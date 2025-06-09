@@ -10,7 +10,7 @@ import { useApp } from "../providers";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    userId: "",
+    email: "",
     password: "",
     keepLogin: false,
   });
@@ -24,26 +24,22 @@ export default function LoginPage() {
 
   const locationGoogle = () => {
     localStorage.removeItem("jwtToken");
+    console.log("구글 버튼");
     window.location.href = "http://localhost:8000/auth/google";
   };
   const locationKakao = () => {
     localStorage.removeItem("jwtToken");
+    console.log("카카오 버튼");
     window.location.href = "http://localhost:8000/auth/kakao";
   };
   const locationNaver = () => {
     localStorage.removeItem("jwtToken");
+    console.log("네이버 버튼");
     window.location.href = "http://localhost:8000/auth/naver";
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // 임시 로그인 처리
-    setUser({
-      id: formData.userId,
-      name: "홍길동",
-      email: "hong@example.com",
-    });
 
     alert("로그인되었습니다!");
     router.push("/");
@@ -85,19 +81,19 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <label
-                htmlFor="userId"
+                htmlFor="email"
                 className="text-sm font-medium text-gray-800"
               >
-                아이디
+                이메일
               </label>
               <div className="relative flex items-center">
                 <i className="fas fa-user absolute left-4 text-gray-400"></i>
                 <input
                   type="text"
-                  id="userId"
-                  name="userId"
-                  placeholder="아이디를 입력하세요"
-                  value={formData.userId}
+                  id="email"
+                  name="email"
+                  placeholder="이메일를 입력하세요"
+                  value={formData.email}
                   onChange={handleInputChange}
                   required
                   className="w-full py-4 pl-12 pr-4 border-2 border-gray-200 rounded-xl text-base outline-none transition-all bg-gray-50 focus:border-blue-600 focus:bg-white focus:shadow-md"
@@ -233,7 +229,7 @@ export default function LoginPage() {
           <div className="modal-content">
             <div className="modal-header">
               <h2>
-                {showFindModal === "id" ? "아이디 찾기" : "비밀번호 찾기"}
+                {showFindModal === "id" ? "이메일 찾기" : "비밀번호 찾기"}
               </h2>
               <span className="close" onClick={() => setShowFindModal(null)}>
                 &times;
@@ -244,18 +240,18 @@ export default function LoginPage() {
                 {showFindModal === "id" ? (
                   <>
                     <p className="text-gray-600 text-sm mb-5 leading-relaxed">
-                      가입 시 등록한 이메일과 휴대폰 번호를 입력해주세요.
+                      가입 시 등록한 이름과 휴대폰 번호를 입력해주세요.
                     </p>
                     <div className="flex flex-col gap-2">
                       <label className="text-sm font-medium text-gray-800">
-                        이메일
+                        이름
                       </label>
                       <div className="relative flex items-center">
                         <i className="fas fa-envelope absolute left-4 text-gray-400"></i>
                         <input
-                          type="email"
-                          name="findEmail"
-                          placeholder="이메일을 입력하세요"
+                          type="text"
+                          name="findName"
+                          placeholder="이름을 입력하세요"
                           required
                           className="w-full py-4 pl-12 pr-4 border-2 border-gray-200 rounded-xl text-base outline-none transition-all bg-gray-50 focus:border-blue-600 focus:bg-white"
                         />
