@@ -596,7 +596,9 @@ export default function MyPage() {
           </div>
 
           {/* 메인 콘텐츠 */}
-          <div className="lg:col-span-3 bg-white rounded-xl p-6 shadow-md">{renderTabContent()}</div>
+          <div className="lg:col-span-3 bg-white rounded-xl p-6 shadow-md w-full min-w-[800px]">
+            {renderTabContent()}
+          </div>
         </div>
       </div>
     </MainLayout>
