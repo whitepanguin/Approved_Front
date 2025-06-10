@@ -1,24 +1,35 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useApp } from "@/app/providers"
+import Link from "next/link";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store"; // 실제 경로에 맞게 수정하세요
+import { setUser, setUserStatus } from "@/modules/user";
 
 interface HeaderProps {
-  onMenuClick: () => void
+  onMenuClick: () => void;
 }
 
 export default function Header({ onMenuClick }: HeaderProps) {
-  const { user, setUser } = useApp()
+  const dispatch = useDispatch();
+  const { currentUser, isLogin } = useSelector(
+    (state: RootState) => state.user
+  );
 
   const handleLogout = () => {
-    setUser(null)
-    // 로그아웃 로직
-  }
+    // 로그아웃 시 localStorage 클리어 및 redux 상태 초기화
+    localStorage.removeItem("jwtToken");
+    dispatch(setUser({}));
+    dispatch(setUserStatus(false));
+    // 필요하면 추가적으로 서버 로그아웃 API 호출 가능
+  };
 
   return (
     <div className="flex justify-between items-center p-4">
       <div className="flex items-center">
-        <span className="text-2xl cursor-pointer mr-5 text-blue-600" onClick={onMenuClick}>
+        <span
+          className="text-2xl cursor-pointer mr-5 text-blue-600"
+          onClick={onMenuClick}
+        >
           &#9776;
         </span>
         <Link href="/" className="flex items-center cursor-pointer">
@@ -32,7 +43,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </div>
 
       <div className="flex gap-2">
-        {user ? (
+        {isLogin ? (
           <>
             <button
               onClick={handleLogout}
@@ -42,7 +53,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </button>
             <div className="flex items-center gap-2 text-sm">
               <i className="fas fa-user-circle text-blue-600 text-xl"></i>
-              <span>{user.name}님</span>
+              <span>{currentUser.name}님</span>
             </div>
           </>
         ) : (
@@ -61,5 +72,5 @@ export default function Header({ onMenuClick }: HeaderProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

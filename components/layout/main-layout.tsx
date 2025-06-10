@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Header from "./header"
-import Sidebar from "./sidebar"
+import { useEffect, useState } from "react";
+import Header from "./header";
+import Sidebar from "./sidebar";
 
 interface MainLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
@@ -21,5 +21,5 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {children}
       </div>
     </>
-  )
+  );
 }
