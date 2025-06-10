@@ -2,90 +2,60 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useApp } from "./providers"; // useApp 임포트
-import { setUser, setUserStatus } from "@/modules/user";
+import { useApp } from "./providers"; // useApp에서 상태/액션 받아오기
+import {
+  setUser as setReduxUser,
+  setUserStatus as setReduxUserStatus,
+} from "@/modules/user.js";
+import { useDispatch } from "react-redux";
 
 export default function AuthGate() {
-  const { setUser, setUserStatus } = useApp(); // useApp에서 상태/액션 받아옴
+  const [isLoading, setIsLoading] = useState(true);
+  const { setUser, setUserStatus } = useApp(); // Context 상태 관리용
   const searchParams = useSearchParams();
   const router = useRouter();
+  const dispatch = useDispatch();
 
+  // 중복 호출 방지 플래그
   const [checked, setChecked] = useState(false);
+  const jwtToken =
+    localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
 
   useEffect(() => {
     if (checked) return;
     setChecked(true);
 
-    const tokenFromURL = searchParams.get("jwtToken");
-
-    // 우선순위: URL → sessionStorage → localStorage
-    const jwtToken =
-      tokenFromURL ||
-      sessionStorage.getItem("jwtToken") ||
-      localStorage.getItem("jwtToken");
-
-    if (!jwtToken) {
-      setUser({});
-      setUserStatus(false);
-      sessionStorage.removeItem("jwtToken");
-      localStorage.removeItem("jwtToken");
-      return;
+    if (jwtToken) {
+      localStorage.setItem("jwtToken", jwtToken);
+      router.push("/");
     }
+    if (jwtToken) {
+      const isAuthenticate = async () => {
+        const response = await fetch("http://localhost:8000/auth/jwt", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        });
+        const getAuthenticate = await response.json();
+        return getAuthenticate;
+      };
 
-    // 어떤 저장소에서 쓰는지 확인 (useApp은 sessionStorage 기준)
-    let loginType: "useApp" | "social";
-    if (tokenFromURL) {
-      // URL에 있을 경우 저장소에 최신화
-      if (sessionStorage.getItem("jwtToken")) {
-        sessionStorage.setItem("jwtToken", tokenFromURL);
-        loginType = "useApp";
-      } else {
-        localStorage.setItem("jwtToken", tokenFromURL);
-        loginType = "social";
-      }
-    } else if (sessionStorage.getItem("jwtToken") === jwtToken) {
-      loginType = "useApp";
+      isAuthenticate()
+        .then((res) => {
+          console.log(res);
+          // 3) 화면에 뿌릴 수 있도록 유저정보를 파싱(redux)
+          dispatch(setUser(res.user)); // currentUser
+          dispatch(setUserStatus(true)); // isLogin
+        })
+        .catch(console.error);
     } else {
-      loginType = "social";
+      dispatch(setUser({})); // currentUser
+      dispatch(setUserStatus(false)); // isLogin
+      localStorage.clear();
     }
+  }, [jwtToken]);
 
-    const authUrl =
-      loginType === "useApp"
-        ? "http://localhost:8000/auth/local" // local 로그인 인증 주소 (useApp)
-        : "http://localhost:8000/auth/jwt"; // social 로그인 인증 주소
-
-    fetch(authUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${jwtToken}`,
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || "Unknown error");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.user) {
-          setUser(data.user);
-          setUserStatus(true);
-        } else {
-          throw new Error("사용자 정보가 없습니다.");
-        }
-
-        if (tokenFromURL) {
-          router.replace("/");
-        }
-      })
-      .catch((err) => {
-        console.error("인증 오류:", err);
-        setUser({});
-        setUserStatus(false);
-        localStorage.removeItem("jwtToken");
-      });
-  }, []);
-
+  // 인증 완료 후 자식 컴포넌트 렌더링 등...
   return null;
 }

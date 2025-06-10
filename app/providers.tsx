@@ -7,6 +7,8 @@ import { store } from "../store";
 interface AppContextType {
   user: any;
   setUser: (user: any) => void;
+  userStatus: boolean;
+  setUserStatus: (status: boolean) => void;
   searchHistory: string[];
   addToSearchHistory: (query: string) => void;
   removeFromSearchHistory: (index: number) => void;
@@ -24,6 +26,7 @@ export function useApp() {
 
 export function Providers({ children }: { children: ReactNode }) {
   const [user, setUser] = useState(null);
+  const [userStatus, setUserStatus] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
 
   const addToSearchHistory = (query: string) => {
@@ -44,6 +47,8 @@ export function Providers({ children }: { children: ReactNode }) {
         value={{
           user,
           setUser,
+          userStatus,
+          setUserStatus,
           searchHistory,
           addToSearchHistory,
           removeFromSearchHistory,

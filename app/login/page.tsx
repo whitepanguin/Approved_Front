@@ -47,7 +47,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:8000/users/login", {
+      const response = await fetch("http://localhost:8000/auth/local", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -60,24 +60,14 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (response.ok && data.loginSuccess) {
-        // Redux 상태 업데이트
-        dispatch(setUser(data.currentUser));
-        dispatch(setUserStatus(true));
-        // useApp 상태 업데이트
-        setAppUser(data.currentUser);
-
-        // 로그인 유지 여부에 따라 저장소 선택
-        if (formData.keepLogin) {
-          localStorage.setItem("jwtToken", data.token);
-        } else {
-          sessionStorage.setItem("jwtToken", data.token);
-        }
+      if (response.ok) {
+        alert(data.message || "로그인에 성공했습니다.");
+        localStorage.setItem("jwtToken", data.jwtToken);
 
         alert(data.message);
         router.push("/");
       } else {
-        setErrorMsg(data.message || "로그인에 실패했습니다.");
+        throw new Error(data.message || "로그인에 실패했습니다.");
       }
     } catch (error) {
       setErrorMsg("서버와의 연결에 실패했습니다.");
