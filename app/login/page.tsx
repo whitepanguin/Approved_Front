@@ -1,12 +1,13 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
+import { useDispatch } from "react-redux";
+import { setUser, setUserStatus } from "@/modules/user";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -18,9 +19,13 @@ export default function LoginPage() {
   const [showFindModal, setShowFindModal] = useState<"id" | "password" | null>(
     null
   );
+  const [errorMsg, setErrorMsg] = useState("");
 
   const router = useRouter();
-  const { setUser } = useApp();
+  const dispatch = useDispatch();
+
+  // useApp 컨텍스트에서 setUser 함수 가져오기
+  const { setUser: setAppUser } = useApp();
 
   const locationGoogle = () => {
     localStorage.removeItem("jwtToken");
@@ -38,11 +43,46 @@ export default function LoginPage() {
     window.location.href = "http://localhost:8000/auth/naver";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    alert("로그인되었습니다!");
-    router.push("/");
+    try {
+      const response = await fetch("http://localhost:8000/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.loginSuccess) {
+        // Redux 상태 업데이트
+        dispatch(setUser(data.currentUser));
+        dispatch(setUserStatus(true));
+        // useApp 상태 업데이트
+        setAppUser(data.currentUser);
+
+        // 로그인 유지 여부에 따라 저장소 선택
+        if (formData.keepLogin) {
+          localStorage.setItem("jwtToken", data.token);
+        } else {
+          sessionStorage.setItem("jwtToken", data.token);
+        }
+
+        alert(data.message);
+        router.push("/");
+      } else {
+        setErrorMsg(data.message || "로그인에 실패했습니다.");
+      }
+    } catch (error) {
+      setErrorMsg("서버와의 연결에 실패했습니다.");
+      console.error("Login error:", error);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

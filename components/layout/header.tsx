@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store"; // 실제 경로에 맞게 수정하세요
 import { setUser, setUserStatus } from "@/modules/user";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -11,16 +12,18 @@ interface HeaderProps {
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const dispatch = useDispatch();
+  const router = useRouter();
+
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
   );
 
   const handleLogout = () => {
-    // 로그아웃 시 localStorage 클리어 및 redux 상태 초기화
     localStorage.removeItem("jwtToken");
+    sessionStorage.removeItem("jwtToken");
     dispatch(setUser({}));
     dispatch(setUserStatus(false));
-    // 필요하면 추가적으로 서버 로그아웃 API 호출 가능
+    router.push("/"); // 로그인 페이지로 이동
   };
 
   return (
