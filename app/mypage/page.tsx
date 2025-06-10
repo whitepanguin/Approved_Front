@@ -1,14 +1,15 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import MainLayout from "@/components/layout/main-layout"
-import { useApp } from "../providers"
+import type React from "react";
+import { useState, useEffect } from "react";
+import MainLayout from "@/components/layout/main-layout";
+import { useApp } from "../providers";
 
 export default function MyPage() {
-  const { user, searchHistory, removeFromSearchHistory } = useApp()
-  const [activeTab, setActiveTab] = useState("profile")
-  const [isEditing, setIsEditing] = useState(false)
+  const { user, searchHistory, removeFromSearchHistory } = useApp();
+  const [myComments, setMyComments] = useState([]);
+  const [activeTab, setActiveTab] = useState("profile");
+  const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
     userId: "honggildong",
     name: "홍길동",
@@ -16,53 +17,56 @@ export default function MyPage() {
     phone: "010-1234-5678",
     businessType: "음식점업",
     joinDate: "2023.05.15",
-  })
+  });
 
-  // 샘플 데이터
-  const myPosts = [
-    {
-      id: 1,
-      title: "음식점 영업허가 신청 시 주의사항",
-      preview: "음식점을 개업하려고 하는데 영업허가 신청할 때 놓치기 쉬운 부분들을 정리해봤습니다.",
-      date: "2023-06-01",
-      views: 1245,
-      likes: 89,
-      comments: 32,
-    },
-    {
-      id: 2,
-      title: "사업자등록증 발급 후기",
-      preview: "처음으로 사업자등록증을 발급받았습니다. 과정과 필요 서류를 공유합니다.",
-      date: "2023-05-15",
-      views: 876,
-      likes: 45,
-      comments: 18,
-    },
-  ]
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/profile`)
+      .then((res) => res.json())
+      .then((data) => {
+        setProfileData(data);
+      })
+      .catch((err) => console.error("프로필 정보 불러오기 실패:", err));
+  }, []);
 
-  const myComments = [
-    {
-      id: 1,
-      postTitle: "건축허가 관련 질문드립니다",
-      comment: "저도 비슷한 경험이 있는데요, 건축과에 직접 방문하시는 것이 가장 빠릅니다.",
-      date: "2023-06-05",
-      likes: 12,
-    },
-    {
-      id: 2,
-      postTitle: "식품위생교육 어디서 받나요?",
-      comment: "식품의약품안전처 교육포털에서 온라인으로 받을 수 있습니다. 링크 첨부합니다.",
-      date: "2023-05-28",
-      likes: 8,
-    },
-    {
-      id: 3,
-      postTitle: "창업 초기 세무 관리 팁",
-      comment: "세금계산서 발행과 매입/매출 관리는 꼭 클라우드 회계 프로그램 사용하세요.",
-      date: "2023-05-20",
-      likes: 15,
-    },
-  ]
+  const [myPosts, setMyPosts] = useState([]);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/posts`)
+      .then((res) => res.json())
+      .then((data) => setMyPosts(data))
+      .catch((err) => console.error("내 글 불러오기 실패:", err));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/comments`)
+      .then((res) => res.json())
+      .then((data) => setMyComments(data))
+      .catch((err) => console.error("댓글 불러오기 실패:", err));
+  }, []);
+
+  // const [myComments, setMyComments] = useState([
+  //   {
+  //     id: 1,
+  //     postTitle: "2024년 달라지는 인허가 제도 총정리",
+  //     comment: "이 부분은 정말 중요한 것 같아요!",
+  //     date: "2024-06-10",
+  //     likes: 5,
+  //   },
+  //   {
+  //     id: 2,
+  //     postTitle: "소상공인 정책 변화 요약",
+  //     comment: "정리 감사합니다 🙏",
+  //     date: "2024-06-08",
+  //     likes: 2,
+  //   },
+  //   {
+  //     id: 3,
+  //     postTitle: "식품 위생 허가 체크리스트",
+  //     comment: "실제 신청할 때 큰 도움이 되었어요.",
+  //     date: "2024-06-05",
+  //     likes: 8,
+  //   },
+  // ]);
 
   const likedPosts = [
     {
@@ -92,25 +96,27 @@ export default function MyPage() {
       likes: 98,
       comments: 37,
     },
-  ]
+  ];
 
   const handleProfileSave = () => {
-    setIsEditing(false)
-    alert("프로필이 저장되었습니다.")
-  }
+    setIsEditing(false);
+    alert("프로필이 저장되었습니다.");
+  };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
     setProfileData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault()
-    alert("비밀번호가 변경되었습니다.")
-  }
+    e.preventDefault();
+    alert("비밀번호가 변경되었습니다.");
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -118,14 +124,20 @@ export default function MyPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">프로필 수정</h3>
-              <p className="text-sm text-gray-500 mb-6">개인정보를 안전하게 관리하세요</p>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                프로필 수정
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                개인정보를 안전하게 관리하세요
+              </p>
 
               <div className="bg-white rounded-lg p-6 border border-gray-200">
                 <h4 className="font-medium text-gray-800 mb-4">기본 정보</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">아이디</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      아이디
+                    </label>
                     <input
                       type="text"
                       name="userId"
@@ -133,11 +145,15 @@ export default function MyPage() {
                       disabled
                       className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
                     />
-                    <p className="text-xs text-gray-500 mt-1">아이디는 변경할 수 없습니다.</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      아이디는 변경할 수 없습니다.
+                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      이메일
+                    </label>
                     <div className="flex">
                       <input
                         type="email"
@@ -153,7 +169,9 @@ export default function MyPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">닉네임</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      닉네임
+                    </label>
                     <div className="flex">
                       <input
                         type="text"
@@ -169,7 +187,9 @@ export default function MyPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">휴대폰 번호</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      휴대폰 번호
+                    </label>
                     <input
                       type="tel"
                       name="phone"
@@ -180,7 +200,9 @@ export default function MyPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">사업 분야</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      사업 분야
+                    </label>
                     <select
                       name="businessType"
                       value={profileData.businessType}
@@ -198,7 +220,9 @@ export default function MyPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">가입일</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      가입일
+                    </label>
                     <input
                       type="text"
                       name="joinDate"
@@ -215,7 +239,9 @@ export default function MyPage() {
               <h4 className="font-medium text-gray-800 mb-4">비밀번호 변경</h4>
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">현재 비밀번호</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    현재 비밀번호
+                  </label>
                   <input
                     type="password"
                     placeholder="현재 비밀번호를 입력하세요"
@@ -223,7 +249,9 @@ export default function MyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">새 비밀번호</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    새 비밀번호
+                  </label>
                   <input
                     type="password"
                     placeholder="새 비밀번호를 입력하세요"
@@ -231,7 +259,9 @@ export default function MyPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">새 비밀번호 확인</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    새 비밀번호 확인
+                  </label>
                   <input
                     type="password"
                     placeholder="새 비밀번호를 다시 입력하세요"
@@ -255,13 +285,15 @@ export default function MyPage() {
               </form>
             </div>
           </div>
-        )
+        );
 
       case "posts":
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-gray-800">내가 쓴 글</h3>
+              <h3 className="text-xl font-semibold text-gray-800">
+                내가 쓴 글
+              </h3>
               <div className="flex gap-2">
                 <select className="p-2 border border-gray-300 rounded-lg text-sm">
                   <option>최신순</option>
@@ -283,11 +315,22 @@ export default function MyPage() {
               <div className="space-y-4">
                 {myPosts.map((post) => (
                   <div
-                    key={post.id}
+                    key={post._id}
                     className="p-5 border border-gray-200 rounded-lg hover:border-blue-600 transition-colors cursor-pointer"
                   >
-                    <h4 className="text-lg font-semibold text-gray-800 mb-2">{post.title}</h4>
-                    <p className="text-gray-600 mb-4 line-clamp-2">{post.preview}</p>
+                    <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                      {post.title}
+                    </h4>
+                    {/* 미리보기 */}
+                    <p className="text-sm text-gray-600 mt-1">
+                      {post.content.length > 100
+                        ? post.content.slice(0, 100) + "..."
+                        : post.content}
+                    </p>
+
+                    <p className="text-gray-600 mb-4 line-clamp-2">
+                      {post.preview}
+                    </p>
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <div className="flex gap-4">
                         <span className="flex items-center gap-1">
@@ -326,7 +369,7 @@ export default function MyPage() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case "comments":
         return (
@@ -356,7 +399,9 @@ export default function MyPage() {
                         <i className="fas fa-reply text-blue-600 mr-2 rotate-180"></i>
                         {comment.postTitle}
                       </h4>
-                      <span className="text-xs text-gray-500">{comment.date}</span>
+                      <span className="text-xs text-gray-500">
+                        {comment.date}
+                      </span>
                     </div>
                     <p className="text-gray-600 mb-3 pl-6">{comment.comment}</p>
                     <div className="flex justify-end items-center text-sm text-gray-500">
@@ -384,13 +429,15 @@ export default function MyPage() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case "likes":
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-gray-800">좋아요한 글</h3>
+              <h3 className="text-xl font-semibold text-gray-800">
+                좋아요한 글
+              </h3>
               <select className="p-2 border border-gray-300 rounded-lg text-sm">
                 <option>최신순</option>
                 <option>인기순</option>
@@ -410,7 +457,9 @@ export default function MyPage() {
                     key={post.id}
                     className="p-5 border border-gray-200 rounded-lg hover:border-blue-600 transition-colors cursor-pointer"
                   >
-                    <h4 className="text-lg font-semibold text-gray-800 mb-2">{post.title}</h4>
+                    <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                      {post.title}
+                    </h4>
                     <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
                       <span className="flex items-center gap-1">
                         <i className="fas fa-user"></i> {post.author}
@@ -450,7 +499,7 @@ export default function MyPage() {
               </div>
             </div>
           </div>
-        )
+        );
 
       case "settings":
         return (
@@ -480,7 +529,8 @@ export default function MyPage() {
                 <h4 className="font-semibold text-gray-800 mb-4">계정 관리</h4>
                 <div className="space-y-3">
                   <button className="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <i className="fas fa-download mr-3 text-blue-600"></i>내 데이터 다운로드
+                    <i className="fas fa-download mr-3 text-blue-600"></i>내
+                    데이터 다운로드
                   </button>
                   <button className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
                     <i className="fas fa-user-times mr-3"></i>
@@ -490,12 +540,12 @@ export default function MyPage() {
               </div>
             </div>
           </div>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <MainLayout>
@@ -509,20 +559,30 @@ export default function MyPage() {
                 <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mb-3">
                   <i className="fas fa-user text-white text-2xl"></i>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800">{profileData.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">@{profileData.userId}</p>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  {profileData.name}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {profileData.email}
+                </p>
 
                 <div className="flex justify-between w-full border-t border-gray-200 pt-4">
                   <div className="text-center">
-                    <span className="block text-xl font-bold text-blue-600">15</span>
+                    <span className="block text-xl font-bold text-blue-600">
+                      15
+                    </span>
                     <span className="text-xs text-gray-600">작성글</span>
                   </div>
                   <div className="text-center">
-                    <span className="block text-xl font-bold text-blue-600">42</span>
+                    <span className="block text-xl font-bold text-blue-600">
+                      42
+                    </span>
                     <span className="text-xs text-gray-600">댓글</span>
                   </div>
                   <div className="text-center">
-                    <span className="block text-xl font-bold text-blue-600">128</span>
+                    <span className="block text-xl font-bold text-blue-600">
+                      128
+                    </span>
                     <span className="text-xs text-gray-600">좋아요</span>
                   </div>
                 </div>
@@ -540,7 +600,13 @@ export default function MyPage() {
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
-                  <i className={`fas fa-user ${activeTab === "profile" ? "text-blue-600" : "text-gray-500"}`}></i>
+                  <i
+                    className={`fas fa-user ${
+                      activeTab === "profile"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  ></i>
                   <span>프로필 수정</span>
                 </button>
 
@@ -552,7 +618,11 @@ export default function MyPage() {
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
-                  <i className={`fas fa-file-alt ${activeTab === "posts" ? "text-blue-600" : "text-gray-500"}`}></i>
+                  <i
+                    className={`fas fa-file-alt ${
+                      activeTab === "posts" ? "text-blue-600" : "text-gray-500"
+                    }`}
+                  ></i>
                   <span>내가 쓴 글</span>
                 </button>
 
@@ -564,7 +634,13 @@ export default function MyPage() {
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
-                  <i className={`fas fa-comment ${activeTab === "comments" ? "text-blue-600" : "text-gray-500"}`}></i>
+                  <i
+                    className={`fas fa-comment ${
+                      activeTab === "comments"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  ></i>
                   <span>내 댓글</span>
                 </button>
 
@@ -576,7 +652,11 @@ export default function MyPage() {
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
-                  <i className={`fas fa-heart ${activeTab === "likes" ? "text-blue-600" : "text-gray-500"}`}></i>
+                  <i
+                    className={`fas fa-heart ${
+                      activeTab === "likes" ? "text-blue-600" : "text-gray-500"
+                    }`}
+                  ></i>
                   <span>좋아요한 글</span>
                 </button>
 
@@ -588,7 +668,13 @@ export default function MyPage() {
                       : "border-transparent hover:bg-gray-50"
                   }`}
                 >
-                  <i className={`fas fa-cog ${activeTab === "settings" ? "text-blue-600" : "text-gray-500"}`}></i>
+                  <i
+                    className={`fas fa-cog ${
+                      activeTab === "settings"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  ></i>
                   <span>계정 설정</span>
                 </button>
               </nav>
@@ -602,5 +688,5 @@ export default function MyPage() {
         </div>
       </div>
     </MainLayout>
-  )
+  );
 }
