@@ -1,61 +1,61 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useApp } from "./providers"; // useApp에서 상태/액션 받아오기
-import {
-  setUser as setReduxUser,
-  setUserStatus as setReduxUserStatus,
-} from "@/modules/user.js";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch } from "react-redux";
+import { setUser, setUserStatus } from "../modules/user";
 
-export default function AuthGate() {
-  const [isLoading, setIsLoading] = useState(true);
-  const { setUser, setUserStatus } = useApp(); // Context 상태 관리용
-  const searchParams = useSearchParams();
+const AuthGate = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch();
-
-  // 중복 호출 방지 플래그
   const [checked, setChecked] = useState(false);
-  const jwtToken =
-    localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
 
   useEffect(() => {
-    if (checked) return;
-    setChecked(true);
+    const jwtToken =
+      localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
 
     if (jwtToken) {
       localStorage.setItem("jwtToken", jwtToken);
-      router.push("/");
-    }
-    if (jwtToken) {
-      const isAuthenticate = async () => {
-        const response = await fetch("http://localhost:8000/auth/jwt", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-          },
-        });
-        const getAuthenticate = await response.json();
-        return getAuthenticate;
+
+      const authenticate = async () => {
+        try {
+          const res = await fetch("http://localhost:8000/auth/jwt", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          });
+
+          if (!res.ok) throw new Error("Invalid token");
+
+          const data = await res.json();
+          dispatch(setUser(data.user));
+          dispatch(setUserStatus(true));
+        } catch (error) {
+          console.error("JWT 인증 실패:", error);
+          localStorage.removeItem("jwtToken");
+          dispatch(setUser({}));
+          dispatch(setUserStatus(false));
+          router.push("/login");
+        } finally {
+          setChecked(true);
+        }
       };
 
-      isAuthenticate()
-        .then((res) => {
-          console.log(res);
-          // 3) 화면에 뿌릴 수 있도록 유저정보를 파싱(redux)
-          dispatch(setUser(res.user)); // currentUser
-          dispatch(setUserStatus(true)); // isLogin
-        })
-        .catch(console.error);
+      authenticate();
     } else {
-      dispatch(setUser({})); // currentUser
-      dispatch(setUserStatus(false)); // isLogin
-      localStorage.clear();
+      dispatch(setUser({}));
+      dispatch(setUserStatus(false));
+      localStorage.removeItem("jwtToken");
+      router.push("/login");
+      setChecked(true);
     }
-  }, [jwtToken]);
+  }, [dispatch, router, searchParams]);
 
-  // 인증 완료 후 자식 컴포넌트 렌더링 등...
-  return null;
-}
+  if (!checked) return null; // 로딩 중엔 아무것도 렌더링하지 않음
+
+  return null; // 인증 처리만 하고 UI는 출력하지 않음
+};
+
+export default AuthGate;
