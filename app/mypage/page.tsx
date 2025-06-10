@@ -5,11 +5,34 @@ import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
 
+type Post = {
+  _id: string;
+  title: string;
+  content: string;
+  preview?: string;
+  date: string;
+  author?: string;
+  views?: number;
+  likes?: number;
+  comments?: number;
+};
+
+type Comment = {
+  id: number;
+  postTitle: string;
+  comment: string;
+  date: string;
+  likes: number;
+};
+
+
 export default function MyPage() {
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
   const { user, searchHistory, removeFromSearchHistory } = useApp();
-  const [myComments, setMyComments] = useState([]);
+  const [myComments, setMyComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
+  const [likedPosts, setLikedPosts] = useState([]);
   const [profileData, setProfileData] = useState({
     userId: "honggildong",
     name: "홍길동",
@@ -19,6 +42,7 @@ export default function MyPage() {
     joinDate: "2023.05.15",
   });
 
+  // 프로필 정보 불러오기 (GET /mypage/profile)
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/profile`)
       .then((res) => res.json())
@@ -28,8 +52,7 @@ export default function MyPage() {
       .catch((err) => console.error("프로필 정보 불러오기 실패:", err));
   }, []);
 
-  const [myPosts, setMyPosts] = useState([]);
-
+// 내가 쓴 글 불러오기 (GET /mypage/posts)
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/posts`)
       .then((res) => res.json())
@@ -37,6 +60,7 @@ export default function MyPage() {
       .catch((err) => console.error("내 글 불러오기 실패:", err));
   }, []);
 
+  // 내가 쓴 댓글 불러오기 (GET /mypage/comments)
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/comments`)
       .then((res) => res.json())
@@ -44,65 +68,54 @@ export default function MyPage() {
       .catch((err) => console.error("댓글 불러오기 실패:", err));
   }, []);
 
-  // const [myComments, setMyComments] = useState([
+  // 좋아요한 글 불러오기 (GET /mypage/likes)
+useEffect(() => {
+  fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/likes`)
+    .then((res) => res.json())
+    .then((data) => setLikedPosts(data))
+    .catch((err) => console.error("좋아요한 글 가져오기 실패:", err));
+}, []);
+
+
+  // 프론트에 하드코딩된 더미 데이터 사용
+  // const likedPosts = [
   //   {
   //     id: 1,
-  //     postTitle: "2024년 달라지는 인허가 제도 총정리",
-  //     comment: "이 부분은 정말 중요한 것 같아요!",
-  //     date: "2024-06-10",
-  //     likes: 5,
+  //     title: "2023년 달라지는 인허가 제도 총정리",
+  //     author: "정책전문가",
+  //     date: "2023-06-10",
+  //     views: 2341,
+  //     likes: 156,
+  //     comments: 45,
   //   },
   //   {
   //     id: 2,
-  //     postTitle: "소상공인 정책 변화 요약",
-  //     comment: "정리 감사합니다 🙏",
-  //     date: "2024-06-08",
-  //     likes: 2,
+  //     title: "소상공인 지원 정책 모음",
+  //     author: "경제연구소",
+  //     date: "2023-06-05",
+  //     views: 1876,
+  //     likes: 134,
+  //     comments: 28,
   //   },
   //   {
   //     id: 3,
-  //     postTitle: "식품 위생 허가 체크리스트",
-  //     comment: "실제 신청할 때 큰 도움이 되었어요.",
-  //     date: "2024-06-05",
-  //     likes: 8,
+  //     title: "식품접객업 인허가 체크리스트",
+  //     author: "식당CEO",
+  //     date: "2023-05-30",
+  //     views: 1543,
+  //     likes: 98,
+  //     comments: 37,
   //   },
-  // ]);
+  // ];
 
-  const likedPosts = [
-    {
-      id: 1,
-      title: "2023년 달라지는 인허가 제도 총정리",
-      author: "정책전문가",
-      date: "2023-06-10",
-      views: 2341,
-      likes: 156,
-      comments: 45,
-    },
-    {
-      id: 2,
-      title: "소상공인 지원 정책 모음",
-      author: "경제연구소",
-      date: "2023-06-05",
-      views: 1876,
-      likes: 134,
-      comments: 28,
-    },
-    {
-      id: 3,
-      title: "식품접객업 인허가 체크리스트",
-      author: "식당CEO",
-      date: "2023-05-30",
-      views: 1543,
-      likes: 98,
-      comments: 37,
-    },
-  ];
 
+  // 프로필 저장 버튼 현재는 alert만 띄우고 실제 저장 기능은 없음 (UI 동작만 존재)
   const handleProfileSave = () => {
     setIsEditing(false);
     alert("프로필이 저장되었습니다.");
   };
 
+  // 프로필 입력 필드 값 변경 핸들러
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -113,11 +126,13 @@ export default function MyPage() {
     }));
   };
 
+  // 비밀번호 변경 폼 제출  현재는 실제 비밀번호 변경 로직 없이 alert만 띄움 (UI 동작만 존재)
   const handlePasswordChange = (e: React.FormEvent) => {
     e.preventDefault();
     alert("비밀번호가 변경되었습니다.");
   };
 
+  // 마이페이지 탭 렌더링 함수
   const renderTabContent = () => {
     switch (activeTab) {
       case "profile":
