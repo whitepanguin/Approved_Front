@@ -107,7 +107,7 @@ body {
 
 /* 메인 콘텐츠 스타일 */
 #main {
-  transition: margin-left .5s;
+  transition: margin-left 0.5s;
   padding: 16px;
   min-height: 100vh;
   display: flex;

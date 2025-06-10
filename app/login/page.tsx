@@ -1,12 +1,13 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
+import { useDispatch } from "react-redux";
+import { setUser, setUserStatus } from "@/modules/user";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -18,9 +19,13 @@ export default function LoginPage() {
   const [showFindModal, setShowFindModal] = useState<"id" | "password" | null>(
     null
   );
+  const [errorMsg, setErrorMsg] = useState("");
 
   const router = useRouter();
-  const { setUser } = useApp();
+  const dispatch = useDispatch();
+
+  // useApp 컨텍스트에서 setUser 함수 가져오기
+  const { setUser: setAppUser } = useApp();
 
   const locationGoogle = () => {
     localStorage.removeItem("jwtToken");
@@ -38,11 +43,36 @@ export default function LoginPage() {
     window.location.href = "http://localhost:8000/auth/naver";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    alert("로그인되었습니다!");
-    router.push("/");
+    try {
+      const response = await fetch("http://localhost:8000/auth/local", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // alert(data.message || "로그인에 성공했습니다.");
+        localStorage.setItem("jwtToken", data.jwtToken);
+
+        alert(data.message);
+        router.push("/");
+      } else {
+        throw new Error(data.message || "로그인에 실패했습니다.");
+      }
+    } catch (error) {
+      setErrorMsg("서버와의 연결에 실패했습니다.");
+      console.error("Login error:", error);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
