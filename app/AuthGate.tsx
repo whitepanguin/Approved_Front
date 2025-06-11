@@ -37,7 +37,6 @@ const AuthGate = () => {
           localStorage.removeItem("jwtToken");
           dispatch(setUser({}));
           dispatch(setUserStatus(false));
-          router.push("/login");
         } finally {
           setChecked(true);
         }
@@ -48,7 +47,7 @@ const AuthGate = () => {
       dispatch(setUser({}));
       dispatch(setUserStatus(false));
       localStorage.removeItem("jwtToken");
-      router.push("/login");
+
       setChecked(true);
     }
   }, [dispatch, router, searchParams]);
