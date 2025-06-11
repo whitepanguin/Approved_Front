@@ -4,6 +4,8 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 type Post = {
   _id: string;
@@ -28,103 +30,145 @@ type Comment = {
 
 export default function MyPage() {
   const [myPosts, setMyPosts] = useState<Post[]>([]);
-  const { user, searchHistory, removeFromSearchHistory } = useApp();
+  const user = useSelector((state: RootState) => state.user.currentUser);
+const isLogin = useSelector((state: RootState) => state.user.isLogin);
   const [myComments, setMyComments] = useState<Comment[]>([]);
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
   const [likedPosts, setLikedPosts] = useState([]);
-  const [profileData, setProfileData] = useState({
-    userId: "honggildong",
-    name: "홍길동",
-    email: "hong@example.com",
-    phone: "010-1234-5678",
-    businessType: "음식점업",
-    joinDate: "2023.05.15",
-  });
+ const [profileData, setProfileData] = useState({
+  userId: "",
+  name: "",
+  email: "",
+  phone: "",
+  businessType: "",
+  joinDate: "",
+});
 
-  // 프로필 정보 불러오기 (GET /mypage/profile)
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/profile`)
-      .then((res) => res.json())
-      .then((data) => {
-        setProfileData(data);
-      })
-      .catch((err) => console.error("프로필 정보 불러오기 실패:", err));
-  }, []);
 
-// 내가 쓴 글 불러오기 (GET /mypage/posts)
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/posts`)
-      .then((res) => res.json())
-      .then((data) => setMyPosts(data))
-      .catch((err) => console.error("내 글 불러오기 실패:", err));
-  }, []);
 
-  // 내가 쓴 댓글 불러오기 (GET /mypage/comments)
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/comments`)
-      .then((res) => res.json())
-      .then((data) => setMyComments(data))
-      .catch((err) => console.error("댓글 불러오기 실패:", err));
-  }, []);
-
-  // 좋아요한 글 불러오기 (GET /mypage/likes)
 useEffect(() => {
-  fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/likes`)
-    .then((res) => res.json())
-    .then((data) => setLikedPosts(data))
-    .catch((err) => console.error("좋아요한 글 가져오기 실패:", err));
-}, []);
+  const token =
+    localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
 
+  if (!token || !user?.email) {
+    console.warn("❗ 토큰 또는 user.email이 없습니다. 요청 중단");
+    return;
+  }
 
-  // 프론트에 하드코딩된 더미 데이터 사용
-  // const likedPosts = [
-  //   {
-  //     id: 1,
-  //     title: "2023년 달라지는 인허가 제도 총정리",
-  //     author: "정책전문가",
-  //     date: "2023-06-10",
-  //     views: 2341,
-  //     likes: 156,
-  //     comments: 45,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "소상공인 지원 정책 모음",
-  //     author: "경제연구소",
-  //     date: "2023-06-05",
-  //     views: 1876,
-  //     likes: 134,
-  //     comments: 28,
-  //   },
-  //   {
-  //     id: 3,
-  //     title: "식품접객업 인허가 체크리스트",
-  //     author: "식당CEO",
-  //     date: "2023-05-30",
-  //     views: 1543,
-  //     likes: 98,
-  //     comments: 37,
-  //   },
-  // ];
+  const fetchUserProfile = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo?email=${user.email}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
+      if (!res.ok) throw new Error("프로필 요청 실패");
 
-  // 프로필 저장 버튼 현재는 alert만 띄우고 실제 저장 기능은 없음 (UI 동작만 존재)
-  const handleProfileSave = () => {
-    setIsEditing(false);
-    alert("프로필이 저장되었습니다.");
+      const data = await res.json();
+      console.log("🔵 JWT 기반 프로필 불러옴:", data);
+
+      setProfileData({
+        userId: data.userid || "", // ✅ userId → userid
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        businessType: data.businessType || "",
+        joinDate: data.createdAt?.slice(0, 10) || "",
+      });
+    } catch (err) {
+      console.error("❌ 프로필 불러오기 실패:", err);
+    }
   };
+
+  fetchUserProfile();
+}, [user?.email]);
+
+
+// 중복확인
+const handleCheckDuplicate = async () => {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/users/check-duplicate?userid=${profileData.userId}`
+    );
+
+    console.log("📡 중복확인 응답 상태:", res.status);
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("❌ 서버 응답 내용:", text);
+      throw new Error("중복확인 실패");
+    }
+
+    const result = await res.json();
+    console.log("✅ 중복확인 결과:", result);
+
+    if (result.exists) {
+      alert("이미 사용 중인 닉네임입니다.");
+    } else {
+      alert("사용 가능한 닉네임입니다!");
+    }
+  } catch (err) {
+    console.error("❌ 중복확인 에러:", err);
+    alert("중복확인 중 오류가 발생했습니다.");
+  }
+};
+
+
+
+// 저장하기 버튼튼
+  const handleSaveProfile = async () => {
+  const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+  if (!token) {
+    alert("로그인이 필요합니다.");
+    return;
+  }
+
+  // ✅ 백엔드가 기대하는 key 이름에 맞게 전송
+  const bodyToSend = {
+    userid: profileData.userId, // ✅ key 이름 바꿔줌
+    name: profileData.name,
+    email: profileData.email,
+    phone: profileData.phone,
+    businessType: profileData.businessType,
+  };
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(bodyToSend),
+    });
+
+    if (!res.ok) throw new Error("저장 실패");
+
+    const result = await res.json();
+    alert("✅ 저장 완료!");
+  } catch (err) {
+    console.error("❌ 저장 에러:", err);
+    alert("저장 중 오류가 발생했습니다.");
+  }
+};
+
+
 
   // 프로필 입력 필드 값 변경 핸들러
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setProfileData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = e.target;
+  setProfileData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
 
   // 비밀번호 변경 폼 제출  현재는 실제 비밀번호 변경 로직 없이 alert만 띄움 (UI 동작만 존재)
   const handlePasswordChange = (e: React.FormEvent) => {
@@ -156,7 +200,7 @@ useEffect(() => {
                     <input
                       type="text"
                       name="userId"
-                      value={profileData.userId}
+                      value={user?.email || ""}
                       disabled
                       className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
                     />
@@ -173,7 +217,7 @@ useEffect(() => {
                       <input
                         type="email"
                         name="email"
-                        value={profileData.email}
+                        value={user?.email || ""}
                         onChange={handleInputChange}
                         className="flex-1 p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                       />
@@ -190,12 +234,12 @@ useEffect(() => {
                     <div className="flex">
                       <input
                         type="text"
-                        name="name"
-                        value={profileData.name}
+                        name="userId"
+                        value={profileData.userId || ""}
                         onChange={handleInputChange}
                         className="flex-1 p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                       />
-                      <button className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      <button onClick={handleCheckDuplicate} className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         중복확인
                       </button>
                     </div>
@@ -208,7 +252,7 @@ useEffect(() => {
                     <input
                       type="tel"
                       name="phone"
-                      value={profileData.phone}
+                      value={profileData.phone||""}
                       onChange={handleInputChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                     />
@@ -220,7 +264,7 @@ useEffect(() => {
                     </label>
                     <select
                       name="businessType"
-                      value={profileData.businessType}
+                      value={profileData.businessType||""}
                       onChange={handleInputChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                     >
@@ -241,7 +285,7 @@ useEffect(() => {
                     <input
                       type="text"
                       name="joinDate"
-                      value={profileData.joinDate}
+                      value={user?.createdAt?.slice(0, 10) || ""}
                       disabled
                       className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
                     />
@@ -291,7 +335,7 @@ useEffect(() => {
                     취소
                   </button>
                   <button
-                    type="submit"
+                    onClick={handleSaveProfile}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     저장하기
@@ -575,10 +619,10 @@ useEffect(() => {
                   <i className="fas fa-user text-white text-2xl"></i>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">
-                  {profileData.name}
+                  {user?.userid || ""}
                 </h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  {profileData.email}
+                  {user?.email || ""}
                 </p>
 
                 <div className="flex justify-between w-full border-t border-gray-200 pt-4">
