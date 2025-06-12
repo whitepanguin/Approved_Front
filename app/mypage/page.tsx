@@ -27,154 +27,313 @@ type Comment = {
   likes: number;
 };
 
-
 export default function MyPage() {
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const user = useSelector((state: RootState) => state.user.currentUser);
-const isLogin = useSelector((state: RootState) => state.user.isLogin);
+  const isLogin = useSelector((state: RootState) => state.user.isLogin);
   const [myComments, setMyComments] = useState<Comment[]>([]);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
   const [likedPosts, setLikedPosts] = useState([]);
- const [profileData, setProfileData] = useState({
-  userId: "",
-  name: "",
-  email: "",
-  phone: "",
-  businessType: "",
-  joinDate: "",
-});
+  const [isChecked, setIsChecked] = useState(false);
+  const [originalUserId, setOriginalUserId] = useState("");
+  const [profileData, setProfileData] = useState({
+    userId: "",
+    name: "",
+    email: "",
+    phone: "",
+    businessType: "",
+    joinDate: "",
+  });
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+    }
+  };
 
+  // 프로필 사진 업로드
+  const handleUploadPicture = async () => {
+    if (!selectedImage) {
+      alert("업로드할 이미지를 선택해주세요.");
+      return;
+    }
 
-useEffect(() => {
-  const token =
-    localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+    const formData = new FormData();
+    formData.append("picture", selectedImage);
+    formData.append("email", user.email); // 로그인한 사용자 이메일
 
-  if (!token || !user?.email) {
-    console.warn("❗ 토큰 또는 user.email이 없습니다. 요청 중단");
-    return;
-  }
-
-  const fetchUserProfile = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo?email=${user.email}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/users/picture`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          method: "POST",
+          body: formData,
         }
       );
 
-      if (!res.ok) throw new Error("프로필 요청 실패");
-
       const data = await res.json();
-      console.log("🔵 JWT 기반 프로필 불러옴:", data);
 
-      setProfileData({
-        userId: data.userid || "", // ✅ userId → userid
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        businessType: data.businessType || "",
-        joinDate: data.createdAt?.slice(0, 10) || "",
-      });
+      if (!res.ok) throw new Error(data.message);
+
+      alert("✅ 프로필 이미지 업로드 완료");
+      // 📌 여기서 user 상태를 업데이트 해줘야 카드에 반영돼!
+      // 예: dispatch(updateUser({ ...user, profile: data.filePath })) 또는 setUser()
+    } catch (err: any) {
+      console.error("이미지 업로드 실패:", err.message);
+      alert("이미지 업로드 중 오류가 발생했습니다.");
+    }
+  };
+
+  // useEffect: 프로필 처음 불러올 때 닉네임 기억해두기
+  useEffect(() => {
+    const token =
+      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+    if (!token || !user?.email) {
+      console.warn("❗ 토큰 또는 user.email이 없습니다. 요청 중단");
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo?email=${user.email}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await res.json();
+        setProfileData({
+          userId: data.userid || "",
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          businessType: data.businessType || "",
+          joinDate: data.createdAt?.slice(0, 10) || "",
+        });
+        setOriginalUserId(data.userid || ""); // ✅ 최초 닉네임 기억
+      } catch (err) {
+        console.error("❌ 프로필 불러오기 실패:", err);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.email]);
+
+  useEffect(() => {
+    const token =
+      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+    if (!token || !user?.email) {
+      console.warn("❗ 토큰 또는 user.email이 없습니다. 요청 중단");
+      return;
+    }
+
+    const fetchUserProfile = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo?email=${user.email}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("프로필 요청 실패");
+
+        const data = await res.json();
+        console.log("🔵 JWT 기반 프로필 불러옴:", data);
+
+        setProfileData({
+          userId: data.userid || "", // ✅ userId → userid
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          businessType: data.businessType || "",
+          joinDate: data.createdAt?.slice(0, 10) || "",
+        });
+      } catch (err) {
+        console.error("❌ 프로필 불러오기 실패:", err);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.email]);
+
+  // 중복확인
+  const handleCheckDuplicate = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/check-duplicate?userid=${profileData.userId}`
+      );
+
+      console.log("📡 중복확인 응답 상태:", res.status);
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("❌ 서버 응답 내용:", text);
+        throw new Error("중복확인 실패");
+      }
+
+      const result = await res.json();
+      console.log("✅ 중복확인 결과:", result);
+
+      if (result.exists) {
+        alert("이미 사용 중인 닉네임입니다.");
+      } else {
+        alert("사용 가능한 닉네임입니다!");
+        setIsChecked(true);
+      }
     } catch (err) {
-      console.error("❌ 프로필 불러오기 실패:", err);
+      console.error("❌ 중복확인 에러:", err);
+      alert("중복확인 중 오류가 발생했습니다.");
+      setIsChecked(false);
     }
   };
 
-  fetchUserProfile();
-}, [user?.email]);
-
-
-// 중복확인
-const handleCheckDuplicate = async () => {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/check-duplicate?userid=${profileData.userId}`
-    );
-
-    console.log("📡 중복확인 응답 상태:", res.status);
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("❌ 서버 응답 내용:", text);
-      throw new Error("중복확인 실패");
-    }
-
-    const result = await res.json();
-    console.log("✅ 중복확인 결과:", result);
-
-    if (result.exists) {
-      alert("이미 사용 중인 닉네임입니다.");
-    } else {
-      alert("사용 가능한 닉네임입니다!");
-    }
-  } catch (err) {
-    console.error("❌ 중복확인 에러:", err);
-    alert("중복확인 중 오류가 발생했습니다.");
-  }
-};
-
-
-
-// 저장하기 버튼튼
+  // 저장하기
   const handleSaveProfile = async () => {
-  const token = localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+    const token =
+      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
 
-  if (!token) {
-    alert("로그인이 필요합니다.");
-    return;
-  }
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
 
-  // ✅ 백엔드가 기대하는 key 이름에 맞게 전송
-  const bodyToSend = {
-    userid: profileData.userId, // ✅ key 이름 바꿔줌
-    name: profileData.name,
-    email: profileData.email,
-    phone: profileData.phone,
-    businessType: profileData.businessType,
+    // ✅ 닉네임이 변경되었을 경우에만 중복확인 필수
+    const isNicknameChanged = profileData.userId !== originalUserId;
+    if (isNicknameChanged && !isChecked) {
+      alert("닉네임을 변경하셨습니다. 중복확인을 먼저 해주세요.");
+      return;
+    }
+
+    const bodyToSend = {
+      userid: profileData.userId,
+      name: profileData.name,
+      email: profileData.email,
+      phone: profileData.phone,
+      businessType: profileData.businessType,
+    };
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bodyToSend),
+        }
+      );
+
+      if (!res.ok) throw new Error("저장 실패");
+
+      const result = await res.json();
+      alert("✅ 저장 완료!");
+      setOriginalUserId(profileData.userId); // 변경 성공 시 원본 닉네임 업데이트
+      setIsChecked(false); // 중복확인 플래그 리셋
+    } catch (err) {
+      console.error("❌ 저장 에러:", err);
+      alert("저장 중 오류가 발생했습니다.");
+    }
   };
-
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/profile`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(bodyToSend),
-    });
-
-    if (!res.ok) throw new Error("저장 실패");
-
-    const result = await res.json();
-    alert("✅ 저장 완료!");
-  } catch (err) {
-    console.error("❌ 저장 에러:", err);
-    alert("저장 중 오류가 발생했습니다.");
-  }
-};
-
-
 
   // 프로필 입력 필드 값 변경 핸들러
- const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const { name, value } = e.target;
-  setProfileData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
-
-
-  // 비밀번호 변경 폼 제출  현재는 실제 비밀번호 변경 로직 없이 alert만 띄움 (UI 동작만 존재)
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert("비밀번호가 변경되었습니다.");
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProfileData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+
+  // // 비밀번호 변경 폼 제출  현재는 실제 비밀번호 변경 로직 없이 alert만 띄움 (UI 동작만 존재)
+  // const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+
+  //   const form = e.currentTarget;
+
+  //   const currentPassword = (
+  //     form.elements.namedItem("currentPassword") as HTMLInputElement
+  //   )?.value;
+  //   const newPassword = (
+  //     form.elements.namedItem("newPassword") as HTMLInputElement
+  //   )?.value;
+  //   const confirmPassword = (
+  //     form.elements.namedItem("confirmNewPassword") as HTMLInputElement
+  //   )?.value;
+
+  //   const email = user?.email;
+  //   const token =
+  //     localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+  //   if (!email || !token) {
+  //     alert("로그인이 필요합니다.");
+  //     return;
+  //   }
+
+  //   // ✅ 소셜 로그인 계정일 경우 비밀번호 변경 금지
+  //   if (
+  //     email.endsWith("@gmail.com") ||
+  //     email.endsWith("@kakao.com") ||
+  //     email.endsWith("@naver.com")
+  //   ) {
+  //     alert("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
+  //     return;
+  //   }
+
+  //   if (!currentPassword || !newPassword || !confirmPassword) {
+  //     alert("모든 필드를 입력해주세요.");
+  //     return;
+  //   }
+
+  //   // ✅ 현재 비밀번호와 새 비밀번호가 같을 경우 차단
+  //   if (currentPassword === newPassword) {
+  //     alert("현재 비밀번호와 새 비밀번호는 달라야 합니다.");
+  //     return;
+  //   }
+
+  //   if (newPassword !== confirmPassword) {
+  //     alert("새 비밀번호가 일치하지 않습니다.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await fetch(
+  //       `${process.env.NEXT_PUBLIC_API_URL}/users/updatePassword`,
+  //       {
+  //         method: "PUT",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify({ email, currentPassword, newPassword }),
+  //       }
+  //     );
+
+  //     const result = await res.json();
+
+  //     if (!res.ok) {
+  //       alert(result.message || "비밀번호 변경 실패");
+  //       return;
+  //     }
+
+  //     alert("✅ 비밀번호가 성공적으로 변경되었습니다.");
+  //   } catch (err) {
+  //     console.error("❌ 비밀번호 변경 에러:", err);
+  //     alert("서버 오류가 발생했습니다.");
+  //   }
+  // };
 
   // 마이페이지 탭 렌더링 함수
   const renderTabContent = () => {
@@ -182,7 +341,7 @@ const handleCheckDuplicate = async () => {
       case "profile":
         return (
           <div className="space-y-8">
-            <div>
+            <div className="relative">
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 프로필 수정
               </h3>
@@ -211,18 +370,20 @@ const handleCheckDuplicate = async () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      이메일
+                      프로필 이미지
                     </label>
-                    <div className="flex">
+                    <div className="flex items-center">
                       <input
-                        type="email"
-                        name="email"
-                        value={user?.email || ""}
-                        onChange={handleInputChange}
-                        className="flex-1 p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="flex-1 p-2 border border-gray-300 rounded-lg"
                       />
-                      <button className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        인증
+                      <button
+                        onClick={handleUploadPicture}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        업로드
                       </button>
                     </div>
                   </div>
@@ -239,7 +400,10 @@ const handleCheckDuplicate = async () => {
                         onChange={handleInputChange}
                         className="flex-1 p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                       />
-                      <button onClick={handleCheckDuplicate} className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      <button
+                        onClick={handleCheckDuplicate}
+                        className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
                         중복확인
                       </button>
                     </div>
@@ -252,7 +416,7 @@ const handleCheckDuplicate = async () => {
                     <input
                       type="tel"
                       name="phone"
-                      value={profileData.phone||""}
+                      value={profileData.phone || ""}
                       onChange={handleInputChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                     />
@@ -264,10 +428,11 @@ const handleCheckDuplicate = async () => {
                     </label>
                     <select
                       name="businessType"
-                      value={profileData.businessType||""}
+                      value={profileData.businessType || ""}
                       onChange={handleInputChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                     >
+                      <option value=""></option>
                       <option value="음식점업">음식점업</option>
                       <option value="소매업">소매업</option>
                       <option value="서비스업">서비스업</option>
@@ -289,12 +454,21 @@ const handleCheckDuplicate = async () => {
                       disabled
                       className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
                     />
+
+                    <div className="flex justify-end mt-3">
+                      <button
+                        onClick={handleSaveProfile}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        수정
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+            {/* <div className="bg-white rounded-lg p-6 border border-gray-200">
               <h4 className="font-medium text-gray-800 mb-4">비밀번호 변경</h4>
               <form onSubmit={handlePasswordChange} className="space-y-4">
                 <div>
@@ -302,6 +476,7 @@ const handleCheckDuplicate = async () => {
                     현재 비밀번호
                   </label>
                   <input
+                    name="currentPassword"
                     type="password"
                     placeholder="현재 비밀번호를 입력하세요"
                     className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
@@ -312,6 +487,7 @@ const handleCheckDuplicate = async () => {
                     새 비밀번호
                   </label>
                   <input
+                    name="newPassword"
                     type="password"
                     placeholder="새 비밀번호를 입력하세요"
                     className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
@@ -322,6 +498,7 @@ const handleCheckDuplicate = async () => {
                     새 비밀번호 확인
                   </label>
                   <input
+                    name="confirmNewPassword"
                     type="password"
                     placeholder="새 비밀번호를 다시 입력하세요"
                     className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
@@ -335,14 +512,14 @@ const handleCheckDuplicate = async () => {
                     취소
                   </button>
                   <button
-                    onClick={handleSaveProfile}
+                    type="submit"
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     저장하기
                   </button>
                 </div>
               </form>
-            </div>
+            </div> */}
           </div>
         );
 
