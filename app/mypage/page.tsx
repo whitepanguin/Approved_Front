@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
 import { useSelector } from "react-redux";
@@ -30,14 +30,23 @@ type Comment = {
 export default function MyPage() {
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const user = useSelector((state: RootState) => state.user.currentUser);
+
+  const profileSrc = user?.profile?.startsWith("http")
+    ? user.profile
+    : user?.profile
+    ? `${process.env.NEXT_PUBLIC_API_URL}/${user.profile}`
+    : "/default-profile.jpg";
+
   const isLogin = useSelector((state: RootState) => state.user.isLogin);
   const [myComments, setMyComments] = useState<Comment[]>([]);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditing, setIsEditing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [likedPosts, setLikedPosts] = useState([]);
   const [isChecked, setIsChecked] = useState(false);
   const [originalUserId, setOriginalUserId] = useState("");
+
   const [profileData, setProfileData] = useState({
     userId: "",
     name: "",
@@ -47,14 +56,55 @@ export default function MyPage() {
     joinDate: "",
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 회원탈퇴
+  const handleDeleteAccount = async () => {
+  const confirmed = window.confirm("정말로 회원 탈퇴하시겠습니까?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/remove`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: user?.email }),
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) throw new Error(result.message);
+
+    alert("회원탈퇴 완료 🥲");
+
+    // ✅ 토큰 제거
+    localStorage.removeItem("jwtToken");
+    sessionStorage.removeItem("jwtToken");
+
+    // ✅ 메인 페이지 이동 (Next.js)
+    window.location.href = "/";
+  } catch (err: any) {
+    console.error("회원탈퇴 오류:", err);
+    alert("서버 오류로 탈퇴에 실패했습니다.");
+  }
+};
+
+
+
+
+  // 파일 선택 시 상태에 저장
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file);
     }
   };
 
-  // 프로필 사진 업로드
+  // input file 트리거
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 프로필 이미지 업로드
   const handleUploadPicture = async () => {
     if (!selectedImage) {
       alert("업로드할 이미지를 선택해주세요.");
@@ -63,7 +113,7 @@ export default function MyPage() {
 
     const formData = new FormData();
     formData.append("picture", selectedImage);
-    formData.append("email", user.email); // 로그인한 사용자 이메일
+    formData.append("email", user?.email || "");
 
     try {
       const res = await fetch(
@@ -75,12 +125,10 @@ export default function MyPage() {
       );
 
       const data = await res.json();
-
       if (!res.ok) throw new Error(data.message);
 
       alert("✅ 프로필 이미지 업로드 완료");
-      // 📌 여기서 user 상태를 업데이트 해줘야 카드에 반영돼!
-      // 예: dispatch(updateUser({ ...user, profile: data.filePath })) 또는 setUser()
+      // 📌 필요시 user 상태 업데이트 추가 필요
     } catch (err: any) {
       console.error("이미지 업로드 실패:", err.message);
       alert("이미지 업로드 중 오류가 발생했습니다.");
@@ -368,20 +416,32 @@ export default function MyPage() {
                     </p>
                   </div>
 
-                  <div>
+                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       프로필 이미지
                     </label>
-                    <div className="flex items-center">
+                    <div className="flex">
+                      <div
+                        onClick={triggerFileInput}
+                        className="flex-1 p-3 border border-gray-300 rounded-lg focus:border-blue-600 cursor-pointer bg-white flex items-center justify-between"
+                      >
+                        <span className="text-gray-500 text-sm">
+                          {selectedImage ? selectedImage.name : "선택된 파일 없음"}
+                        </span>
+                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-medium">
+                          파일 선택
+                        </span>
+                      </div>
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={handleImageUpload}
-                        className="flex-1 p-2 border border-gray-300 rounded-lg"
+                        onChange={handleImageSelect}
+                        className="hidden"
                       />
                       <button
                         onClick={handleUploadPicture}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="ml-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         업로드
                       </button>
@@ -764,11 +824,7 @@ export default function MyPage() {
               <div className="p-5 border border-gray-200 rounded-lg">
                 <h4 className="font-semibold text-gray-800 mb-4">계정 관리</h4>
                 <div className="space-y-3">
-                  <button className="w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <i className="fas fa-download mr-3 text-blue-600"></i>내
-                    데이터 다운로드
-                  </button>
-                  <button className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                  <button  onClick={handleDeleteAccount} className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
                     <i className="fas fa-user-times mr-3"></i>
                     회원 탈퇴
                   </button>
@@ -792,8 +848,14 @@ export default function MyPage() {
             {/* 프로필 카드 */}
             <div className="bg-white rounded-xl p-6 shadow-md mb-6">
               <div className="flex flex-col items-center">
-                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mb-3">
-                  <i className="fas fa-user text-white text-2xl"></i>
+              {/*사진 올라가는 곳 */}
+                <div className="flex justify-center">
+                  <img
+                    src={profileSrc}
+                alt="프로필 이미지"
+                className="w-24 h-24 rounded-full object-cover"
+                    className="w-24 h-24 rounded-full object-cover"
+                  />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">
                   {user?.userid || ""}
