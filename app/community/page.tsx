@@ -1,32 +1,35 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import MainLayout from "@/components/layout/main-layout"
-import { useApp } from "../providers"
+import { useState, useEffect } from "react";
+import MainLayout from "@/components/layout/main-layout";
+import { useApp } from "../providers";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store"; // store 타입 import 필요
 
 interface Post {
-  id: number
-  title: string
-  preview: string
-  author: string
-  date: string
-  category: string
-  views: number
-  likes: number
-  comments: number
-  isHot: boolean
-  isNotice: boolean
+  _id?: string;
+  title: string;
+  preview: string;
+  userid: string;
+  createdAt: Date;
+  category: string;
+  views: number;
+  likes: number;
+  comments: number;
+  isHot: boolean;
+  isNotice: boolean;
 }
 
 export default function CommunityPage() {
-  const [posts, setPosts] = useState<Post[]>([])
-  const [currentCategory, setCurrentCategory] = useState("all")
-  const [currentSort, setCurrentSort] = useState("latest")
-  const [showWriteModal, setShowWriteModal] = useState(false)
-  const [showMobileFilter, setShowMobileFilter] = useState(false)
-  const { user } = useApp()
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [currentCategory, setCurrentCategory] = useState("all");
+  const [currentSort, setCurrentSort] = useState("latest");
+  const [showWriteModal, setShowWriteModal] = useState(false);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const user = useSelector((state: RootState) => state.user);
+  const [postCount, setPostCount] = useState(0);
 
   const categoryInfo = {
     all: { title: "전체 게시글", icon: "fas fa-list" },
@@ -34,120 +37,154 @@ export default function CommunityPage() {
     qna: { title: "Q&A", icon: "fas fa-question-circle" },
     daily: { title: "일상 이야기", icon: "fas fa-coffee" },
     startup: { title: "창업 관련 정보", icon: "fas fa-rocket" },
-  }
+  };
 
-  const samplePosts: Post[] = [
-    {
-      id: 1,
-      title: "음식점 영업허가 신청 시 주의사항",
-      preview:
-        "음식점을 개업하려고 하는데 영업허가 신청할 때 놓치기 쉬운 부분들을 정리해봤습니다. 특히 위생 관련 서류와 소방 안전 검사는 미리 준비하시는 것이 좋습니다.",
-      author: "김사장님",
-      date: "2023-06-01",
-      category: "info",
-      views: 1245,
-      likes: 89,
-      comments: 32,
-      isHot: true,
-      isNotice: false,
-    },
-    {
-      id: 2,
-      title: "건축허가 관련 질문드립니다",
-      preview:
-        "단독주택 신축 시 건축허가 절차가 어떻게 되는지 궁금합니다. 경험 있으신 분들의 조언 부탁드려요. 특히 도시계획 조례에 관한 부분이 헷갈립니다.",
-      author: "집짓는사람",
-      date: "2023-06-02",
-      category: "qna",
-      views: 876,
-      likes: 45,
-      comments: 28,
-      isHot: false,
-      isNotice: false,
-    },
-    {
-      id: 3,
-      title: "오늘 드디어 사업자등록증을 받았습니다!",
-      preview:
-        "1년간 준비한 카페 창업, 드디어 사업자등록증을 받았습니다. 기쁜 마음에 인증샷 올려봅니다. 앞으로 잘 부탁드려요!",
-      author: "카페주인",
-      date: "2023-06-03",
-      category: "daily",
-      views: 654,
-      likes: 102,
-      comments: 45,
-      isHot: true,
-      isNotice: false,
-    },
-    {
-      id: 4,
-      title: "[공지] 커뮤니티 이용 규칙 안내",
-      preview:
-        "허가요 커뮤니티를 이용해주셔서 감사합니다. 모두가 편안하게 이용할 수 있도록 커뮤니티 이용 규칙을 안내드립니다.",
-      author: "관리자",
-      date: "2023-05-20",
-      category: "all",
-      views: 2345,
-      likes: 156,
-      comments: 12,
-      isHot: false,
-      isNotice: true,
-    },
-    {
-      id: 5,
-      title: "창업 초기 세무 관리 팁 공유합니다",
-      preview:
-        "창업 3년차 소상공인입니다. 초기에 세무 관리를 어떻게 하면 좋을지 제 경험을 공유합니다. 특히 세금계산서 관리와 경비 처리에 대한 팁입니다.",
-      author: "세무달인",
-      date: "2023-05-28",
-      category: "info",
-      views: 1567,
-      likes: 134,
-      comments: 56,
-      isHot: true,
-      isNotice: false,
-    },
-  ]
+  // const samplePosts: Post[] = [
+  //   {
+  //     id: 1,
+  //     title: "음식점 영업허가 신청 시 주의사항",
+  //     preview:
+  //       "음식점을 개업하려고 하는데 영업허가 신청할 때 놓치기 쉬운 부분들을 정리해봤습니다. 특히 위생 관련 서류와 소방 안전 검사는 미리 준비하시는 것이 좋습니다.",
+  //     userid: "김사장님",
+  //     date: "2023-06-01",
+  //     category: "info",
+  //     views: 1245,
+  //     likes: 89,
+  //     comments: 32,
+  //     isHot: true,
+  //     isNotice: false,
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "건축허가 관련 질문드립니다",
+  //     preview:
+  //       "단독주택 신축 시 건축허가 절차가 어떻게 되는지 궁금합니다. 경험 있으신 분들의 조언 부탁드려요. 특히 도시계획 조례에 관한 부분이 헷갈립니다.",
+  //     userid: "집짓는사람",
+  //     date: "2023-06-02",
+  //     category: "qna",
+  //     views: 876,
+  //     likes: 45,
+  //     comments: 28,
+  //     isHot: false,
+  //     isNotice: false,
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "오늘 드디어 사업자등록증을 받았습니다!",
+  //     preview:
+  //       "1년간 준비한 카페 창업, 드디어 사업자등록증을 받았습니다. 기쁜 마음에 인증샷 올려봅니다. 앞으로 잘 부탁드려요!",
+  //     userid: "카페주인",
+  //     date: "2023-06-03",
+  //     category: "daily",
+  //     views: 654,
+  //     likes: 102,
+  //     comments: 45,
+  //     isHot: true,
+  //     isNotice: false,
+  //   },
+  //   {
+  //     id: 4,
+  //     title: "[공지] 커뮤니티 이용 규칙 안내",
+  //     preview:
+  //       "허가요 커뮤니티를 이용해주셔서 감사합니다. 모두가 편안하게 이용할 수 있도록 커뮤니티 이용 규칙을 안내드립니다.",
+  //     userid: "관리자",
+  //     date: "2023-05-20",
+  //     category: "all",
+  //     views: 2345,
+  //     likes: 156,
+  //     comments: 12,
+  //     isHot: false,
+  //     isNotice: true,
+  //   },
+  //   {
+  //     id: 5,
+  //     title: "창업 초기 세무 관리 팁 공유합니다",
+  //     preview:
+  //       "창업 3년차 소상공인입니다. 초기에 세무 관리를 어떻게 하면 좋을지 제 경험을 공유합니다. 특히 세금계산서 관리와 경비 처리에 대한 팁입니다.",
+  //     userid: "세무달인",
+  //     date: "2023-05-28",
+  //     category: "info",
+  //     views: 1567,
+  //     likes: 134,
+  //     comments: 56,
+  //     isHot: true,
+  //     isNotice: false,
+  //   },
+  // ];
 
   useEffect(() => {
-    setPosts(samplePosts)
-  }, [])
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/posts");
+
+        const data = await res.json();
+        setPosts(data);
+        console.log(data);
+      } catch (err) {
+        console.error("❌ 게시글 로딩 실패:", err);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    const fetchPostCount = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/posts/count/${user.currentUser.name}`
+        );
+        const data = await res.json();
+
+        console.log(data);
+        setPostCount(data.count); // ← 상태로 저장
+      } catch (err) {
+        console.error("❌ 작성글 수 조회 실패:", err);
+      }
+    };
+
+    fetchPostCount();
+  }, [user?.currentUser?.name]);
 
   const filteredPosts = posts
-    .filter((post) => currentCategory === "all" || post.category === currentCategory)
+    .filter(
+      (post) => currentCategory === "all" || post.category === currentCategory
+    )
     .sort((a, b) => {
       switch (currentSort) {
         case "latest":
-          return new Date(b.date).getTime() - new Date(a.date).getTime()
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
         case "popular":
-          return b.likes - a.likes
+          return b.likes - a.likes;
         case "comments":
-          return b.comments - a.comments
+          return b.comments - a.comments;
         case "views":
-          return b.views - a.views
+          return b.views - a.views;
         default:
-          return 0
+          return 0;
       }
-    })
+    });
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  const formatDate = (input: string | Date) => {
+    const date = new Date(input);
+    if (isNaN(date.getTime())) return "날짜 오류";
 
-    if (diffDays === 0) {
-      return "오늘"
-    } else if (diffDays === 1) {
-      return "어제"
-    } else if (diffDays < 7) {
-      return `${diffDays}일 전`
-    } else {
-      return `${date.getFullYear()}.${(date.getMonth() + 1)
-        .toString()
-        .padStart(2, "0")}.${date.getDate().toString().padStart(2, "0")}`
-    }
-  }
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "오늘";
+    else if (diffDays === 1) return "어제";
+    else if (diffDays < 7) return `${diffDays}일 전`;
+
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+
+    return `${year}.${month}.${day}`;
+  };
 
   const getCategoryName = (category: string) => {
     const categories = {
@@ -155,32 +192,69 @@ export default function CommunityPage() {
       qna: "Q&A",
       daily: "일상",
       startup: "창업정보",
-    }
-    return categories[category as keyof typeof categories] || category
-  }
+    };
+    return categories[category as keyof typeof categories] || category;
+  };
 
-  const handleWriteSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const formData = new FormData(e.target as HTMLFormElement)
+  const handleWriteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
 
     const newPost: Post = {
-      id: posts.length + 1,
       title: formData.get("title") as string,
       preview: (formData.get("content") as string).substring(0, 100) + "...",
-      author: "홍길동",
-      date: new Date().toISOString().split("T")[0],
+      userid: user.name,
+      createdAt: new Date(), // ← 이건 DB 저장용이 아니라 화면용이라면 OK
       category: formData.get("category") as string,
       views: 0,
       likes: 0,
       comments: 0,
       isHot: false,
       isNotice: false,
-    }
+    };
 
-    setPosts((prev) => [newPost, ...prev])
-    setShowWriteModal(false)
-    alert("게시글이 등록되었습니다.")
-  }
+    try {
+      // ✅ [1] 최종 요청할 데이터 로그
+      const payload = {
+        userid: user.currentUser.name,
+        title: newPost.title,
+        content: formData.get("content") as string,
+        category: newPost.category,
+        tags: [],
+        views: 0,
+        todayViews: 0,
+        comments: 0,
+        likes: 0,
+        preview: newPost.preview,
+        isHot: false,
+        isNotice: false,
+      };
+      console.log("📝 서버로 전송할 게시글 데이터:", payload);
+
+      const res = await fetch("http://localhost:8000/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("❌ 글 저장 실패");
+
+      // ✅ [2] 서버 응답 로그
+      const updatedPosts = await fetch("http://localhost:8000/posts").then(
+        (res) => res.json()
+      );
+      console.log("📦 서버에서 받아온 게시글 목록:", updatedPosts);
+
+      setPosts(updatedPosts);
+      setShowWriteModal(false);
+      alert("✅ 게시글이 등록되었습니다.");
+    } catch (err) {
+      console.error("❌ 서버 오류:", err);
+      alert("서버에 문제가 있어 게시글을 등록하지 못했습니다.");
+    }
+  };
 
   return (
     <MainLayout>
@@ -189,7 +263,9 @@ export default function CommunityPage() {
           <h1 className="text-2xl md:text-3xl text-blue-600 mb-1 md:mb-2 flex items-center gap-2">
             <i className="fas fa-users"></i> 커뮤니티
           </h1>
-          <p className="text-sm md:text-base text-gray-600">다양한 주제로 소통하고 정보를 공유해보세요</p>
+          <p className="text-sm md:text-base text-gray-600">
+            다양한 주제로 소통하고 정보를 공유해보세요
+          </p>
         </div>
 
         {/* 모바일 필터 버튼 */}
@@ -217,11 +293,13 @@ export default function CommunityPage() {
                 <button
                   key={key}
                   onClick={() => {
-                    setCurrentCategory(key)
-                    setShowMobileFilter(false)
+                    setCurrentCategory(key);
+                    setShowMobileFilter(false);
                   }}
                   className={`p-3 rounded-lg flex items-center gap-2 ${
-                    currentCategory === key ? "bg-blue-600 text-white" : "bg-gray-50 text-gray-700"
+                    currentCategory === key
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-50 text-gray-700"
                   }`}
                 >
                   <i className={data.icon}></i>
@@ -280,15 +358,21 @@ export default function CommunityPage() {
               key={key}
               onClick={() => setCurrentCategory(key)}
               className={`bg-white rounded-xl p-5 shadow-lg cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between hover:-translate-y-1 hover:shadow-xl ${
-                currentCategory === key ? "border-blue-600 bg-blue-50 -translate-y-1 shadow-xl" : "border-transparent"
+                currentCategory === key
+                  ? "border-blue-600 bg-blue-50 -translate-y-1 shadow-xl"
+                  : "border-transparent"
               }`}
             >
               <div>
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mb-3">
                   <i className={`${data.icon} text-white text-xl`}></i>
                 </div>
-                <h3 className="text-lg text-gray-800 mb-1 font-semibold">{data.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{data.desc}</p>
+                <h3 className="text-lg text-gray-800 mb-1 font-semibold">
+                  {data.title}
+                </h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  {data.desc}
+                </p>
               </div>
               <div className="flex gap-3 text-xs text-gray-500 mt-3">
                 <span className="flex items-center gap-1">
@@ -310,8 +394,17 @@ export default function CommunityPage() {
               <div className="hidden md:flex justify-between items-center mb-5 pb-2 border-b border-gray-200 sticky top-0 bg-white z-10">
                 <div className="flex items-center gap-5">
                   <h2 className="text-xl md:text-2xl text-gray-800 m-0 flex items-center gap-2">
-                    <i className={categoryInfo[currentCategory as keyof typeof categoryInfo].icon}></i>
-                    {categoryInfo[currentCategory as keyof typeof categoryInfo].title}
+                    <i
+                      className={
+                        categoryInfo[
+                          currentCategory as keyof typeof categoryInfo
+                        ].icon
+                      }
+                    ></i>
+                    {
+                      categoryInfo[currentCategory as keyof typeof categoryInfo]
+                        .title
+                    }
                   </h2>
                   <select
                     value={currentSort}
@@ -341,8 +434,12 @@ export default function CommunityPage() {
                 ) : (
                   filteredPosts.map((post) => (
                     <div
-                      key={post.id}
-                      onClick={() => alert(`"${post.title}" 게시글 상세 페이지로 이동합니다.`)}
+                      key={post._id}
+                      onClick={() =>
+                        alert(
+                          `"${post.title}" 게시글 상세 페이지로 이동합니다.`
+                        )
+                      }
                       className="border border-gray-200 rounded-lg p-4 transition-all duration-300 bg-white cursor-pointer hover:border-blue-600 hover:shadow-lg"
                     >
                       <div className="flex flex-wrap gap-2 mb-2">
@@ -369,10 +466,11 @@ export default function CommunityPage() {
                       <div className="flex flex-wrap justify-between items-center text-xs text-gray-500">
                         <div className="flex flex-wrap gap-3">
                           <span className="flex items-center gap-1">
-                            <i className="fas fa-user"></i> {post.author}
+                            <i className="fas fa-user"></i> {post.userid}
                           </span>
                           <span className="flex items-center gap-1">
-                            <i className="fas fa-clock"></i> {formatDate(post.date)}
+                            <i className="fas fa-clock"></i>{" "}
+                            {formatDate(post.createdAt)}
                           </span>
                         </div>
                         <div className="flex gap-3 mt-2 md:mt-0">
@@ -404,7 +502,9 @@ export default function CommunityPage() {
                     <button
                       key={num}
                       className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 ${
-                        num === 1 ? "bg-blue-600 text-white border-blue-600" : ""
+                        num === 1
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : ""
                       }`}
                     >
                       {num}
@@ -426,21 +526,31 @@ export default function CommunityPage() {
                   <i className="fas fa-user-circle text-blue-600 text-5xl"></i>
                 </div>
                 <div>
-                  <h3 className="text-lg text-gray-800 mb-1">{user ? user.name : "게스트"}</h3>
-                  <p className="text-gray-600 text-sm">{user ? `@${user.id}` : "로그인하세요"}</p>
+                  <h3 className="text-lg text-gray-800 mb-1">
+                    {user.currentUser.name} {/* 닉네임 */}
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    {user?.currentUser?.email || "이메일 없음"} {/* 이메일 */}
+                  </p>
                 </div>
               </div>
               <div className="flex justify-between py-4 border-t border-b border-gray-200 mb-5">
                 <div className="text-center">
-                  <span className="block text-xl font-bold text-blue-600">15</span>
+                  <span className="block text-xl font-bold text-blue-600">
+                    {postCount}
+                  </span>
                   <span className="text-xs text-gray-600">작성글</span>
                 </div>
                 <div className="text-center">
-                  <span className="block text-xl font-bold text-blue-600">42</span>
+                  <span className="block text-xl font-bold text-blue-600">
+                    42
+                  </span>
                   <span className="text-xs text-gray-600">댓글</span>
                 </div>
                 <div className="text-center">
-                  <span className="block text-xl font-bold text-blue-600">128</span>
+                  <span className="block text-xl font-bold text-blue-600">
+                    128
+                  </span>
                   <span className="text-xs text-gray-600">받은 좋아요</span>
                 </div>
               </div>
@@ -457,7 +567,14 @@ export default function CommunityPage() {
                 <i className="fas fa-tags"></i> 인기 태그
               </h3>
               <div className="flex flex-wrap gap-2">
-                {["#영업허가", "#건축허가", "#창업", "#법인설립", "#세무", "#노무"].map((tag) => (
+                {[
+                  "#영업허가",
+                  "#건축허가",
+                  "#창업",
+                  "#법인설립",
+                  "#세무",
+                  "#노무",
+                ].map((tag) => (
                   <span
                     key={tag}
                     className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:bg-blue-600 hover:text-white"
@@ -475,15 +592,21 @@ export default function CommunityPage() {
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">전체 회원</span>
-                  <span className="text-blue-600 font-semibold text-sm">1,234명</span>
+                  <span className="text-blue-600 font-semibold text-sm">
+                    1,234명
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">오늘 방문자</span>
-                  <span className="text-blue-600 font-semibold text-sm">89명</span>
+                  <span className="text-blue-600 font-semibold text-sm">
+                    89명
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">전체 게시글</span>
-                  <span className="text-blue-600 font-semibold text-sm">325개</span>
+                  <span className="text-blue-600 font-semibold text-sm">
+                    325개
+                  </span>
                 </div>
               </div>
             </div>
@@ -514,9 +637,15 @@ export default function CommunityPage() {
               </span>
             </div>
             <div className="modal-body">
-              <form onSubmit={handleWriteSubmit} className="flex flex-col gap-5">
+              <form
+                onSubmit={handleWriteSubmit}
+                className="flex flex-col gap-5"
+              >
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="category" className="text-base font-medium text-gray-800">
+                  <label
+                    htmlFor="category"
+                    className="text-base font-medium text-gray-800"
+                  >
                     카테고리 선택
                   </label>
                   <select
@@ -535,7 +664,10 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="title" className="text-base font-medium text-gray-800">
+                  <label
+                    htmlFor="title"
+                    className="text-base font-medium text-gray-800"
+                  >
                     제목
                   </label>
                   <input
@@ -548,7 +680,10 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="content" className="text-base font-medium text-gray-800">
+                  <label
+                    htmlFor="content"
+                    className="text-base font-medium text-gray-800"
+                  >
                     내용
                   </label>
                   <textarea
@@ -561,7 +696,10 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="tags" className="text-base font-medium text-gray-800">
+                  <label
+                    htmlFor="tags"
+                    className="text-base font-medium text-gray-800"
+                  >
                     태그
                   </label>
                   <input
@@ -570,7 +708,9 @@ export default function CommunityPage() {
                     placeholder="태그를 입력하세요 (쉼표로 구분)"
                     className="px-3 py-3 border border-gray-300 rounded-lg text-base outline-none transition-colors focus:border-blue-600"
                   />
-                  <div className="text-xs text-gray-500">예: #인허가, #창업, #음식점</div>
+                  <div className="text-xs text-gray-500">
+                    예: #인허가, #창업, #음식점
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-4 mt-5">
@@ -594,5 +734,5 @@ export default function CommunityPage() {
         </div>
       )}
     </MainLayout>
-  )
+  );
 }
