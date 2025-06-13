@@ -11,7 +11,7 @@
 }
 
 body {
-  background-color: #f0f5ff;
+  background-color: #f6f6f6;
   color: #333;
 }
 
@@ -112,6 +112,15 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+
+  background-image: url("/images/background2.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: repeat;
+}
+
+#header {
+  z-index: 99;
 }
 
 #main.shifted {

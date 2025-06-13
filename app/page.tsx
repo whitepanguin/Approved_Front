@@ -1,44 +1,42 @@
 "use client";
 
-
 import type React from "react";
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import MainLayout from "@/components/layout/main-layout"
-import { useApp } from "./providers"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import MainLayout from "@/components/layout/main-layout";
+import { useApp } from "./providers";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
-
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [introPassed, setIntroPassed] = useState(false)
-  const { addToSearchHistory } = useApp()
+  const [searchQuery, setSearchQuery] = useState("");
+  const [introPassed, setIntroPassed] = useState(false);
+  const { addToSearchHistory } = useApp();
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("introPassed")
+    const stored = sessionStorage.getItem("introPassed");
     if (stored === "true") {
-      setIntroPassed(true)
-      document.body.style.overflow = "auto"
+      setIntroPassed(true);
+      document.body.style.overflow = "auto";
     } else {
-      window.scrollTo(0, 0)
-      document.body.style.overflow = "hidden"
+      window.scrollTo(0, 0);
+      document.body.style.overflow = "hidden";
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    document.body.style.overflow = introPassed ? "auto" : "hidden"
-  }, [introPassed])
+    document.body.style.overflow = introPassed ? "auto" : "hidden";
+  }, [introPassed]);
 
   const handleStart = () => {
-    const mainSection = document.getElementById("main")
+    const mainSection = document.getElementById("main");
     if (mainSection) {
-      mainSection.scrollIntoView({ behavior: "smooth" })
+      mainSection.scrollIntoView({ behavior: "smooth" });
       setTimeout(() => {
-        sessionStorage.setItem("introPassed", "true")
-        setIntroPassed(true)
-      }, 1000)
+        sessionStorage.setItem("introPassed", "true");
+        setIntroPassed(true);
+      }, 1000);
     }
-  }
+  };
 
   const handleSearch = (type: "ai" | "normal") => {
     if (searchQuery.trim()) {
@@ -49,15 +47,13 @@ export default function HomePage() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-
-      const mainSection = document.getElementById("main")
+      const mainSection = document.getElementById("main");
       if (mainSection) {
-        mainSection.scrollIntoView({ behavior: "smooth" })
+        mainSection.scrollIntoView({ behavior: "smooth" });
         if (searchQuery.trim()) {
-          addToSearchHistory(searchQuery)
+          addToSearchHistory(searchQuery);
         }
       }
-
     }
   };
 
@@ -106,19 +102,26 @@ export default function HomePage() {
       )}
 
       <MainLayout>
-        <div id="main" className="w-full h-screen overflow-hidden max-w-5xl mx-auto flex flex-col items-center justify-center px-5 -translate-y-10">
+        <div
+          id="main"
+          className="w-full h-screen overflow-hidden max-w-5xl mx-auto flex flex-col items-center justify-center px-5 -translate-y-10"
+        >
           <div className="w-full flex flex-col items-center">
-            <div className="w-full flex items-start justify-between mb-6">
+            <div className="w-full flex items-start mb-6">
               <div className="flex items-start gap-3">
                 <img
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
                   alt="허가요 로고"
                   className="w-14 h-14 object-contain"
                 />
-                <h1 className="text-3xl font-bold text-gray-800 mt-2"><span className="text-blue-600">허가요</span></h1>
-              </div>
-              <div className="text-sm text-gray-500 whitespace-nowrap mt-2">
-                대한민국 인허가 정보 통합 검색 플랫폼
+                <div className="flex items-baseline mt-2">
+                  <h1 className="text-3xl font-bold text-gray-800">
+                    <span className="text-blue-600">허가요</span>
+                  </h1>
+                  <div className="text-sm text-black-500 ml-[30px] whitespace-nowrap">
+                    대한민국 인허가 정보 통합 검색 플랫폼
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -143,7 +146,6 @@ export default function HomePage() {
               >
                 <i className="fas fa-map-marked-alt text-white text-lg"></i>
               </Link>
-
             </div>
             <div className="w-full max-w-6xl flex justify-start items-center">
               <Link
@@ -153,14 +155,10 @@ export default function HomePage() {
                 <i className="fas fa-fire text-red-500"></i>
                 지금 인기있는 법률 검색어
               </Link>
-
-
             </div>
           </div>
         </div>
-
       </MainLayout>
     </>
-  )
-
+  );
 }

@@ -27,7 +27,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <div className="flex justify-between items-center p-4">
+    <div id="header" className="flex justify-between items-center p-4">
       <div className="flex items-center">
         <span
           className="text-2xl cursor-pointer mr-5 text-blue-600"
