@@ -59,7 +59,6 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
-
       if (response.ok) {
         // alert(data.message || "로그인에 성공했습니다.");
         localStorage.setItem("jwtToken", data.jwtToken);
@@ -67,7 +66,7 @@ export default function LoginPage() {
         alert(data.message);
         router.push("/");
       } else {
-        throw new Error(data.message || "로그인에 실패했습니다.");
+        alert(data.message || "로그인에 실패했습니다.");
       }
     } catch (error) {
       setErrorMsg("서버와의 연결에 실패했습니다.");

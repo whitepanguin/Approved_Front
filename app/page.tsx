@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import MainLayout from "@/components/layout/main-layout"
-import { useApp } from "./providers"
+import { useState } from "react";
+import Link from "next/link";
+import MainLayout from "@/components/layout/main-layout";
+import { useApp } from "./providers";
 
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const { addToSearchHistory } = useApp()
+  const [searchQuery, setSearchQuery] = useState("");
+  const { addToSearchHistory } = useApp();
 
   const handleSearch = (type: "ai" | "normal") => {
     if (searchQuery.trim()) {
-      addToSearchHistory(searchQuery)
-      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`)
+      addToSearchHistory(searchQuery);
+      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      handleSearch("ai")
+      handleSearch("ai");
     }
-  }
+  };
 
   return (
     <MainLayout>
@@ -78,8 +78,12 @@ export default function HomePage() {
           <Link href="/popular" className="w-1/2">
             <div className="bg-white rounded-xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-center h-full">
               <i className="fas fa-chart-line text-blue-600 text-3xl mb-4"></i>
-              <h3 className="text-lg mb-2 text-gray-800">가장 많이 검색한 인허가 사항</h3>
-              <p className="text-sm text-gray-600">자주 찾는 인허가 정보를 확인하세요</p>
+              <h3 className="text-lg mb-2 text-gray-800">
+                가장 많이 검색한 인허가 사항
+              </h3>
+              <p className="text-sm text-gray-600">
+                자주 찾는 인허가 정보를 확인하세요
+              </p>
             </div>
           </Link>
 
@@ -87,11 +91,13 @@ export default function HomePage() {
             <div className="bg-white rounded-xl p-6 shadow-lg cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl text-center h-full">
               <i className="fas fa-map-marked-alt text-blue-600 text-3xl mb-4"></i>
               <h3 className="text-lg mb-2 text-gray-800">지도</h3>
-              <p className="text-sm text-gray-600">지역별 인허가 정보를 확인하세요</p>
+              <p className="text-sm text-gray-600">
+                지역별 인허가 정보를 확인하세요
+              </p>
             </div>
           </Link>
         </div>
       </div>
     </MainLayout>
-  )
+  );
 }
