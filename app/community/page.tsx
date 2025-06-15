@@ -81,6 +81,8 @@ export default function Page() {
   const [postComments, setPostComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
 
+
+
   const categoryInfo = {
     all: { title: "전체 게시글", icon: faList },
     info: { title: "정보공유", icon: faInfoCircle },
@@ -281,34 +283,66 @@ export default function Page() {
     }
   };
 
+
+
+const todayKey = () =>
+  "viewedPosts_" + new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+const hasViewedToday = (id: string) => {
+  const viewed: string[] = JSON.parse(localStorage.getItem(todayKey()) || "[]");
+  return viewed.includes(id);
+};
+
+const markViewedToday = (id: string) => {
+  const viewed: string[] = JSON.parse(localStorage.getItem(todayKey()) || "[]");
+  localStorage.setItem(todayKey(), JSON.stringify([...viewed, id]));
+};
+
+
+
   // 포스트 상세 모달 관련 함수
   const openPostModal = async (post: Post) => {
-    try {
-      setSelectedPost({
-        ...post,
-        content:
-          post.preview +
-          "\n\n이 게시글의 전체 내용입니다. 실제 구현 시에는 여기에 게시글의 전체 내용이 표시됩니다.",
-      });
-
-      // 1) 게시글의 댓글 불러오기
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`
+  try {
+    /* 1) ▼▼ 조회수 PATCH (하루 1회) ▼▼ */
+    if (!hasViewedToday(post._id!)) {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/view`,
+        { method: "PATCH" }
       );
-      const comments: Comment[] = await res.json();
-      setPostComments(comments);
+      markViewedToday(post._id!);
 
-      // 2) 좋아요, 댓글 수 초기화
-      setLiked(false);
-      setLikeCount(post.likes);
-
-      // 3) 모달 오픈
-      setShowPostModal(true);
-    } catch (err) {
-      console.error("❌ 게시글 상세 정보 로딩 실패:", err);
-      alert("게시글을 불러오는데 실패했습니다.");
+      // 카드 리스트에도 바로 +1 반영
+      setPosts((prev) =>
+        prev.map((p) =>
+          p._id === post._id ? { ...p, views: p.views + 1 } : p
+        )
+      );
     }
-  };
+
+    /* 2) 댓글 최신 데이터 불러오기 */
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`
+    );
+    const comments: Comment[] = await res.json();
+    setPostComments(comments);
+
+    /* 3) 좋아요 상태 초기화 */
+    setLiked(false);
+    setLikeCount(post.likes);
+
+    /* 4) 선택된 게시글·모달 오픈 */
+    setSelectedPost({
+      ...post,
+      content: post.content ?? post.preview,
+    });
+    setShowPostModal(true);
+  } catch (err) {
+    console.error("❌ 게시글 상세 정보 로딩 실패:", err);
+    alert("게시글을 불러오는데 실패했습니다.");
+  }
+};
+
+
 
   const closePostModal = () => {
     setShowPostModal(false);
@@ -316,20 +350,53 @@ export default function Page() {
     setNewComment("");
   };
 
-  const handleToggleLike = async () => {
-    if (!selectedPost?._id) return;
 
-    try {
-      if (liked) {
-        setLikeCount((prev) => prev - 1);
-      } else {
-        setLikeCount((prev) => prev + 1);
+  // 좋아요 기능
+ const handleToggleLike = async () => {
+  if (!selectedPost?._id) return;
+
+  // 1) 토큰 준비
+  const token =
+  localStorage.getItem("token") ||
+  localStorage.getItem("jwtToken") || 
+  sessionStorage.getItem("token") || 
+  sessionStorage.getItem("jwtToken");
+
+  if (!token) {
+    alert("로그인 후 이용해 주세요!");
+    return;
+  }
+
+  try {
+    // 2) 서버에 PATCH /posts/:postId/like 요청
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
-      setLiked(!liked);
-    } catch (err) {
-      console.error("❌ 좋아요 처리 실패:", err);
-    }
-  };
+    );
+
+    if (!res.ok) throw new Error("좋아요 처리 실패");
+    const { liked: nowLiked, likes } = await res.json(); // { liked, likes }
+
+    // 3) 모달 상태 & 메인 카드 동기화
+    setLiked(nowLiked);
+    setLikeCount(likes);
+    setPosts((prev) =>
+      prev.map((p) =>
+        p._id === selectedPost._id ? { ...p, likes } : p
+      )
+    );
+  } catch (err) {
+    console.error("❌ 좋아요 처리 실패:", err);
+    alert("좋아요 처리 중 오류가 발생했습니다.");
+  }
+};
+
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
