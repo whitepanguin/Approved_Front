@@ -30,17 +30,17 @@ export default function LoginPage() {
   const locationGoogle = () => {
     localStorage.removeItem("jwtToken");
     console.log("구글 버튼");
-    window.location.href = "http://localhost:8000/auth/google";
+    window.location.href = "http://localhost:8000/oauth2/authorization/google";
   };
   const locationKakao = () => {
     localStorage.removeItem("jwtToken");
     console.log("카카오 버튼");
-    window.location.href = "http://localhost:8000/auth/kakao";
+    window.location.href = "http://localhost:8000/oauth2/authorization/kakao";
   };
   const locationNaver = () => {
     localStorage.removeItem("jwtToken");
     console.log("네이버 버튼");
-    window.location.href = "http://localhost:8000/auth/naver";
+    window.location.href = "http://localhost:8000/oauth2/authorization/naver";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,11 +59,11 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
+      console.log(data);
       if (response.ok) {
-        // alert(data.message || "로그인에 성공했습니다.");
-        localStorage.setItem("jwtToken", data.jwtToken);
+        alert(data.message || "로그인에 성공했습니다.");
+        localStorage.setItem("jwtToken", data.token);
 
-        alert(data.message);
         router.push("/");
       } else {
         alert(data.message || "로그인에 실패했습니다.");
