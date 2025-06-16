@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/store"; // 실제 경로에 맞게 수정하세요
+import { RootState } from "@/store";
 import { setUser, setUserStatus } from "@/modules/user";
 import { useRouter } from "next/navigation";
 
@@ -48,6 +48,16 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex gap-2">
         {isLogin ? (
           <>
+            {currentUser.name === "Admin" && (
+              <div>
+                <button
+                  onClick={() => router.push("/AdminPage")}
+                  className="px-4 py-2 rounded bg-transparent text-blue-600 hover:bg-blue-50 transition-colors"
+                >
+                  관리자 페이지
+                </button>
+              </div>
+            )}
             <button
               onClick={handleLogout}
               className="px-4 py-2 rounded bg-transparent text-blue-600 hover:bg-blue-50 transition-colors"
