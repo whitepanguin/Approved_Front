@@ -1,4 +1,4 @@
-import type React from "react";
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -15,14 +15,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
+  
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko">
-      <body className={inter.className}>
+    <html lang="ko" className="scroll-smooth">
+      <body className={`${inter.className} bg-white text-gray-900`}>
         <Providers>
-          <AuthGate /> {}
+          <AuthGate />
           {children}
         </Providers>
       </body>
