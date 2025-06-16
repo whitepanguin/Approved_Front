@@ -15,21 +15,29 @@ type Post = {
   _id: string;
   title: string;
   content: string;
+  date: string;        
   preview?: string;
-  date: string;
+  userid?: string;     
   author?: string;
+  category?: string;
   views?: number;
   likes?: number;
   comments?: number;
+  emoji?: string;
+   createdAt: string | Date;
 };
 
+
+
+
 type Comment = {
-  id: number;
-  postTitle: string;
-  comment: string;
-  date: string;
-  likes: number;
+  _id: string;
+  userid: string;
+  content: string;
+  createdAt: string | Date;
+  postTitle: string; 
 };
+
 
 export default function MyPage() {
   // 🔹 Redux 및 로그인 관련
@@ -72,7 +80,8 @@ export default function MyPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [myPosts, setMyPosts] = useState<Post[]>([]);
   const [myComments, setMyComments] = useState<Comment[]>([]);
-  const [likedPosts, setLikedPosts] = useState([]); // 좋아요 누른
+  // const [likedPosts, setLikedPosts] = useState([]); // 좋아요 누른
+  const [likedPosts, setLikedPosts] = useState<Post[]>([]);
   // 글 목록
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -664,91 +673,16 @@ export default function MyPage() {
   };
 
   // 프로필 입력 필드 값 변경 핸들러
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setProfileData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  const handleInputChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+) => {
+  const { name, value } = e.target;
+  setProfileData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
 
-  // // 비밀번호 변경 폼 제출  현재는 실제 비밀번호 변경 로직 없이 alert만 띄움 (UI 동작만 존재)
-  // const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-
-  //   const form = e.currentTarget;
-
-  //   const currentPassword = (
-  //     form.elements.namedItem("currentPassword") as HTMLInputElement
-  //   )?.value;
-  //   const newPassword = (
-  //     form.elements.namedItem("newPassword") as HTMLInputElement
-  //   )?.value;
-  //   const confirmPassword = (
-  //     form.elements.namedItem("confirmNewPassword") as HTMLInputElement
-  //   )?.value;
-
-  //   const email = user?.email;
-  //   const token =
-  //     localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
-
-  //   if (!email || !token) {
-  //     alert("로그인이 필요합니다.");
-  //     return;
-  //   }
-
-  //   // ✅ 소셜 로그인 계정일 경우 비밀번호 변경 금지
-  //   if (
-  //     email.endsWith("@gmail.com") ||
-  //     email.endsWith("@kakao.com") ||
-  //     email.endsWith("@naver.com")
-  //   ) {
-  //     alert("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
-  //     return;
-  //   }
-
-  //   if (!currentPassword || !newPassword || !confirmPassword) {
-  //     alert("모든 필드를 입력해주세요.");
-  //     return;
-  //   }
-
-  //   // ✅ 현재 비밀번호와 새 비밀번호가 같을 경우 차단
-  //   if (currentPassword === newPassword) {
-  //     alert("현재 비밀번호와 새 비밀번호는 달라야 합니다.");
-  //     return;
-  //   }
-
-  //   if (newPassword !== confirmPassword) {
-  //     alert("새 비밀번호가 일치하지 않습니다.");
-  //     return;
-  //   }
-
-  //   try {
-  //     const res = await fetch(
-  //       `${process.env.NEXT_PUBLIC_API_URL}/users/updatePassword`,
-  //       {
-  //         method: "PUT",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //         body: JSON.stringify({ email, currentPassword, newPassword }),
-  //       }
-  //     );
-
-  //     const result = await res.json();
-
-  //     if (!res.ok) {
-  //       alert(result.message || "비밀번호 변경 실패");
-  //       return;
-  //     }
-
-  //     alert("✅ 비밀번호가 성공적으로 변경되었습니다.");
-  //   } catch (err) {
-  //     console.error("❌ 비밀번호 변경 에러:", err);
-  //     alert("서버 오류가 발생했습니다.");
-  //   }
-  // };
 
   // 마이페이지 탭 렌더링 함수
   const renderTabContent = () => {
@@ -896,59 +830,6 @@ export default function MyPage() {
                 </div>
               </div>
             </div>
-
-            {/* <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h4 className="font-medium text-gray-800 mb-4">비밀번호 변경</h4>
-              <form onSubmit={handlePasswordChange} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    현재 비밀번호
-                  </label>
-                  <input
-                    name="currentPassword"
-                    type="password"
-                    placeholder="현재 비밀번호를 입력하세요"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    새 비밀번호
-                  </label>
-                  <input
-                    name="newPassword"
-                    type="password"
-                    placeholder="새 비밀번호를 입력하세요"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    새 비밀번호 확인
-                  </label>
-                  <input
-                    name="confirmNewPassword"
-                    type="password"
-                    placeholder="새 비밀번호를 다시 입력하세요"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                  />
-                </div>
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    type="button"
-                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    저장하기
-                  </button>
-                </div>
-              </form>
-            </div> */}
           </div>
         );
 
@@ -1250,7 +1131,7 @@ export default function MyPage() {
                     src={profileSrc}
                     alt="프로필 이미지"
                     className="w-24 h-24 rounded-full object-cover"
-                    className="w-24 h-24 rounded-full object-cover"
+                   
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">
