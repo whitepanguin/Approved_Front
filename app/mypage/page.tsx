@@ -7,7 +7,7 @@ import { useApp } from "../providers";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useDispatch } from "react-redux";
-import { setUser } from "@/modules/user"
+import { setUser } from "@/modules/user";
 
 import PostCard from "@/components/postCard/postCard"; // 꼭 경로 맞게
 import PostModal from "@/components/postModal/postModal";
@@ -32,41 +32,22 @@ type Comment = {
 };
 
 export default function MyPage() {
-  const [myPosts, setMyPosts] = useState<Post[]>([]);
-  const user = useSelector((state: RootState) => state.user.currentUser);
-  
-  const profileSrc = user?.profile?.startsWith("http")
-  ? user.profile
-  : user?.profile
-  ? `${process.env.NEXT_PUBLIC_API_URL}/${user.profile}`
-  : "/default-profile.jpg";
-  
-  
+  // 🔹 Redux 및 로그인 관련
   const dispatch = useDispatch();
   const isLogin = useSelector((state: RootState) => state.user.isLogin);
-  const [myComments, setMyComments] = useState<Comment[]>([]);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState("profile");
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-const [showPostModal, setShowPostModal] = useState(false);
-const [liked,      setLiked]      = useState(false);
-const [likeCount,  setLikeCount]  = useState(0);
-const [token, setToken] = useState<string | null>(null);
-const [isModalOpen, setIsModalOpen] = useState(false);
-const [comments, setComments] = useState<Comment[]>([]);
-const [newComment, setNewComment] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [likedPosts, setLikedPosts] = useState([]);
-  const [isChecked, setIsChecked] = useState(false);
-  const [originalUserId, setOriginalUserId] = useState("");
-  const [sortKey, setSortKey] = useState<"latest" | "likes" | "comments">("latest");
-  // 🔄 정렬된 게시글 리스트를 여기서 단 한 번만 계산
-const sortedPosts = [...myPosts].sort((a, b) => {
-  if (sortKey === "likes") return (b.likes ?? 0) - (a.likes ?? 0);
-  if (sortKey === "comments") return (b.comments ?? 0) - (a.comments ?? 0);
-  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-});
+  const user = useSelector((state: RootState) => state.user.currentUser);
+
+  // 🔹 인증 토큰
+  const [token, setToken] = useState<string | null>(null);
+
+  // 🔹 프로필 이미지 경로 처리
+  const profileSrc = user?.profile?.startsWith("http")
+    ? user.profile
+    : user?.profile
+    ? `${process.env.NEXT_PUBLIC_API_URL}/${user.profile}`
+    : "/default-profile.jpg";
+
+  // 🔹 프로필 수정 상태
   const [profileData, setProfileData] = useState({
     userId: "",
     name: "",
@@ -75,76 +56,229 @@ const sortedPosts = [...myPosts].sort((a, b) => {
     businessType: "",
     joinDate: "",
   });
+  const [originalUserId, setOriginalUserId] = useState(""); // 기존 닉네임 기억용
+  const [isChecked, setIsChecked] = useState(false); // 닉네임 중복확인 여부
+  const [isEditing, setIsEditing] = useState(false); // 프로필 수정 모드
+  const [selectedImage, setSelectedImage] = useState<File | null>(null); // 이미지 파일 선택
+  const fileInputRef = useRef<HTMLInputElement | null>(null); // 파일 input 참조
 
+  // 🔹 마이페이지 탭 상태
+  const [activeTab, setActiveTab] = useState("profile"); // 탭: profile | posts | comments | likes
+  const [sortKey, setSortKey] = useState<"latest" | "likes" | "comments">(
+    "latest"
+  ); // 정렬 기준
+
+  // 🔹 내 게시글 / 댓글 / 좋아요한 글
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
+  const [myComments, setMyComments] = useState<Comment[]>([]);
+  const [likedPosts, setLikedPosts] = useState([]); // 좋아요 누른
+  // 글 목록
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [newComment, setNewComment] = useState("");
+
+  // 🔹 정렬된 게시글 리스트
+  const sortedPosts = [...myPosts].sort((a, b) => {
+    if (sortKey === "likes") return (b.likes ?? 0) - (a.likes ?? 0);
+    if (sortKey === "comments") return (b.comments ?? 0) - (a.comments ?? 0);
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  // 🔹 게시글 상세보기 모달 관련
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchAllStats = async () => {
+      const email = user.email;
+      const userid = user.userid;
+
+      try {
+        // 1. 내가 쓴 글
+        const postRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${email}`
+        );
+        if (postRes.ok) {
+          const posts = await postRes.json();
+          setMyPosts(posts);
+        }
+
+        // 2. 내가 쓴 댓글
+        const commentRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/comments/user/${email}`
+        );
+        if (commentRes.ok) {
+          const comments = await commentRes.json();
+          setMyComments(comments);
+        }
+
+        // 3. 내가 좋아요한 글
+        const likeRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/liked/${encodeURIComponent(
+            userid
+          )}`
+        );
+        if (likeRes.ok) {
+          const likes = await likeRes.json();
+          setLikedPosts(likes);
+        }
+      } catch (err) {
+        console.error("📛 통계 불러오기 에러:", err);
+      }
+    };
+
+    fetchAllStats(); // 페이지 첫 로딩 시 1회만 실행
+  }, [user]);
+
+  // 조회수
+  const todayKey = () => "viewedPosts_" + new Date().toISOString().slice(0, 10);
+
+  const hasViewedToday = (id: string) => {
+    const viewed: string[] = JSON.parse(
+      localStorage.getItem(todayKey()) || "[]"
+    );
+    return viewed.includes(id);
+  };
+
+  const markViewedToday = (id: string) => {
+    const viewed: string[] = JSON.parse(
+      localStorage.getItem(todayKey()) || "[]"
+    );
+    localStorage.setItem(todayKey(), JSON.stringify([...viewed, id]));
+  };
+
+  // 🔹 상세보기 모달 내 좋아요 및 댓글 상태
+
+  // 모달 열기
+  // 📌 수정본
   const openPostModal = async (post: Post) => {
-  setSelectedPost(post);
-  setShowPostModal(true);
+    // 1) 우선 모달 열고 현재 글 기억
+    setSelectedPost(post);
+    setShowPostModal(true);
 
-  // 댓글 불러오기
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const commentData = await res.json();
-    setComments(commentData);
-  } catch (e) {
-    console.error("댓글 불러오기 실패:", e);
-    setComments([]);
-  }
+    // 2) 조회수 PATCH (하루 1회) ────────────────────────
+    try {
+      if (!hasViewedToday(post._id)) {
+        await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/view`,
+          { method: "PATCH" }
+        );
+        markViewedToday(post._id);
 
-  // 좋아요 초기화
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}`);
-    const postData = await res.json();
+        // 리스트 카드 +1
+        setMyPosts((prev) =>
+          prev.map((p) =>
+            p._id === post._id ? { ...p, views: (p.views ?? 0) + 1 } : p
+          )
+        );
+        // 모달 내부도 +1
+        setSelectedPost((prev) =>
+          prev ? { ...prev, views: (prev.views ?? 0) + 1 } : prev
+        );
+      }
+    } catch (err) {
+      console.error("조회수 증가 실패:", err);
+    }
 
-    // ✅ 유저가 좋아요 누른 상태인지 확인
-    const liked = Array.isArray(postData.likes)
-      ? postData.likes.includes(user?.userid)
-      : false;
+    // 3) 댓글 불러오기 ────────────────────────────────
+    try {
+      const r = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`
+      );
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      setComments(await r.json());
+    } catch (err) {
+      console.error("댓글 불러오기 실패:", err);
+      setComments([]);
+    }
 
-    setLiked(liked);
-    setLikeCount(Array.isArray(postData.likes) ? postData.likes.length : 0);
-  } catch (e) {
-    console.error("좋아요 상태 불러오기 실패:", e);
-    setLiked(false);
-    setLikeCount(0);
-  }
-};
+    // 4) 좋아요 상태 / 개수 불러오기 ───────────────────
+    try {
+      const r = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}`
+      );
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const p = await r.json();
+
+      const likesField = p.likes; // 배열 | 숫자 | undefined
+      const nowLiked = Array.isArray(likesField) // 내가 눌렀나?
+        ? likesField.includes(user?.userid)
+        : p.liked ?? false;
+
+      const nowLikeCnt = Array.isArray(likesField)
+        ? likesField.length
+        : typeof likesField === "number"
+        ? likesField
+        : 0;
+
+      setLiked(nowLiked);
+      setLikeCount(nowLikeCnt);
+
+      // 카드에 즉시 반영
+      setMyPosts((prev) =>
+        prev.map((p) => (p._id === post._id ? { ...p, likes: nowLikeCnt } : p))
+      );
+      // 모달 post 최신화
+      setSelectedPost((prev) => (prev ? { ...prev, likes: nowLikeCnt } : prev));
+    } catch (err) {
+      console.error("좋아요 상태 불러오기 실패:", err);
+      setLiked(false);
+      setLikeCount(0);
+    }
+  };
 
   // 좋아요 토글
-const handleToggleLike = async () => {
-  if (!selectedPost) return;
+  const handleToggleLike = async () => {
+    if (!selectedPost) return;
 
-  try {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (!token) throw new Error("로그인 필요");
+    try {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("jwtToken") ||
+            sessionStorage.getItem("jwtToken")
+          : null;
+      if (!token) throw new Error("로그인 필요");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // ✅ 토큰을 헤더에 포함
-        
-      },
-      
-    });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    if (!res.ok) throw new Error("좋아요 실패");
-    const data = await res.json();
-    setLiked(data.liked);
-    setLikeCount(data.likes);
-  } catch (err) {
-    console.error("❌ 좋아요 실패:", err.message);
-    
-  }
-};
+      const { liked: nowLiked, likes } = await res.json(); // ← 백엔드가 숫자 반환
+      if (!res.ok) throw new Error("좋아요 실패");
 
-// 댓글 등록
-const handleAddComment = async (content: string) => {
-  if (!content.trim()) return;
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/comments`,
-      {
+      // 1) 모달 내부
+      setLiked(nowLiked);
+      setLikeCount(likes);
+
+      // 2) 카드 리스트(마이글 탭) 동기화
+      setMyPosts((prev) =>
+        prev.map((p) => (p._id === selectedPost._id ? { ...p, likes } : p))
+      );
+
+      // 3) 현재 선택된 post 객체도 갱신 ― 모달이 닫혔다 다시 열려도 유지
+      setSelectedPost((prev) => (prev ? { ...prev, likes } : prev));
+    } catch (err) {
+      console.error("❌ 좋아요 실패:", err);
+      alert(err instanceof Error ? err.message : "좋아요 실패");
+    }
+  };
+
+  // 댓글 등록
+  const handleAddComment = async (content: string) => {
+    if (!content.trim()) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -152,54 +286,56 @@ const handleAddComment = async (content: string) => {
           userid: user?.userid,
           content,
         }),
-      }
-    );
-    if (!res.ok) throw new Error("댓글 등록 실패");
-    const saved = await res.json();
-    setComments((prev) => [...prev, saved]); // 새 댓글 목록에 추가
-    setNewComment("");                       // 입력창 비우기
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-useEffect(() => {
-  const t = localStorage.getItem("token") || sessionStorage.getItem("token");
-  setToken(t);
-}, []);
-
-  useEffect(() => {
-  const fetchProfile = async () => {
-    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    if (!token) return;
-
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mypage/profile`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      console.log("🔵 JWT 기반 프로필 불러옴:", data);
-      dispatch(setUser(data)); // ✅ 여기서 Redux에 저장!
+      });
+      if (!res.ok) throw new Error("댓글 등록 실패");
+      const saved = await res.json();
+      setComments((prev) => [...prev, saved]); // 새 댓글 목록에 추가
+      setNewComment(""); // 입력창 비우기
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  fetchProfile();
-}, []);
+  useEffect(() => {
+    const t = localStorage.getItem("token") || sessionStorage.getItem("token");
+    setToken(t);
+  }, []);
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token =
+        localStorage.getItem("token") || sessionStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/mypage/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log("🔵 JWT 기반 프로필 불러옴:", data);
+        dispatch(setUser(data)); // ✅ 여기서 Redux에 저장!
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     const token =
       localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
-  
+
     if (!token || !user?.email) {
       console.warn("❗ 토큰 또는 user.email이 없습니다. 요청 중단");
-      
+
       return;
     }
-  
+
     const fetchUserProfile = async () => {
       try {
         const res = await fetch(
@@ -210,12 +346,12 @@ useEffect(() => {
             },
           }
         );
-  
+
         if (!res.ok) throw new Error("프로필 요청 실패");
-  
+
         const data = await res.json();
         console.log("🔵 JWT 기반 프로필 불러옴:", data);
-  
+
         setProfileData({
           userId: data.userid || "", // ✅ userId → userid
           name: data.name || "",
@@ -228,147 +364,140 @@ useEffect(() => {
         console.error("❌ 프로필 불러오기 실패:", err);
       }
     };
-  
+
     fetchUserProfile();
   }, [user?.email]);
-  
+
   useEffect(() => {
     console.log("🔍🔍 activeTab 변경:", activeTab);
   }, [activeTab]);
-  
+
   // 좋아요 한 글 불러오기
-useEffect(() => {
-  const fetchLikedPosts = async () => {
-    const userid = user?.userid;           // ✅ userid 우선 사용
-    if (!userid) return;
+  useEffect(() => {
+    const fetchLikedPosts = async () => {
+      const userid = user?.userid; // ✅ userid 우선 사용
+      if (!userid) return;
 
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/liked/${encodeURIComponent(
-          userid
-        )}`
-      );
-      if (!res.ok) throw new Error("좋아요한 글 조회 실패");
-      setLikedPosts(await res.json());
-    } catch (err) {
-      console.error("❌ 좋아요한 글 불러오기 에러:", err);
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/liked/${encodeURIComponent(
+            userid
+          )}`
+        );
+        if (!res.ok) throw new Error("좋아요한 글 조회 실패");
+        setLikedPosts(await res.json());
+      } catch (err) {
+        console.error("❌ 좋아요한 글 불러오기 에러:", err);
+      }
+    };
+
+    if (activeTab === "likes" && user) fetchLikedPosts();
+  }, [activeTab, user]);
+
+  // 내 댓글 불러오기
+  useEffect(() => {
+    const fetchMyComments = async () => {
+      console.log("🗨️ fetchMyComments 호출");
+
+      const userid = user?.email || user?.name;
+
+      if (!userid) {
+        console.warn("🟡 userid/email/name 없음, 요청 중단");
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_API_URL
+          }/comments/user/${encodeURIComponent(userid)}`
+        );
+
+        if (!res.ok) throw new Error(`내 댓글 조회 실패: ${res.status}`);
+
+        const data = await res.json();
+        console.log("✅ 받아온 댓글:", data);
+        console.log("user:", user);
+        console.log("user.userid:", user?.userid);
+        console.log("user.email:", user?.email);
+        console.log("user.name:", user?.name);
+        console.log("userid:", userid);
+
+        setMyComments(data);
+      } catch (err) {
+        console.error("❌ 내 댓글 조회 에러:", err);
+      }
+    };
+
+    // 🗂️ 'comments' 탭이 활성화되고 user 객체가 준비된 뒤에만 호출
+    if (activeTab === "comments" && user) {
+      fetchMyComments();
     }
-  };
+  }, [activeTab, user]);
 
-  if (activeTab === "likes" && user) fetchLikedPosts();
-}, [activeTab, user]);
-
-
-// 내 댓글 불러오기
-useEffect(() => {
-  const fetchMyComments = async () => {
-    console.log("🗨️ fetchMyComments 호출");
-
-
-    const userid = user?.email || user?.name;
-
-    if (!userid) {
-      console.warn("🟡 userid/email/name 없음, 요청 중단");
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/comments/user/${encodeURIComponent(
-          userid
-        )}`
-      );
-
-      if (!res.ok) throw new Error(`내 댓글 조회 실패: ${res.status}`);
-
-      const data = await res.json();
-      console.log("✅ 받아온 댓글:", data);
-      console.log("user:", user);
-      console.log("user.userid:", user?.userid);
-      console.log("user.email:", user?.email);
-      console.log("user.name:", user?.name);
-      console.log("userid:", userid);
-
-      setMyComments(data);
-    } catch (err) {
-      console.error("❌ 내 댓글 조회 에러:", err);
-    }
-  };
-
-  // 🗂️ 'comments' 탭이 활성화되고 user 객체가 준비된 뒤에만 호출
-  if (activeTab === "comments" && user) {
-    fetchMyComments();
-  }
-}, [activeTab, user]);
-  
   // 내 게시글 불러오기
-useEffect(() => {
-  const fetchMyPosts = async () => {
-    console.log("🔍🔍 fetchMyPosts 호출");
-    console.log("🔍🔍 user 객체:", user);
-console.log("🧪 user 값 확인:", user);
-    // userid(닉네임) - 또는 fallback 으로 name 사용
-    const userid = user?.email || user?.name;
-    if (!userid) {
-      console.warn("🟡 userid 또는 name 없음, 요청 중단");
-      return;
+  useEffect(() => {
+    const fetchMyPosts = async () => {
+      const userid = user?.email || user?.name;
+      if (!userid) {
+        console.warn("🟡 userid 또는 name 없음, 요청 중단");
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${userid}`
+        );
+        if (!res.ok) throw new Error("내 글 조회 실패");
+
+        const posts = await res.json();
+        console.log("✅ 받아온 게시글:", posts);
+        setMyPosts(posts);
+      } catch (err) {
+        console.error("❌ 내 글 조회 에러:", err);
+      }
+    };
+
+    // 🔑 탭이 'posts' 이고, user 정보가 로드된 뒤에만 실행
+    if (activeTab === "posts" && user) {
+      fetchMyPosts();
     }
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${userid}`
-      );
-      if (!res.ok) throw new Error("내 글 조회 실패");
-
-      const posts = await res.json();
-      console.log("✅ 받아온 게시글:", posts);
-      setMyPosts(posts);
-    } catch (err) {
-      console.error("❌ 내 글 조회 에러:", err);
-    }
-  };
-
-  // 🔑 탭이 'posts' 이고, user 정보가 로드된 뒤에만 실행
-  if (activeTab === "posts" && user) {
-    fetchMyPosts();
-  }
-}, [activeTab, user]);   // ← 의존성도 user.currentUser → user
-
+  }, [activeTab, user]); // ← 의존성도 user.currentUser → user
 
   // 회원탈퇴
   const handleDeleteAccount = async () => {
-  const confirmed = window.confirm("정말로 회원 탈퇴하시겠습니까?");
-  if (!confirmed) return;
+    const confirmed = window.confirm("정말로 회원 탈퇴하시겠습니까?");
+    if (!confirmed) return;
 
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/remove`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email: user?.email }),
-    });
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/remove`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: user?.email }),
+        }
+      );
 
-    const result = await res.json();
+      const result = await res.json();
 
-    if (!res.ok) throw new Error(result.message);
+      if (!res.ok) throw new Error(result.message);
 
-    alert("회원탈퇴 완료 🥲");
+      alert("회원탈퇴 완료 🥲");
 
-    // ✅ 토큰 제거
-    localStorage.removeItem("jwtToken");
-    sessionStorage.removeItem("jwtToken");
+      // ✅ 토큰 제거
+      localStorage.removeItem("jwtToken");
+      sessionStorage.removeItem("jwtToken");
 
-    // ✅ 메인 페이지 이동 (Next.js)
-    window.location.href = "/";
-  } catch (err: any) {
-    console.error("회원탈퇴 오류:", err);
-    alert("서버 오류로 탈퇴에 실패했습니다.");
-  }
-};
-
-
-
+      // ✅ 메인 페이지 이동 (Next.js)
+      window.location.href = "/";
+    } catch (err: any) {
+      console.error("회원탈퇴 오류:", err);
+      alert("서버 오류로 탈퇴에 실패했습니다.");
+    }
+  };
 
   // 파일 선택 시 상태에 저장
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -414,8 +543,6 @@ console.log("🧪 user 값 확인:", user);
     }
   };
 
-
-
   // useEffect: 프로필 처음 불러올 때 닉네임 기억해두기
   useEffect(() => {
     const token =
@@ -455,11 +582,6 @@ console.log("🧪 user 값 확인:", user);
     fetchUserProfile();
   }, [user?.email]);
 
-
-
-
-
-
   // 중복확인
   const handleCheckDuplicate = async () => {
     try {
@@ -490,8 +612,6 @@ console.log("🧪 user 값 확인:", user);
       setIsChecked(false);
     }
   };
-
-
 
   // 저장하기
   const handleSaveProfile = async () => {
@@ -542,8 +662,6 @@ console.log("🧪 user 값 확인:", user);
       alert("저장 중 오류가 발생했습니다.");
     }
   };
-
-
 
   // 프로필 입력 필드 값 변경 핸들러
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -632,7 +750,6 @@ console.log("🧪 user 값 확인:", user);
   //   }
   // };
 
-
   // 마이페이지 탭 렌더링 함수
   const renderTabContent = () => {
     switch (activeTab) {
@@ -666,7 +783,7 @@ console.log("🧪 user 값 확인:", user);
                     </p>
                   </div>
 
-                   <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       프로필 이미지
                     </label>
@@ -676,7 +793,9 @@ console.log("🧪 user 값 확인:", user);
                         className="flex-1 p-3 border border-gray-300 rounded-lg focus:border-blue-600 cursor-pointer bg-white flex items-center justify-between"
                       >
                         <span className="text-gray-500 text-sm">
-                          {selectedImage ? selectedImage.name : "선택된 파일 없음"}
+                          {selectedImage
+                            ? selectedImage.name
+                            : "선택된 파일 없음"}
                         </span>
                         <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded text-xs font-medium">
                           파일 선택
@@ -833,234 +952,244 @@ console.log("🧪 user 값 확인:", user);
           </div>
         );
 
-      
-  case "posts": {
-    /* 1) 정렬 옵션 - JSX 밖 변수 */
-    const sortOptions = [
-      { key: "latest",   label: "최신순" },
-      { key: "likes",    label: "인기순" },
-      { key: "comments", label: "댓글순" },
-    ];
+      case "posts": {
+        /* 1) 정렬 옵션 - JSX 밖 변수 */
+        const sortOptions = [
+          { key: "latest", label: "최신순" },
+          { key: "likes", label: "인기순" },
+          { key: "comments", label: "댓글순" },
+        ];
 
-    /* 2) 반환 JSX */
-    return (
-  <>
-    <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-gray-800">내가 쓴 글</h3>
+        /* 2) 반환 JSX */
+        return (
+          <>
+            <div className="space-y-6">
+              {/* 헤더 */}
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold text-gray-800">
+                  내가 쓴 글
+                </h3>
 
-        <div className="flex gap-2">
-          <select
-            value={sortKey}
-            onChange={(e) =>
-              setSortKey(e.target.value as "latest" | "likes" | "comments")
-            }
-            className="p-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="latest">최신순</option>
-            <option value="likes">인기순</option>
-            <option value="comments">댓글순</option>
-          </select>
-        </div>
-      </div>
-
-      {/* 게시글 리스트 */}
-      {Array.isArray(sortedPosts) && sortedPosts.length > 0 ? (
-        <div className="space-y-4">
-          {sortedPosts.map((post) => (
-            <PostCard
-              key={post._id}
-              post={{
-                _id: post._id,
-                title: post.title,
-                preview: post.preview,
-                category: post.category,
-                author: post.userid,
-                createdAt: (post.createdAt || post.date) as string,
-                views: post.views,
-                likes: post.likes,
-                comments: post.comments,
-              }}
-              onClick={() => openPostModal(post)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 text-gray-500">
-          <i className="fas fa-file-alt text-4xl mb-4 opacity-50" />
-          <p>작성한 글이 없습니다.</p>
-        </div>
-      )}
-
-      {/* 페이지네이션 */}
-      <div className="flex justify-center mt-6">
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5].map((num) => (
-            <button
-              key={num}
-              className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
-                num === 1 ? "bg-blue-600 text-white border-blue-600" : ""
-              }`}
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-
-    {/* 🔍 상세 모달 */}
-    {showPostModal && selectedPost && (
-      <PostModal
-        post={selectedPost}
-        comments={comments}
-        newComment={newComment}
-        setNewComment={setNewComment}
-        onToggleLike={handleToggleLike}       // 좋아요 핸들러
-    onAddComment={handleAddComment}       // 댓글 등록 핸들러
-        onClose={() => {
-          setShowPostModal(false);
-          setSelectedPost(null);
-          setComments([]);
-        }}
-      />
-    )}
-  </>
-);
-  }
-
-      case "comments":
-  return (
-    <div className="space-y-6">
-      {/* 헤더 */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold text-gray-800">내 댓글</h3>
-        <select className="p-2 border border-gray-300 rounded-lg text-sm">
-          <option>최신순</option>
-          <option>인기순</option>
-        </select>
-      </div>
-
-      {/* 본문 – 댓글 카드 리스트 */}
-      {myComments.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <i className="fas fa-comment-dots text-4xl mb-4 opacity-50" />
-          <p>작성한 댓글이 없습니다.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {myComments.map((comment) => (
-            <div
-              key={comment._id}
-              className="p-5 border border-gray-200 rounded-lg
-                         hover:border-blue-600 hover:shadow transition-colors"
-            >
-              {/* 상단: 댓글이 달린 글 제목, 날짜 */}
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="text-base font-semibold text-gray-800 flex items-center">
-                  <i className="fas fa-message text-purple-500 mr-2" />
-                  {comment.postTitle}
-                </h4>
-
-                {/* createdAt → 날짜 포맷 */}
-                <span className="text-xs text-gray-500">
-                  {new Date(comment.createdAt).toLocaleDateString("ko-KR", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
+                <div className="flex gap-2">
+                  <select
+                    value={sortKey}
+                    onChange={(e) =>
+                      setSortKey(
+                        e.target.value as "latest" | "likes" | "comments"
+                      )
+                    }
+                    className="p-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="latest">최신순</option>
+                    <option value="likes">인기순</option>
+                    <option value="comments">댓글순</option>
+                  </select>
+                </div>
               </div>
 
-              {/* 댓글 본문 */}
-              <p className="text-gray-700 text-sm leading-relaxed">
-                {comment.content}
-              </p>
+              {/* 게시글 리스트 */}
+              {Array.isArray(sortedPosts) && sortedPosts.length > 0 ? (
+                <div className="space-y-4">
+                  {sortedPosts.map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={{
+                        _id: post._id,
+                        title: post.title,
+                        preview: post.preview,
+                        category: post.category,
+                        author: post.userid,
+                        createdAt: (post.createdAt || post.date) as string,
+                        views: post.views,
+                        likes: post.likes,
+                        comments: post.comments,
+                      }}
+                      onClick={() => openPostModal(post)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <i className="fas fa-file-alt text-4xl mb-4 opacity-50" />
+                  <p>작성한 글이 없습니다.</p>
+                </div>
+              )}
+
+              {/* 페이지네이션 */}
+              <div className="flex justify-center mt-6">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
+                        num === 1
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : ""
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* (선택) 페이지네이터 – 필요 없으면 삭제 */}
-      <div className="flex justify-center mt-6">
-        <div className="flex gap-1">
-          {[1, 2, 3].map((num) => (
-            <button
-              key={num}
-              className={`w-9 h-9 flex items-center justify-center border
-                          border-gray-300 rounded text-sm ${
-                num === 1 ? "bg-blue-600 text-white border-blue-600" : ""
-              }`}
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-
-     case "likes":
-  return (
-    <div className="space-y-6">
-      {/* ------ 헤더 ------ */}
-      ...
-      {/* ------ 카드 리스트 ------ */}
-      {likedPosts.length === 0 ? (
-        /* 빈 상태 */
-        <div className="text-center py-12 text-gray-500">
-          <i className="fas fa-heart text-4xl mb-4 opacity-50" />
-          <p>좋아요한 글이 없습니다.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {[...likedPosts]
-            .sort((a, b) => {
-              if (sortKey === "likes")    return (b.likes ?? 0)    - (a.likes ?? 0);
-              if (sortKey === "comments") return (b.comments ?? 0) - (a.comments ?? 0);
-              return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-            })
-            .map((post) => (
-              <PostCard
-                key={post._id}
-                post={{
-                  _id:       post._id,
-                  title:     post.title,
-                  preview:   post.preview || post.content?.slice(0, 80) + "...",
-                  category:  post.category,
-                  author:    post.userid ?? post.author,
-                  createdAt: post.date ?? post.createdAt,
-                  views:     post.views,
-                  likes:     post.likes,
-                  comments:  post.comments,
-                  emoji:     post.emoji,
+            {/* 🔍 상세 모달 */}
+            {showPostModal && selectedPost && (
+              <PostModal
+                post={selectedPost}
+                comments={comments}
+                liked={liked} // ✅
+                likeCount={likeCount} // ✅
+                newComment={newComment}
+                setNewComment={setNewComment}
+                onToggleLike={handleToggleLike}
+                onAddComment={handleAddComment}
+                onClose={() => {
+                  setShowPostModal(false);
+                  setSelectedPost(null);
+                  setComments([]);
                 }}
-                onClick={() => openPostModal(post)} 
               />
-            ))}
-        </div>
-      )}
+            )}
+          </>
+        );
+      }
 
+      case "comments":
+        return (
+          <div className="space-y-6">
+            {/* 헤더 */}
+            <h3 className="text-xl font-semibold text-gray-800">내 댓글</h3>
 
-      {/* ------ (선택) 페이지네이션 ------ */}
-      <div className="flex justify-center mt-6">
-        <div className="flex gap-1">
-          {[1, 2, 3].map((num) => (
-            <button
-              key={num}
-              className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
-                num === 1 ? "bg-blue-600 text-white border-blue-600" : ""
-              }`}
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+            {/* 본문 – 댓글 카드 리스트 */}
+            {myComments.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <i className="fas fa-comment-dots text-4xl mb-4 opacity-50" />
+                <p>작성한 댓글이 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myComments.map((comment) => (
+                  <div
+                    key={comment._id}
+                    className="p-5 border border-gray-200 rounded-lg
+                         hover:border-blue-600 hover:shadow transition-colors"
+                  >
+                    {/* 상단: 댓글이 달린 글 제목, 날짜 */}
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-base font-semibold text-gray-800 flex items-center">
+                        <i className="fas fa-message text-purple-500 mr-2" />
+                        {comment.postTitle}
+                      </h4>
+
+                      {/* createdAt → 날짜 포맷 */}
+                      <span className="text-xs text-gray-500">
+                        {new Date(comment.createdAt).toLocaleDateString(
+                          "ko-KR",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          }
+                        )}
+                      </span>
+                    </div>
+
+                    {/* 댓글 본문 */}
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      {comment.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* (선택) 페이지네이터 – 필요 없으면 삭제 */}
+            <div className="flex justify-center mt-6">
+              <div className="flex gap-1">
+                {[1, 2, 3].map((num) => (
+                  <button
+                    key={num}
+                    className={`w-9 h-9 flex items-center justify-center border
+                          border-gray-300 rounded text-sm ${
+                            num === 1
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : ""
+                          }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      case "likes":
+        return (
+          <div className="space-y-6">
+            {/* ------ 헤더 ------ */}
+            <h3 className="text-xl font-semibold text-gray-800">좋아요한 글</h3>
+            {/* ------ 카드 리스트 ------ */}
+            {likedPosts.length === 0 ? (
+              /* 빈 상태 */
+              <div className="text-center py-12 text-gray-500">
+                <i className="fas fa-heart text-4xl mb-4 opacity-50" />
+                <p>좋아요한 글이 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[...likedPosts]
+                  .sort((a, b) => {
+                    if (sortKey === "likes")
+                      return (b.likes ?? 0) - (a.likes ?? 0);
+                    if (sortKey === "comments")
+                      return (b.comments ?? 0) - (a.comments ?? 0);
+                    return (
+                      new Date(b.createdAt).getTime() -
+                      new Date(a.createdAt).getTime()
+                    );
+                  })
+                  .map((post) => (
+                    <PostCard
+                      key={post._id}
+                      post={{
+                        _id: post._id,
+                        title: post.title,
+                        preview:
+                          post.preview || post.content?.slice(0, 80) + "...",
+                        category: post.category,
+                        author: post.userid ?? post.author,
+                        createdAt: post.date ?? post.createdAt,
+                        views: post.views,
+                        likes: post.likes,
+                        comments: post.comments,
+                        emoji: post.emoji,
+                      }}
+                      onClick={() => openPostModal(post)}
+                    />
+                  ))}
+              </div>
+            )}
+
+            {/* ------ (선택) 페이지네이션 ------ */}
+            <div className="flex justify-center mt-6">
+              <div className="flex gap-1">
+                {[1, 2, 3].map((num) => (
+                  <button
+                    key={num}
+                    className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
+                      num === 1 ? "bg-blue-600 text-white border-blue-600" : ""
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
       case "settings":
         return (
           <div className="space-y-6">
@@ -1088,7 +1217,10 @@ console.log("🧪 user 값 확인:", user);
               <div className="p-5 border border-gray-200 rounded-lg">
                 <h4 className="font-semibold text-gray-800 mb-4">계정 관리</h4>
                 <div className="space-y-3">
-                  <button  onClick={handleDeleteAccount} className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors">
+                  <button
+                    onClick={handleDeleteAccount}
+                    className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                  >
                     <i className="fas fa-user-times mr-3"></i>
                     회원 탈퇴
                   </button>
@@ -1112,12 +1244,12 @@ console.log("🧪 user 값 확인:", user);
             {/* 프로필 카드 */}
             <div className="bg-white rounded-xl p-6 shadow-md mb-6">
               <div className="flex flex-col items-center">
-              {/*사진 올라가는 곳 */}
+                {/*사진 올라가는 곳 */}
                 <div className="flex justify-center">
                   <img
                     src={profileSrc}
-                alt="프로필 이미지"
-                className="w-24 h-24 rounded-full object-cover"
+                    alt="프로필 이미지"
+                    className="w-24 h-24 rounded-full object-cover"
                     className="w-24 h-24 rounded-full object-cover"
                   />
                 </div>
@@ -1131,19 +1263,19 @@ console.log("🧪 user 값 확인:", user);
                 <div className="flex justify-between w-full border-t border-gray-200 pt-4">
                   <div className="text-center">
                     <span className="block text-xl font-bold text-blue-600">
-                      15
+                      {myPosts.length}
                     </span>
                     <span className="text-xs text-gray-600">작성글</span>
                   </div>
                   <div className="text-center">
                     <span className="block text-xl font-bold text-blue-600">
-                      42
+                      {myComments.length}
                     </span>
                     <span className="text-xs text-gray-600">댓글</span>
                   </div>
                   <div className="text-center">
                     <span className="block text-xl font-bold text-blue-600">
-                      128
+                      {likedPosts.length}
                     </span>
                     <span className="text-xs text-gray-600">좋아요</span>
                   </div>
@@ -1249,22 +1381,22 @@ console.log("🧪 user 값 확인:", user);
           </div>
         </div>
       </div>
-       {showPostModal && selectedPost && (
-    <PostModal
-      post={selectedPost}
-      comments={comments}
-      liked={liked}
-      likeCount={likeCount}
-      onClose={() => {
-        setShowPostModal(false);
-        setSelectedPost(null);
-      }}
-      onToggleLike={handleToggleLike}
-      onAddComment={handleAddComment}
-      newComment={newComment}
-      setNewComment={setNewComment}
-    />
-  )}
+      {showPostModal && selectedPost && (
+        <PostModal
+          post={selectedPost}
+          comments={comments}
+          liked={liked}
+          likeCount={likeCount}
+          onClose={() => {
+            setShowPostModal(false);
+            setSelectedPost(null);
+          }}
+          onToggleLike={handleToggleLike}
+          onAddComment={handleAddComment}
+          newComment={newComment}
+          setNewComment={setNewComment}
+        />
+      )}
     </MainLayout>
   );
 }
