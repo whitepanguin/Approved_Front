@@ -1062,7 +1062,7 @@ export default function MyPage() {
             {/* 헤더 */}
             <h3 className="text-xl font-semibold text-gray-800">내 댓글</h3>
 
-            {/* 본문 – 댓글 카드 리스트 */}
+            {/* 본문 – 댓글 카드 리스트ㅇ */}
             {myComments.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <i className="fas fa-comment-dots text-4xl mb-4 opacity-50" />
