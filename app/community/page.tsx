@@ -28,15 +28,112 @@ export default function CommunityPage() {
   const [currentSort, setCurrentSort] = useState("latest");
   const [showWriteModal, setShowWriteModal] = useState(false);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 5;
+
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+
   const user = useSelector((state: RootState) => state.user);
+
   const [postCount, setPostCount] = useState(0);
 
+  // 수정 버튼 핸들러
+  const handleEdit = (post: Post) => {
+    setEditingPost(post);
+    setShowWriteModal(true);
+  };
+
+  // 삭제 버튼 핸들러
+  const handleDelete = async (postId: string) => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/posts/${postId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("삭제 실패");
+
+      const updatedPosts = await fetch("http://localhost:8000/posts").then(
+        (res) => res.json()
+      );
+      setPosts(updatedPosts);
+
+      await fetchPostCount();
+
+      alert("✅ 삭제 완료");
+    } catch (err) {
+      console.error("❌ 삭제 오류:", err);
+      alert("게시글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>(
+    {}
+  );
+
+  useEffect(() => {
+    const fetchCategoryCounts = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/posts/category-counts");
+        const data = await res.json();
+        setCategoryCounts(data);
+      } catch (err) {
+        console.error("❌ 카테고리 수 불러오기 실패:", err);
+      }
+    };
+
+    fetchCategoryCounts();
+  }, []);
+
   const categoryInfo = {
-    all: { title: "전체 게시글", icon: "fas fa-list" },
-    info: { title: "정보공유", icon: "fas fa-info-circle" },
-    qna: { title: "Q&A", icon: "fas fa-question-circle" },
-    daily: { title: "일상 이야기", icon: "fas fa-coffee" },
-    startup: { title: "창업 관련 정보", icon: "fas fa-rocket" },
+    all: {
+      title: "전체 게시글",
+      icon: "fas fa-list",
+      posts: posts.length,
+      comments: 0,
+      desc: "모든 게시글을 확인할 수 있어요",
+    },
+    info: {
+      title: "정보공유",
+      icon: "fas fa-info-circle",
+      posts: categoryCounts["info"] || 0,
+      comments: 0,
+      desc: "유용한 인허가 정보와 팁을 공유해요",
+    },
+    qna: {
+      title: "Q&A",
+      icon: "fas fa-question-circle",
+      posts: categoryCounts["qna"] || 0,
+      comments: 0,
+      desc: "궁금한 점을 질문하고 답변을 받아보세요",
+    },
+    daily: {
+      title: "일상 이야기",
+      icon: "fas fa-coffee",
+      posts: categoryCounts["daily"] || 0,
+      comments: 0,
+      desc: "자유롭게 일상을 공유하고 소통해요",
+    },
+    startup: {
+      title: "창업 관련 정보",
+      icon: "fas fa-rocket",
+      posts: categoryCounts["startup"] || 0,
+      comments: 0,
+      desc: "창업에 필요한 정보와 경험을 나눠요",
+    },
+  };
+
+  const fetchPostCount = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:8000/posts/count/${user.currentUser.name}`
+      );
+      const data = await res.json();
+      setPostCount(data.count);
+    } catch (err) {
+      console.error("❌ 작성글 수 조회 실패:", err);
+    }
   };
 
   // const samplePosts: Post[] = [
@@ -112,14 +209,14 @@ export default function CommunityPage() {
   //   },
   // ];
 
+  // 1. 게시글 불러오기
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const res = await fetch("http://localhost:8000/posts");
-
         const data = await res.json();
         setPosts(data);
-        console.log(data);
+        console.log("✅ 게시글 불러오기 성공:", data);
       } catch (err) {
         console.error("❌ 게시글 로딩 실패:", err);
       }
@@ -128,16 +225,18 @@ export default function CommunityPage() {
     fetchPosts();
   }, []);
 
+  // 2. 작성글 수 불러오기 (user가 있을 경우에만)
   useEffect(() => {
+    if (!user?.currentUser?.name) return;
+
     const fetchPostCount = async () => {
       try {
         const res = await fetch(
           `http://localhost:8000/posts/count/${user.currentUser.name}`
         );
         const data = await res.json();
-
-        console.log(data);
-        setPostCount(data.count); // ← 상태로 저장
+        setPostCount(data.count);
+        console.log("✅ 작성글 수 불러오기 성공:", data.count);
       } catch (err) {
         console.error("❌ 작성글 수 조회 실패:", err);
       }
@@ -166,6 +265,10 @@ export default function CommunityPage() {
           return 0;
       }
     });
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
 
   const formatDate = (input: string | Date) => {
     const date = new Date(input);
@@ -200,59 +303,64 @@ export default function CommunityPage() {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
 
-    const newPost: Post = {
-      title: formData.get("title") as string,
-      preview: (formData.get("content") as string).substring(0, 100) + "...",
-      userid: user.name,
-      createdAt: new Date(), // ← 이건 DB 저장용이 아니라 화면용이라면 OK
-      category: formData.get("category") as string,
+    const title = formData.get("title") as string;
+    const content = formData.get("content") as string;
+    const category = formData.get("category") as string;
+    const preview = content.substring(0, 100) + "...";
+
+    const payload = {
+      userid: user.currentUser.name,
+      title,
+      content,
+      category,
+      tags: [],
       views: 0,
-      likes: 0,
       comments: 0,
+      likes: 0,
+      preview,
       isHot: false,
       isNotice: false,
     };
 
     try {
-      // ✅ [1] 최종 요청할 데이터 로그
-      const payload = {
-        userid: user.currentUser.name,
-        title: newPost.title,
-        content: formData.get("content") as string,
-        category: newPost.category,
-        tags: [],
-        views: 0,
-        todayViews: 0,
-        comments: 0,
-        likes: 0,
-        preview: newPost.preview,
-        isHot: false,
-        isNotice: false,
-      };
-      console.log("📝 서버로 전송할 게시글 데이터:", payload);
+      let res;
 
-      const res = await fetch("http://localhost:8000/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      // ✅ 수정인지 확인
+      if (editingPost) {
+        res = await fetch(`http://localhost:8000/posts/${editingPost._id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch("http://localhost:8000/posts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       if (!res.ok) throw new Error("❌ 글 저장 실패");
 
-      // ✅ [2] 서버 응답 로그
+      // 최신 글 목록 다시 불러오기
       const updatedPosts = await fetch("http://localhost:8000/posts").then(
         (res) => res.json()
       );
-      console.log("📦 서버에서 받아온 게시글 목록:", updatedPosts);
 
       setPosts(updatedPosts);
+      await fetchPostCount();
       setShowWriteModal(false);
-      alert("✅ 게시글이 등록되었습니다.");
+      setEditingPost(null); // ← 수정 후 초기화
+      alert(
+        editingPost ? "게시글이 수정되었습니다." : "게시글이 등록되었습니다."
+      );
     } catch (err) {
       console.error("❌ 서버 오류:", err);
-      alert("서버에 문제가 있어 게시글을 등록하지 못했습니다.");
+      alert("서버에 문제가 있어 게시글을 저장하지 못했습니다.");
     }
   };
 
@@ -324,66 +432,39 @@ export default function CommunityPage() {
 
         {/* 데스크톱 카테고리 그리드 - 모바일에서는 숨김 */}
         <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {Object.entries({
-            info: {
-              icon: "fas fa-info-circle",
-              title: "정보공유",
-              desc: "유용한 인허가 정보와 팁을 공유해요",
-              posts: 124,
-              comments: 356,
-            },
-            qna: {
-              icon: "fas fa-question-circle",
-              title: "Q&A",
-              desc: "궁금한 점을 질문하고 답변을 받아보세요",
-              posts: 89,
-              comments: 203,
-            },
-            daily: {
-              icon: "fas fa-coffee",
-              title: "일상 이야기",
-              desc: "자유롭게 일상을 공유하고 소통해요",
-              posts: 67,
-              comments: 145,
-            },
-            startup: {
-              icon: "fas fa-rocket",
-              title: "창업 관련 정보",
-              desc: "창업에 필요한 정보와 경험을 나눠요",
-              posts: 45,
-              comments: 98,
-            },
-          }).map(([key, data]) => (
-            <div
-              key={key}
-              onClick={() => setCurrentCategory(key)}
-              className={`bg-white rounded-xl p-5 shadow-lg cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between hover:-translate-y-1 hover:shadow-xl ${
-                currentCategory === key
-                  ? "border-blue-600 bg-blue-50 -translate-y-1 shadow-xl"
-                  : "border-transparent"
-              }`}
-            >
-              <div>
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mb-3">
-                  <i className={`${data.icon} text-white text-xl`}></i>
+          {Object.entries(categoryInfo)
+            .filter(([key]) => key !== "all") // ← "전체"는 제외
+            .map(([key, data]) => (
+              <div
+                key={key}
+                onClick={() => setCurrentCategory(key)}
+                className={`bg-white rounded-xl p-5 shadow-lg cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between hover:-translate-y-1 hover:shadow-xl ${
+                  currentCategory === key
+                    ? "border-blue-600 bg-blue-50 -translate-y-1 shadow-xl"
+                    : "border-transparent"
+                }`}
+              >
+                <div>
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mb-3">
+                    <i className={`${data.icon} text-white text-xl`}></i>
+                  </div>
+                  <h3 className="text-lg text-gray-800 mb-1 font-semibold">
+                    {data.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {data.desc}
+                  </p>
                 </div>
-                <h3 className="text-lg text-gray-800 mb-1 font-semibold">
-                  {data.title}
-                </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {data.desc}
-                </p>
+                <div className="flex gap-3 text-xs text-gray-500 mt-3">
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-file-alt"></i> {data.posts}개 게시글
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-comments"></i> {data.comments}개 댓글
+                  </span>
+                </div>
               </div>
-              <div className="flex gap-3 text-xs text-gray-500 mt-3">
-                <span className="flex items-center gap-1">
-                  <i className="fas fa-file-alt"></i> {data.posts}개 게시글
-                </span>
-                <span className="flex items-center gap-1">
-                  <i className="fas fa-comments"></i> {data.comments}개 댓글
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
 
         <div className="flex flex-col md:flex-row gap-4">
@@ -432,88 +513,158 @@ export default function CommunityPage() {
                     <p>게시글이 없습니다.</p>
                   </div>
                 ) : (
-                  filteredPosts.map((post) => (
-                    <div
-                      key={post._id}
-                      onClick={() =>
-                        alert(
-                          `"${post.title}" 게시글 상세 페이지로 이동합니다.`
-                        )
-                      }
-                      className="border border-gray-200 rounded-lg p-4 transition-all duration-300 bg-white cursor-pointer hover:border-blue-600 hover:shadow-lg"
-                    >
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {post.isNotice && (
-                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">
-                            공지
-                          </span>
-                        )}
-                        {post.isHot && (
-                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
-                            인기
-                          </span>
-                        )}
-                        <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-600">
-                          {getCategoryName(post.category)}
-                        </span>
-                      </div>
-                      <h4 className="text-base md:text-lg text-gray-800 mb-2 font-semibold leading-tight">
-                        {post.title}
-                      </h4>
-                      <p className="text-gray-600 text-sm leading-relaxed mb-3 line-clamp-2 hidden md:block">
-                        {post.preview}
-                      </p>
-                      <div className="flex flex-wrap justify-between items-center text-xs text-gray-500">
-                        <div className="flex flex-wrap gap-3">
-                          <span className="flex items-center gap-1">
-                            <i className="fas fa-user"></i> {post.userid}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <i className="fas fa-clock"></i>{" "}
-                            {formatDate(post.createdAt)}
+                  <>
+                    {currentPosts.map((post) => (
+                      <div
+                        key={post._id}
+                        onClick={() =>
+                          alert(
+                            `"${post.title}" 게시글 상세 페이지로 이동합니다.`
+                          )
+                        }
+                        className="border border-gray-200 rounded-lg p-4 transition-all duration-300 bg-white cursor-pointer hover:border-blue-600 hover:shadow-lg"
+                      >
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {post.isNotice && (
+                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-600">
+                              공지
+                            </span>
+                          )}
+                          {post.isHot && (
+                            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-600">
+                              인기
+                            </span>
+                          )}
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-600">
+                            {getCategoryName(post.category)}
                           </span>
                         </div>
-                        <div className="flex gap-3 mt-2 md:mt-0">
-                          <span className="flex items-center gap-1">
-                            <i className="fas fa-eye"></i> {post.views}
-                          </span>
-                          <button className="flex items-center gap-1 hover:text-pink-600 transition-colors">
-                            <i className="fas fa-heart"></i> {post.likes}
-                          </button>
-                          <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
-                            <i className="fas fa-comment"></i> {post.comments}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
 
-              <div className="flex justify-center items-center mt-6 gap-2">
-                <button
-                  className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:bg-gray-50 hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled
-                >
-                  <i className="fas fa-chevron-left"></i> 이전
-                </button>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <button
-                      key={num}
-                      className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 ${
-                        num === 1
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : ""
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-                <button className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:bg-gray-50 hover:border-blue-600 hover:text-blue-600">
-                  다음 <i className="fas fa-chevron-right"></i>
-                </button>
+                        <h4 className="text-base md:text-lg text-gray-800 mb-2 font-semibold leading-tight">
+                          {post.title}
+                        </h4>
+
+                        <p className="text-gray-600 text-sm leading-relaxed mb-3 line-clamp-2 hidden md:block">
+                          {post.preview}
+                        </p>
+
+                        <div className="flex flex-wrap justify-between items-center text-xs text-gray-500">
+                          {/* 작성자 + 작성일 */}
+                          <div className="flex flex-wrap gap-3">
+                            <span className="flex items-center gap-1">
+                              <i className="fas fa-user"></i> {post.userid}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <i className="fas fa-clock"></i>{" "}
+                              {formatDate(post.createdAt)}
+                            </span>
+                          </div>
+
+                          {/* 조회/좋아요/댓글 + 수정삭제 */}
+                          <div className="flex gap-3 mt-2 md:mt-0 items-center">
+                            <span className="flex items-center gap-1">
+                              <i className="fas fa-eye"></i> {post.views}
+                            </span>
+                            <button className="flex items-center gap-1 hover:text-pink-600 transition-colors">
+                              <i className="fas fa-heart"></i> {post.likes}
+                            </button>
+                            <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
+                              <i className="fas fa-comment"></i> {post.comments}
+                            </button>
+
+                            {/* 수정/삭제 버튼 (본인 글만 표시) */}
+                            {post.userid === user.currentUser.name && (
+                              <div className="flex gap-2 ml-3">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEdit(post);
+                                  }}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(post._id!);
+                                  }}
+                                  className="text-red-600 hover:underline"
+                                >
+                                  삭제
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="flex justify-center items-center mt-6 gap-2">
+                      {/* << 처음 */}
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        &laquo;
+                      </button>
+
+                      {/* < 이전 */}
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(prev - 1, 1))
+                        }
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        &lt;
+                      </button>
+
+                      {/* 페이지 번호 */}
+                      <div className="flex gap-1">
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((num) => (
+                          <button
+                            key={num}
+                            onClick={() => setCurrentPage(num)}
+                            className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 ${
+                              currentPage === num
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : ""
+                            }`}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* > 다음 */}
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(prev + 1, totalPages)
+                          )
+                        }
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        &gt;
+                      </button>
+
+                      {/* >> 끝 */}
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        &raquo;
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
