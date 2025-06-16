@@ -672,45 +672,6 @@ export default function MyPage() {
     }));
   };
 
-  // // 비밀번호 변경 폼 제출  현재는 실제 비밀번호 변경 로직 없이 alert만 띄움 (UI 동작만 존재)
-  // const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-
-  //   const form = e.currentTarget;
-
-  //   const currentPassword = (
-  //     form.elements.namedItem("currentPassword") as HTMLInputElement
-  //   )?.value;
-  //   const newPassword = (
-  //     form.elements.namedItem("newPassword") as HTMLInputElement
-  //   )?.value;
-  //   const confirmPassword = (
-  //     form.elements.namedItem("confirmNewPassword") as HTMLInputElement
-  //   )?.value;
-
-  //   const email = user?.email;
-  //   const token =
-  //     localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
-
-  //   if (!email || !token) {
-  //     alert("로그인이 필요합니다.");
-  //     return;
-  //   }
-
-  //   // ✅ 소셜 로그인 계정일 경우 비밀번호 변경 금지
-  //   if (
-  //     email.endsWith("@gmail.com") ||
-  //     email.endsWith("@kakao.com") ||
-  //     email.endsWith("@naver.com")
-  //   ) {
-  //     alert("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
-  //     return;
-  //   }
-
-  //   if (!currentPassword || !newPassword || !confirmPassword) {
-  //     alert("모든 필드를 입력해주세요.");
-  //     return;
-  //   }
 
   //   // ✅ 현재 비밀번호와 새 비밀번호가 같을 경우 차단
   //   if (currentPassword === newPassword) {
@@ -756,7 +717,9 @@ export default function MyPage() {
       case "profile":
         return (
           <div className="space-y-8">
+
             <div className="relative">
+
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 프로필 수정
               </h3>
@@ -952,6 +915,7 @@ export default function MyPage() {
           </div>
         );
 
+
       case "posts": {
         /* 1) 정렬 옵션 - JSX 밖 변수 */
         const sortOptions = [
@@ -960,8 +924,10 @@ export default function MyPage() {
           { key: "comments", label: "댓글순" },
         ];
 
+
         /* 2) 반환 JSX */
         return (
+
           <>
             <div className="space-y-6">
               {/* 헤더 */}

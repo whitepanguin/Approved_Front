@@ -1,5 +1,7 @@
-"use client"
+"use client";
 
+
+import type React from "react";
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import MainLayout from "@/components/layout/main-layout"
@@ -40,13 +42,14 @@ export default function HomePage() {
 
   const handleSearch = (type: "ai" | "normal") => {
     if (searchQuery.trim()) {
-      addToSearchHistory(searchQuery)
-      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`)
+      addToSearchHistory(searchQuery);
+      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
+
       const mainSection = document.getElementById("main")
       if (mainSection) {
         mainSection.scrollIntoView({ behavior: "smooth" })
@@ -54,8 +57,9 @@ export default function HomePage() {
           addToSearchHistory(searchQuery)
         }
       }
+
     }
-  }
+  };
 
   return (
     <>
@@ -132,7 +136,6 @@ export default function HomePage() {
                   className="flex-1 py-4 pr-4 outline-none border-none text-base"
                 />
               </div>
-
               {/* ✅ 지도 버튼을 아이콘으로 변경 */}
               <Link
                 href="/map"
@@ -140,8 +143,8 @@ export default function HomePage() {
               >
                 <i className="fas fa-map-marked-alt text-white text-lg"></i>
               </Link>
-            </div>
 
+            </div>
             <div className="w-full max-w-6xl flex justify-start items-center">
               <Link
                 href="/popular"
@@ -151,10 +154,13 @@ export default function HomePage() {
                 지금 인기있는 법률 검색어
               </Link>
 
+
             </div>
           </div>
         </div>
+
       </MainLayout>
     </>
   )
+
 }
