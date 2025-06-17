@@ -8,6 +8,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/modules/user";
+import { faCommentDots } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import PostCard from "@/components/postCard/postCard"; // 꼭 경로 맞게
 import PostModal from "@/components/postModal/postModal";
@@ -15,31 +17,34 @@ type Post = {
   _id: string;
   title: string;
   content: string;
-  date: string;        
+  date: string;
   preview?: string;
-  userid?: string;     
+  userid?: string;
   author?: string;
   category?: string;
   views?: number;
   likes?: number;
   comments?: number;
   emoji?: string;
-   createdAt: string | Date;
+  createdAt: string | Date;
 };
-
-
-
 
 type Comment = {
   _id: string;
+  postId: string; //댓글 모달
   userid: string;
   content: string;
   createdAt: string | Date;
-  postTitle: string; 
+  postTitle: string;
 };
 
-
 export default function MyPage() {
+  const PER_PAGE = 10; // 탭 공통 개수
+  const [page, setPage] = useState({
+    posts: 1,
+    comments: 1,
+    likes: 1,
+  });
   // 🔹 Redux 및 로그인 관련
   const dispatch = useDispatch();
   const isLogin = useSelector((state: RootState) => state.user.isLogin);
@@ -237,6 +242,54 @@ export default function MyPage() {
       console.error("좋아요 상태 불러오기 실패:", err);
       setLiked(false);
       setLikeCount(0);
+    }
+  };
+
+  // const openPostModalById = async (id: string) => {
+  //   if (!id || id.length !== 24) {
+  //     alert("❌ 잘못된 게시글 ID입니다.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${id}`);
+  //     if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  //     const post = await r.json();
+  //     openPostModal(post);
+  //   } catch (err) {
+  //     console.error("❌ 게시글 불러오기 실패:", err);
+  //     alert("게시글을 가져오지 못했습니다.");
+  //   }
+  // };
+
+  /** 댓글을 클릭했을 때 실행 */
+  const openPostFromComment = async (comment: Comment) => {
+    // 1️⃣ title로 내 글 / 좋아요 글 배열에서 먼저 찾아보기
+    let post =
+      myPosts.find((p) => p.title === comment.postTitle) ||
+      likedPosts.find((p) => p.title === comment.postTitle);
+
+    // 2️⃣ 못 찾았으면 서버에 '제목 검색' 요청 (이미 존재하는 검색 API 활용)
+    if (!post) {
+      try {
+        const r = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/search?title=` +
+            encodeURIComponent(comment.postTitle)
+        );
+        if (r.ok) {
+          const list = await r.json();
+          post = list[0]; // 첫 번째 결과 사용 (필요하면 더 정교하게)
+        }
+      } catch (err) {
+        console.error("🔴 제목 검색 실패:", err);
+      }
+    }
+
+    // 3️⃣ post가 확보되면 모달 열기
+    if (post) {
+      openPostModal(post);
+    } else {
+      alert("❌ 관련 게시글을 찾을 수 없습니다.");
     }
   };
 
@@ -674,15 +727,23 @@ export default function MyPage() {
 
   // 프로필 입력 필드 값 변경 핸들러
   const handleInputChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-) => {
-  const { name, value } = e.target;
-  setProfileData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setProfileData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
+  // 배열을 잘라서 현재 탭에 보여줄 목록만 반환
+  const getPaged = <T,>(list: T[], tab: keyof typeof page) => {
+    const start = (page[tab] - 1) * PER_PAGE;
+    return list.slice(start, start + PER_PAGE);
+  };
+
+  // 총 페이지 수 계산
+  const totalPages = (len: number) => Math.ceil(len / PER_PAGE);
 
   // 마이페이지 탭 렌더링 함수
   const renderTabContent = () => {
@@ -834,14 +895,17 @@ export default function MyPage() {
         );
 
       case "posts": {
-        /* 1) 정렬 옵션 - JSX 밖 변수 */
+        /* 1) 정렬 옵션 – JSX 밖 변수 */
         const sortOptions = [
           { key: "latest", label: "최신순" },
           { key: "likes", label: "인기순" },
           { key: "comments", label: "댓글순" },
         ];
 
-        /* 2) 반환 JSX */
+        /* 2) 현재 페이지에 보여줄 글 10개 */
+        const pagedPosts = getPaged(sortedPosts, "posts");
+
+        /* 3) 반환 JSX */
         return (
           <>
             <div className="space-y-6">
@@ -851,27 +915,27 @@ export default function MyPage() {
                   내가 쓴 글
                 </h3>
 
-                <div className="flex gap-2">
-                  <select
-                    value={sortKey}
-                    onChange={(e) =>
-                      setSortKey(
-                        e.target.value as "latest" | "likes" | "comments"
-                      )
-                    }
-                    className="p-2 border border-gray-300 rounded-lg text-sm"
-                  >
-                    <option value="latest">최신순</option>
-                    <option value="likes">인기순</option>
-                    <option value="comments">댓글순</option>
-                  </select>
-                </div>
+                <select
+                  value={sortKey}
+                  onChange={(e) =>
+                    setSortKey(
+                      e.target.value as "latest" | "likes" | "comments"
+                    )
+                  }
+                  className="p-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  {sortOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* 게시글 리스트 */}
-              {Array.isArray(sortedPosts) && sortedPosts.length > 0 ? (
+              {pagedPosts.length > 0 ? (
                 <div className="space-y-4">
-                  {sortedPosts.map((post) => (
+                  {pagedPosts.map((post) => (
                     <PostCard
                       key={post._id}
                       post={{
@@ -896,23 +960,32 @@ export default function MyPage() {
                 </div>
               )}
 
-              {/* 페이지네이션 */}
-              <div className="flex justify-center mt-6">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <button
-                      key={num}
-                      className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
-                        num === 1
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : ""
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  ))}
+              {/* 페이지네이터 */}
+              {sortedPosts.length > PER_PAGE && (
+                <div className="flex justify-center mt-6">
+                  <div className="flex gap-1">
+                    {Array.from(
+                      { length: totalPages(sortedPosts.length) },
+                      (_, i) => i + 1
+                    ).map((num) => (
+                      <button
+                        key={num}
+                        onClick={() =>
+                          setPage((prev) => ({ ...prev, posts: num }))
+                        }
+                        className={`w-9 h-9 flex items-center justify-center border
+                                      border-gray-300 rounded text-sm ${
+                                        num === page.posts
+                                          ? "bg-blue-600 text-white border-blue-600"
+                                          : "hover:bg-gray-100"
+                                      }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* 🔍 상세 모달 */}
@@ -937,102 +1010,122 @@ export default function MyPage() {
         );
       }
 
-      case "comments":
+      case "comments": {
+        const pagedComments = getPaged(myComments, "comments");
+
         return (
           <div className="space-y-6">
             {/* 헤더 */}
             <h3 className="text-xl font-semibold text-gray-800">내 댓글</h3>
 
-            {/* 본문 – 댓글 카드 리스트ㅇ */}
+            {/* 본문 – 댓글 카드 리스트 */}
             {myComments.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
-                <i className="fas fa-comment-dots text-4xl mb-4 opacity-50" />
+                <FontAwesomeIcon
+                  icon={faCommentDots}
+                  className="text-4xl mb-4 text-purple-500/50"
+                />
                 <p>작성한 댓글이 없습니다.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {myComments.map((comment) => (
-                  <div
-                    key={comment._id}
-                    className="p-5 border border-gray-200 rounded-lg
-                         hover:border-blue-600 hover:shadow transition-colors"
-                  >
-                    {/* 상단: 댓글이 달린 글 제목, 날짜 */}
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="text-base font-semibold text-gray-800 flex items-center">
-                        <i className="fas fa-message text-purple-500 mr-2" />
-                        {comment.postTitle}
-                      </h4>
+              <>
+                <div className="space-y-4">
+                  {pagedComments.map((comment) => (
+                    <div
+                      key={comment._id}
+                      onClick={() => openPostFromComment(comment)}
+                      className="p-5 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-600 hover:shadow transition-colors"
+                    >
+                      {/* 상단: 댓글이 달린 글 제목, 날짜 */}
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-base font-semibold text-gray-800 flex items-center">
+                          <FontAwesomeIcon
+                            icon={faCommentDots}
+                            className="text-purple-500 mr-2"
+                          />
+                          {comment.postTitle}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.createdAt).toLocaleDateString(
+                            "ko-KR",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </span>
+                      </div>
 
-                      {/* createdAt → 날짜 포맷 */}
-                      <span className="text-xs text-gray-500">
-                        {new Date(comment.createdAt).toLocaleDateString(
-                          "ko-KR",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
-                      </span>
+                      {/* 댓글 본문 */}
+                      <p className="text-gray-700 text-sm leading-relaxed">
+                        {comment.content}
+                      </p>
                     </div>
+                  ))}
+                </div>
 
-                    {/* 댓글 본문 */}
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {comment.content}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* (선택) 페이지네이터 – 필요 없으면 삭제 */}
-            <div className="flex justify-center mt-6">
-              <div className="flex gap-1">
-                {[1, 2, 3].map((num) => (
-                  <button
-                    key={num}
-                    className={`w-9 h-9 flex items-center justify-center border
-                          border-gray-300 rounded text-sm ${
-                            num === 1
+                {/* 페이지네이터 */}
+                {myComments.length > PER_PAGE && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex gap-1">
+                      {Array.from(
+                        { length: totalPages(myComments.length) },
+                        (_, i) => i + 1
+                      ).map((num) => (
+                        <button
+                          key={num}
+                          onClick={() =>
+                            setPage((prev) => ({ ...prev, comments: num }))
+                          }
+                          className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
+                            num === page.comments
                               ? "bg-blue-600 text-white border-blue-600"
-                              : ""
+                              : "hover:bg-gray-100"
                           }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-            </div>
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
+      }
 
-      case "likes":
+      case "likes": {
+        /* 1) 정렬 → 기존 로직 유지해 정렬된 배열 준비 */
+        const sortedLikes = [...likedPosts].sort((a, b) => {
+          if (sortKey === "likes") return (b.likes ?? 0) - (a.likes ?? 0);
+          if (sortKey === "comments")
+            return (b.comments ?? 0) - (a.comments ?? 0);
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
+        /* 2) 현재 페이지 Likes 10개 */
+        const pagedLikes = getPaged(sortedLikes, "likes");
+
+        /* 3) 반환 JSX */
         return (
           <div className="space-y-6">
-            {/* ------ 헤더 ------ */}
+            {/* 헤더 */}
             <h3 className="text-xl font-semibold text-gray-800">좋아요한 글</h3>
-            {/* ------ 카드 리스트 ------ */}
+
+            {/* 카드 리스트 */}
             {likedPosts.length === 0 ? (
-              /* 빈 상태 */
               <div className="text-center py-12 text-gray-500">
                 <i className="fas fa-heart text-4xl mb-4 opacity-50" />
                 <p>좋아요한 글이 없습니다.</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {[...likedPosts]
-                  .sort((a, b) => {
-                    if (sortKey === "likes")
-                      return (b.likes ?? 0) - (a.likes ?? 0);
-                    if (sortKey === "comments")
-                      return (b.comments ?? 0) - (a.comments ?? 0);
-                    return (
-                      new Date(b.createdAt).getTime() -
-                      new Date(a.createdAt).getTime()
-                    );
-                  })
-                  .map((post) => (
+              <>
+                <div className="space-y-4">
+                  {pagedLikes.map((post) => (
                     <PostCard
                       key={post._id}
                       post={{
@@ -1051,26 +1144,40 @@ export default function MyPage() {
                       onClick={() => openPostModal(post)}
                     />
                   ))}
-              </div>
-            )}
+                </div>
 
-            {/* ------ (선택) 페이지네이션 ------ */}
-            <div className="flex justify-center mt-6">
-              <div className="flex gap-1">
-                {[1, 2, 3].map((num) => (
-                  <button
-                    key={num}
-                    className={`w-9 h-9 flex items-center justify-center border border-gray-300 rounded text-sm ${
-                      num === 1 ? "bg-blue-600 text-white border-blue-600" : ""
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-            </div>
+                {/* 페이지네이터 */}
+                {likedPosts.length > PER_PAGE && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex gap-1">
+                      {Array.from(
+                        { length: totalPages(likedPosts.length) },
+                        (_, i) => i + 1
+                      ).map((num) => (
+                        <button
+                          key={num}
+                          onClick={() =>
+                            setPage((prev) => ({ ...prev, likes: num }))
+                          }
+                          className={`w-9 h-9 flex items-center justify-center border
+                                      border-gray-300 rounded text-sm ${
+                                        num === page.likes
+                                          ? "bg-blue-600 text-white border-blue-600"
+                                          : "hover:bg-gray-100"
+                                      }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
+      }
+
       case "settings":
         return (
           <div className="space-y-6">
@@ -1131,7 +1238,6 @@ export default function MyPage() {
                     src={profileSrc}
                     alt="프로필 이미지"
                     className="w-24 h-24 rounded-full object-cover"
-                   
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">
