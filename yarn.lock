@@ -1010,7 +1010,7 @@
 
 "@reduxjs/toolkit@^2.8.2":
   version "2.8.2"
-  resolved "https://registry.npmjs.org/@reduxjs/toolkit/-/toolkit-2.8.2.tgz"
+  resolved "https://registry.yarnpkg.com/@reduxjs/toolkit/-/toolkit-2.8.2.tgz#f4e9f973c6fc930c1e0f3bf462cc95210c28f5f9"
   integrity sha512-MYlOhQ0sLdw4ud48FoC5w0dH9VfWQjtCjreKwYTT3l+r427qYC5Y8PihNutepr8XrNaBUDQo9khWUwQxZaqt5A==
   dependencies:
     "@standard-schema/spec" "^1.0.0"
@@ -1022,12 +1022,12 @@
 
 "@standard-schema/spec@^1.0.0":
   version "1.0.0"
-  resolved "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.0.0.tgz"
+  resolved "https://registry.yarnpkg.com/@standard-schema/spec/-/spec-1.0.0.tgz#f193b73dc316c4170f2e82a881da0f550d551b9c"
   integrity sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==
 
 "@standard-schema/utils@^0.3.0":
   version "0.3.0"
-  resolved "https://registry.npmjs.org/@standard-schema/utils/-/utils-0.3.0.tgz"
+  resolved "https://registry.yarnpkg.com/@standard-schema/utils/-/utils-0.3.0.tgz#3d5e608f16c2390c10528e98e59aef6bf73cae7b"
   integrity sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==
 
 "@swc/counter@0.1.3":
@@ -1114,7 +1114,7 @@
 
 "@types/use-sync-external-store@^0.0.6":
   version "0.0.6"
-  resolved "https://registry.npmjs.org/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz"
+  resolved "https://registry.yarnpkg.com/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz#60be8d21baab8c305132eb9cb912ed497852aadc"
   integrity sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg==
 
 ansi-regex@^2.0.0:
@@ -1917,7 +1917,7 @@ iconv-lite@^0.6.2:
 
 immer@^10.0.3:
   version "10.1.1"
-  resolved "https://registry.npmjs.org/immer/-/immer-10.1.1.tgz"
+  resolved "https://registry.yarnpkg.com/immer/-/immer-10.1.1.tgz#206f344ea372d8ea176891545ee53ccc062db7bc"
   integrity sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==
 
 input-otp@1.4.1:
@@ -2274,7 +2274,18 @@ promise@^7.1.1:
   dependencies:
     asap "~2.0.3"
 
-prop-types@^15.6.0, prop-types@^15.6.2, prop-types@^15.8.1:
+
+postcss@^8.4.47, postcss@^8.5:
+  version "8.5.4"
+  resolved "https://registry.npmjs.org/postcss/-/postcss-8.5.4.tgz"
+  integrity sha512-QSa9EBe+uwlGTFmHsPKokv3B/oEMQZxfqW0QqNCyhpa6mB1afzulwn8hihglqAb2pOw+BJgNlmXQ8la2VeHB7w==
+  dependencies:
+    nanoid "^3.3.11"
+    picocolors "^1.1.1"
+    source-map-js "^1.2.1"
+
+prop-types@^15.6.2, prop-types@^15.8.1:
+
   version "15.8.1"
   resolved "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -2293,6 +2304,7 @@ react-day-picker@8.10.1:
   resolved "https://registry.npmjs.org/react-day-picker/-/react-day-picker-8.10.1.tgz"
   integrity sha512-TMx7fNbhLk15eqcMt+7Z7S2KF7mfTId/XJDjKE8f+IUcFn0l08/kI4FiYTL/0yuOLmEcbR4Fwe3GJf/NiiMnPA==
 
+
 react-dom@16.4.2:
   version "16.4.2"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-16.4.2.tgz"
@@ -2309,6 +2321,7 @@ react-dom@^19.1.0:
   integrity sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==
   dependencies:
     scheduler "^0.26.0"
+
 
 react-fullpage@^0.1.19:
   version "0.1.19"
@@ -2336,7 +2349,7 @@ react-is@^18.3.1:
 
 react-redux@^9.2.0:
   version "9.2.0"
-  resolved "https://registry.npmjs.org/react-redux/-/react-redux-9.2.0.tgz"
+  resolved "https://registry.yarnpkg.com/react-redux/-/react-redux-9.2.0.tgz#96c3ab23fb9a3af2cb4654be4b51c989e32366f5"
   integrity sha512-ROY9fvHhwOD9ySfrF0wmvu//bKCQ6AeZZq1nJNtbDC+kk5DuSuNX/n6YWYF/SYy7bSba4D4FSz8DJeKY/S/r+g==
   dependencies:
     "@types/use-sync-external-store" "^0.0.6"
@@ -2418,6 +2431,7 @@ react@16.4.2:
     object-assign "^4.1.1"
     prop-types "^15.6.0"
 
+
 react@^19.1.0:
   version "19.1.0"
   resolved "https://registry.npmjs.org/react/-/react-19.1.0.tgz"
@@ -2465,7 +2479,7 @@ reduce-reducers@1.0.4:
 
 redux-actions@^3.0.3:
   version "3.0.3"
-  resolved "https://registry.npmjs.org/redux-actions/-/redux-actions-3.0.3.tgz"
+  resolved "https://registry.yarnpkg.com/redux-actions/-/redux-actions-3.0.3.tgz#2d3ebce1f7ceed2825ee9ce9898ea509823b90ff"
   integrity sha512-ca+ySXmXWrxDqtauRA6lQtjmRO8Z9Ruog3wbb8wDq4RVW9Y677Nl/AXoJPlxJqH0mpY9QGkg03NkAJwTcyN2pQ==
   dependencies:
     just-curry-it "5.3.0"
@@ -2473,12 +2487,12 @@ redux-actions@^3.0.3:
 
 redux-thunk@^3.1.0:
   version "3.1.0"
-  resolved "https://registry.npmjs.org/redux-thunk/-/redux-thunk-3.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/redux-thunk/-/redux-thunk-3.1.0.tgz#94aa6e04977c30e14e892eae84978c1af6058ff3"
   integrity sha512-NW2r5T6ksUKXCabzhL9z+h206HQw/NJkcLm1GPImRQ8IzfXwRGqjVhKJGauHirT0DAuyy6hjdnMZaRoAcy0Klw==
 
 redux@^5.0.1:
   version "5.0.1"
-  resolved "https://registry.npmjs.org/redux/-/redux-5.0.1.tgz"
+  resolved "https://registry.yarnpkg.com/redux/-/redux-5.0.1.tgz#97fa26881ce5746500125585d5642c77b6e9447b"
   integrity sha512-M9/ELqF6fy8FwmkpnF0S3YKOqMyoWJ4+CS5Efg2ct3oY9daQvd/Pc71FpGZsVsbl3Cpb+IIcjBDUnnyBdQbq4w==
 
 regenerator-runtime@^0.11.0:
@@ -2488,7 +2502,7 @@ regenerator-runtime@^0.11.0:
 
 reselect@^5.1.0:
   version "5.1.1"
-  resolved "https://registry.npmjs.org/reselect/-/reselect-5.1.1.tgz"
+  resolved "https://registry.yarnpkg.com/reselect/-/reselect-5.1.1.tgz#c766b1eb5d558291e5e550298adb0becc24bb72e"
   integrity sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==
 
 resolve@^1.1.7, resolve@^1.22.8:
