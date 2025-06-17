@@ -22,7 +22,7 @@ const UserInitalValue = {
 
 const user = handleActions(
   {
-    [SET_PREVIOUS_URL]: (state = UserInitalValue, action) => ({
+    [SET_PREVIOUS_URL]: (state, action) => ({
       ...state,
       previousUrl: action.payload,
     }),

@@ -30,17 +30,17 @@ export default function LoginPage() {
   const locationGoogle = () => {
     localStorage.removeItem("jwtToken");
     console.log("구글 버튼");
-    window.location.href = "http://localhost:8000/auth/google";
+    window.location.href = "http://localhost:8000/oauth2/authorization/google";
   };
   const locationKakao = () => {
     localStorage.removeItem("jwtToken");
     console.log("카카오 버튼");
-    window.location.href = "http://localhost:8000/auth/kakao";
+    window.location.href = "http://localhost:8000/oauth2/authorization/kakao";
   };
   const locationNaver = () => {
     localStorage.removeItem("jwtToken");
     console.log("네이버 버튼");
-    window.location.href = "http://localhost:8000/auth/naver";
+    window.location.href = "http://localhost:8000/oauth2/authorization/naver";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,15 +59,14 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
-
+      console.log(data);
       if (response.ok) {
-        // alert(data.message || "로그인에 성공했습니다.");
-        localStorage.setItem("jwtToken", data.jwtToken);
+        alert(data.message || "로그인에 성공했습니다.");
+        localStorage.setItem("jwtToken", data.token);
 
-        alert(data.message);
         router.push("/");
       } else {
-        throw new Error(data.message || "로그인에 실패했습니다.");
+        alert(data.message || "로그인에 실패했습니다.");
       }
     } catch (error) {
       setErrorMsg("서버와의 연결에 실패했습니다.");
@@ -98,7 +97,7 @@ export default function LoginPage() {
 
   return (
     <MainLayout>
-      <div className="flex justify-center items-center min-h-[calc(100vh-80px)] p-5">
+      <div className="margin-top-100px flex justify-center items-center min-h-[calc(100vh-80px)] p-5">
         <div className="bg-white rounded-2xl p-10 shadow-xl w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-5">

@@ -1,10 +1,10 @@
-"use client"
-import { useState } from "react"
-import MainLayout from "@/components/layout/main-layout"
+"use client";
+import MainLayout from "@/components/layout/main-layout";
+import { useState } from "react";
 
 export default function MapPage() {
-  const [selectedRegion, setSelectedRegion] = useState("서울특별시")
-  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedRegion, setSelectedRegion] = useState("서울특별시");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const regions = [
     "서울특별시",
@@ -24,7 +24,7 @@ export default function MapPage() {
     "경상북도",
     "경상남도",
     "제주특별자치도",
-  ]
+  ];
 
   const categories = [
     { id: "all", name: "전체", icon: "fas fa-list" },
@@ -33,7 +33,7 @@ export default function MapPage() {
     { id: "construction", name: "건축", icon: "fas fa-hammer" },
     { id: "environment", name: "환경", icon: "fas fa-leaf" },
     { id: "transport", name: "교통", icon: "fas fa-car" },
-  ]
+  ];
 
   const sampleData = [
     {
@@ -60,10 +60,12 @@ export default function MapPage() {
       category: "construction",
       services: ["건축허가", "도시계획", "주택관련"],
     },
-  ]
+  ];
 
   const filteredData =
-    selectedCategory === "all" ? sampleData : sampleData.filter((item) => item.category === selectedCategory)
+    selectedCategory === "all"
+      ? sampleData
+      : sampleData.filter((item) => item.category === selectedCategory);
 
   return (
     <MainLayout>
@@ -72,7 +74,9 @@ export default function MapPage() {
           <h1 className="text-3xl text-blue-600 mb-2 flex items-center gap-2">
             <i className="fas fa-map-marked-alt"></i> 지도
           </h1>
-          <p className="text-gray-600">지역별 인허가 관련 기관 정보를 확인하세요</p>
+          <p className="text-gray-600">
+            지역별 인허가 관련 기관 정보를 확인하세요
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -88,7 +92,9 @@ export default function MapPage() {
                   key={region}
                   onClick={() => setSelectedRegion(region)}
                   className={`p-3 text-left rounded-lg transition-all ${
-                    selectedRegion === region ? "bg-blue-600 text-white" : "bg-gray-50 text-gray-700 hover:bg-blue-50"
+                    selectedRegion === region
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-50 text-gray-700 hover:bg-blue-50"
                   }`}
                 >
                   {region}
@@ -139,7 +145,9 @@ export default function MapPage() {
                     key={item.id}
                     className="border border-gray-200 rounded-lg p-4 hover:border-blue-600 transition-colors"
                   >
-                    <h4 className="font-semibold text-gray-800 mb-2">{item.name}</h4>
+                    <h4 className="font-semibold text-gray-800 mb-2">
+                      {item.name}
+                    </h4>
                     <div className="space-y-1 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <i className="fas fa-map-marker-alt text-blue-600"></i>
@@ -163,23 +171,7 @@ export default function MapPage() {
             </div>
           </div>
         </div>
-
-        {/* 지도 영역 (실제 지도 API 연동 시 사용) */}
-        <div className="mt-8 bg-white rounded-xl p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <i className="fas fa-map text-blue-600"></i>
-            지도 보기
-          </h3>
-          <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <i className="fas fa-map text-4xl mb-3"></i>
-              <p className="text-lg">지도 API 연동 예정</p>
-              <p className="text-sm">카카오맵 또는 네이버맵 API를 연동하여</p>
-              <p className="text-sm">실제 지도 서비스를 제공할 예정입니다.</p>
-            </div>
-          </div>
-        </div>
       </div>
     </MainLayout>
-  )
+  );
 }
