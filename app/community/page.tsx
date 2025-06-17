@@ -73,6 +73,7 @@ export default function CommunityPage() {
   );
 
   useEffect(() => {
+    console.log("유저 ID 찍어보기", user);
     const fetchCategoryCounts = async () => {
       try {
         const res = await fetch("http://localhost:8000/posts/category-counts");
@@ -126,6 +127,7 @@ export default function CommunityPage() {
 
   const fetchPostCount = async () => {
     try {
+      console.log("유저 ID 찍어보기", user);
       const res = await fetch(
         `http://localhost:8000/posts/count/${user.currentUser.name}`
       );

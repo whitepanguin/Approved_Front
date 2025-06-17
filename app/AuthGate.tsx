@@ -33,7 +33,7 @@ const AuthGate = () => {
           console.log("응답 데이터:", data);
           if (!data.user || !data.user.name)
             throw new Error("유저 데이터 없음");
-          dispatch(setUser(data.user));
+          dispatch(setUser(data));
           dispatch(setUserStatus(true));
         } catch (error) {
           console.error("JWT 인증 실패:", error);
