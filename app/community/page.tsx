@@ -7,6 +7,35 @@ import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store"; // store 타입 import 필요
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  /* 사용하는 solid 아이콘 */
+  faUsers,
+  faFilter,
+  faPen,
+  faFileAlt,
+  faComments,
+  faSearch,
+  faInfoCircle,
+  faQuestionCircle,
+  faCoffee,
+  faRocket,
+  faList,
+  faComment,
+  faChartBar,
+  faTags,
+  faEye,
+  faClock,
+  faUser,
+  faHeart,
+  faChevronLeft,
+  faChevronRight,
+} from "@fortawesome/free-solid-svg-icons";
+import {
+  /* 사용하는 regular 아이콘 */
+  faHeart as farHeart,
+  faComment as farComment,
+} from "@fortawesome/free-regular-svg-icons";
 
 interface Post {
   _id?: string;
@@ -20,6 +49,16 @@ interface Post {
   comments: number;
   isHot: boolean;
   isNotice: boolean;
+  content: string;
+}
+
+interface Comment {
+  _id: string;
+  userid: string;
+  createdAt: string | Date;
+  content?: string;
+  text?: string;
+  id: string;
 }
 
 export default function CommunityPage() {
@@ -36,6 +75,30 @@ export default function CommunityPage() {
   const user = useSelector((state: RootState) => state.user);
 
   const [postCount, setPostCount] = useState(0);
+
+  // 포스트 상세 모달 관련 상태
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [postComments, setPostComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState("");
+
+  const todayKey = () => "viewedPosts_" + new Date().toISOString().slice(0, 10);
+
+  const hasViewedToday = (id: string) => {
+    const viewed: string[] = JSON.parse(
+      localStorage.getItem(todayKey()) || "[]"
+    );
+    return viewed.includes(id);
+  };
+
+  const markViewedToday = (id: string) => {
+    const viewed: string[] = JSON.parse(
+      localStorage.getItem(todayKey()) || "[]"
+    );
+    localStorage.setItem(todayKey(), JSON.stringify([...viewed, id]));
+  };
 
   // 수정 버튼 핸들러
   const handleEdit = (post: Post) => {
@@ -71,6 +134,113 @@ export default function CommunityPage() {
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>(
     {}
   );
+
+  /* 상세 모달 OPEN ─ 조회수·댓글·좋아요 갱신 */
+  const openPostModal = async (post: Post) => {
+    try {
+      // 1) 조회수 PATCH (하루 1회)
+      if (!hasViewedToday(post._id!)) {
+        await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/view`,
+          {
+            method: "PATCH",
+          }
+        );
+        markViewedToday(post._id!);
+
+        // 카드 조회수 +1 동기화
+        setPosts((prev) =>
+          prev.map((p) =>
+            p._id === post._id ? { ...p, views: p.views + 1 } : p
+          )
+        );
+      }
+
+      // 2) 댓글 가져오기
+      const r = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`
+      );
+      setPostComments(await r.json());
+
+      // 3) 좋아요 초기화(추후 서버에서 상태 확인 로직 넣을 수 있음)
+      setLiked(false);
+      setLikeCount(post.likes);
+
+      // 4) 모달 열기
+      setSelectedPost({ ...post, content: post.content ?? post.preview });
+      setShowPostModal(true);
+    } catch (err) {
+      console.error("❌ 게시글 상세 로딩 실패:", err);
+      alert("게시글을 불러오지 못했습니다.");
+    }
+  };
+
+  /* 모달 CLOSE */
+  const closePostModal = () => {
+    setShowPostModal(false);
+    setSelectedPost(null);
+    setNewComment("");
+  };
+
+  /* 좋아요 토글 */
+  const handleToggleLike = async () => {
+    if (!selectedPost?._id) return;
+
+    const token =
+      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+    if (!token) return alert("로그인 필요!");
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const { liked: nowLiked, likes } = await res.json();
+
+      setLiked(nowLiked);
+      setLikeCount(likes);
+      setPosts((prev) =>
+        prev.map((p) => (p._id === selectedPost._id ? { ...p, likes } : p))
+      );
+    } catch (err) {
+      console.error("❌ 좋아요 실패:", err);
+    }
+  };
+
+  /* 댓글 등록 */
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedPost?._id) return;
+
+    try {
+      const payload = {
+        postId: selectedPost._id,
+        userid: user.currentUser.name,
+        content: newComment,
+      };
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const saved = await res.json();
+
+      setPostComments((prev) => [...prev, saved]);
+      setNewComment("");
+      setPosts((prev) =>
+        prev.map((p) =>
+          p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
+        )
+      );
+    } catch (err) {
+      console.error("❌ 댓글 등록 실패:", err);
+    }
+  };
 
   useEffect(() => {
     console.log("유저 ID 찍어보기", user);
@@ -371,7 +541,7 @@ export default function CommunityPage() {
       <div className="max-w-7xl mx-auto p-3 md:p-5">
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-3xl text-blue-600 mb-1 md:mb-2 flex items-center gap-2">
-            <i className="fas fa-users"></i> 커뮤니티
+            <FontAwesomeIcon icon={faUsers} /> 커뮤니티
           </h1>
           <p className="text-sm md:text-base text-gray-600">
             다양한 주제로 소통하고 정보를 공유해보세요
@@ -384,14 +554,14 @@ export default function CommunityPage() {
             onClick={() => setShowMobileFilter(!showMobileFilter)}
             className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow text-blue-600 text-sm"
           >
-            <i className="fas fa-filter"></i>
+            <FontAwesomeIcon icon={faFilter} />
             {getCategoryName(currentCategory)} {showMobileFilter ? "▲" : "▼"}
           </button>
           <button
             onClick={() => setShowWriteModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
           >
-            <i className="fas fa-pen"></i> 글쓰기
+            <FontAwesomeIcon icon={faPen} /> 글쓰기
           </button>
         </div>
 
@@ -459,10 +629,10 @@ export default function CommunityPage() {
                 </div>
                 <div className="flex gap-3 text-xs text-gray-500 mt-3">
                   <span className="flex items-center gap-1">
-                    <i className="fas fa-file-alt"></i> {data.posts}개 게시글
+                    <FontAwesomeIcon icon={faFileAlt} /> {data.posts}개 게시글
                   </span>
                   <span className="flex items-center gap-1">
-                    <i className="fas fa-comments"></i> {data.comments}개 댓글
+                    <FontAwesomeIcon icon={faComments} /> {data.comments}개 댓글
                   </span>
                 </div>
               </div>
@@ -504,14 +674,17 @@ export default function CommunityPage() {
                   onClick={() => setShowWriteModal(true)}
                   className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-blue-700 transition-colors"
                 >
-                  <i className="fas fa-pen"></i> 글쓰기
+                  <FontAwesomeIcon icon={faPen} /> 글쓰기
                 </button>
               </div>
 
               <div className="flex flex-col gap-4">
                 {filteredPosts.length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
-                    <i className="fas fa-search text-5xl mb-4 opacity-50"></i>
+                    <FontAwesomeIcon
+                      icon={faSearch}
+                      className="text-5xl mb-4 opacity-50"
+                    />
                     <p>게시글이 없습니다.</p>
                   </div>
                 ) : (
@@ -519,11 +692,7 @@ export default function CommunityPage() {
                     {currentPosts.map((post) => (
                       <div
                         key={post._id}
-                        onClick={() =>
-                          alert(
-                            `"${post.title}" 게시글 상세 페이지로 이동합니다.`
-                          )
-                        }
+                        onClick={() => openPostModal(post)}
                         className="border border-gray-200 rounded-lg p-4 transition-all duration-300 bg-white cursor-pointer hover:border-blue-600 hover:shadow-lg"
                       >
                         <div className="flex flex-wrap gap-2 mb-2">
@@ -554,10 +723,10 @@ export default function CommunityPage() {
                           {/* 작성자 + 작성일 */}
                           <div className="flex flex-wrap gap-3">
                             <span className="flex items-center gap-1">
-                              <i className="fas fa-user"></i> {post.userid}
+                              <FontAwesomeIcon icon={faUser} /> {post.userid}
                             </span>
                             <span className="flex items-center gap-1">
-                              <i className="fas fa-clock"></i>{" "}
+                              <FontAwesomeIcon icon={faClock} />{" "}
                               {formatDate(post.createdAt)}
                             </span>
                           </div>
@@ -565,13 +734,14 @@ export default function CommunityPage() {
                           {/* 조회/좋아요/댓글 + 수정삭제 */}
                           <div className="flex gap-3 mt-2 md:mt-0 items-center">
                             <span className="flex items-center gap-1">
-                              <i className="fas fa-eye"></i> {post.views}
+                              <FontAwesomeIcon icon={faEye} /> {post.views}
                             </span>
                             <button className="flex items-center gap-1 hover:text-pink-600 transition-colors">
-                              <i className="fas fa-heart"></i> {post.likes}
+                              <FontAwesomeIcon icon={faHeart} /> {post.likes}
                             </button>
                             <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
-                              <i className="fas fa-comment"></i> {post.comments}
+                              <FontAwesomeIcon icon={faComment} />{" "}
+                              {post.comments}
                             </button>
 
                             {/* 수정/삭제 버튼 (본인 글만 표시) */}
@@ -676,7 +846,10 @@ export default function CommunityPage() {
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <div className="flex items-center gap-4 mb-5">
                 <div className="relative">
-                  <i className="fas fa-user-circle text-blue-600 text-5xl"></i>
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    className="text-blue-600 text-5xl"
+                  />
                 </div>
                 <div>
                   <h3 className="text-lg text-gray-800 mb-1">
@@ -711,13 +884,13 @@ export default function CommunityPage() {
                 onClick={() => setShowWriteModal(true)}
                 className="w-full py-3 bg-blue-600 text-white border-none rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-700"
               >
-                <i className="fas fa-pen mr-2"></i> 글쓰기
+                <FontAwesomeIcon icon={faPen} className="mr-2" /> 글쓰기
               </button>
             </div>
 
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <h3 className="text-base text-gray-800 mb-4 flex items-center gap-2">
-                <i className="fas fa-tags"></i> 인기 태그
+                <FontAwesomeIcon icon={faTags} /> 인기 태그
               </h3>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -740,7 +913,7 @@ export default function CommunityPage() {
 
             <div className="bg-white rounded-xl p-5 shadow-lg">
               <h3 className="text-base text-gray-800 mb-4 flex items-center gap-2">
-                <i className="fas fa-chart-bar"></i> 커뮤니티 현황
+                <FontAwesomeIcon icon={faChartBar} /> 커뮤니티 현황
               </h3>
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between items-center">
@@ -772,7 +945,7 @@ export default function CommunityPage() {
             onClick={() => setShowWriteModal(true)}
             className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
           >
-            <i className="fas fa-pen text-lg"></i>
+            <FontAwesomeIcon icon={faChartBar} /> 커뮤니티 현황
           </button>
         </div>
       </div>
@@ -783,7 +956,7 @@ export default function CommunityPage() {
           <div className="modal-content w-full max-w-lg mx-3">
             <div className="modal-header">
               <h2>
-                <i className="fas fa-pen mr-2"></i> 글쓰기
+                <FontAwesomeIcon icon={faPen} className="mr-2" /> 글쓰기
               </h2>
               <span className="close" onClick={() => setShowWriteModal(false)}>
                 &times;
@@ -882,6 +1055,132 @@ export default function CommunityPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 게시글 상세 모달 */}
+      {showPostModal && selectedPost && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-3xl bg-white rounded-lg shadow-lg">
+            {/* -------- header -------- */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold truncate">
+                {selectedPost.title}
+              </h2>
+              <button
+                onClick={closePostModal}
+                className="text-2xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* -------- body -------- */}
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* 메타 정보 */}
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <div className="flex flex-wrap gap-4">
+                  <span>
+                    <FontAwesomeIcon icon={faUser} className="mr-1" />
+                    {selectedPost.userid}
+                  </span>
+                  <span>
+                    <FontAwesomeIcon icon={faClock} className="mr-1" />
+                    {formatDate(selectedPost.createdAt)}
+                  </span>
+                </div>
+                <div className="flex gap-4">
+                  <span>
+                    <FontAwesomeIcon icon={faEye} className="mr-1" />
+                    {selectedPost.views}
+                  </span>
+                  <span>
+                    <FontAwesomeIcon icon={faHeart} className="mr-1" />
+                    {likeCount}
+                  </span>
+                  <span>
+                    <FontAwesomeIcon icon={faComment} className="mr-1" />
+                    {postComments.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* 본문 */}
+              <p className="whitespace-pre-line leading-relaxed text-gray-800">
+                {selectedPost.content ?? selectedPost.preview}
+              </p>
+
+              {/* 좋아요 / 댓글 버튼 영역 */}
+              <div className="flex items-center gap-6 text-gray-600">
+                <button
+                  onClick={handleToggleLike}
+                  className="flex items-center gap-1 hover:text-pink-600"
+                >
+                  <FontAwesomeIcon icon={liked ? faHeart : farHeart} />
+                  <span>{likeCount}</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    document.getElementById("commentInput")?.focus()
+                  }
+                  className="flex items-center gap-1 hover:text-blue-600"
+                >
+                  <FontAwesomeIcon icon={farComment} />
+                  <span>{postComments.length}</span>
+                </button>
+              </div>
+
+              {/* ------- 댓글 리스트 ------- */}
+              <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2">
+                {postComments.length === 0 ? (
+                  <p className="text-sm text-gray-400">
+                    등록된 댓글이 없습니다.
+                  </p>
+                ) : (
+                  postComments.map((comment) => (
+                    <div
+                      key={comment._id || comment.id} // ✅ 고유 key
+                      className="p-3 bg-gray-50 rounded text-sm"
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-2">
+                          <FontAwesomeIcon
+                            icon={faUser}
+                            className="text-blue-600 text-xl"
+                          />
+                          <span className="font-medium">{comment.userid}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(comment.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">
+                        {comment.content ?? comment.text} {/* ✅ 필드명 보강 */}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* ------- 댓글 입력 ------- */}
+              <div className="flex items-center gap-2 pt-4 border-t">
+                <input
+                  id="commentInput"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                  placeholder="댓글을 입력하세요…"
+                  className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring"
+                />
+                <button
+                  onClick={handleAddComment}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                >
+                  등록
+                </button>
+              </div>
             </div>
           </div>
         </div>
