@@ -65,78 +65,20 @@ export default function AdminPage() {
     },
   ];
 
-  const allPosts = [
-    {
-      id: 1,
-      title: "오늘 드디어 사업자등록증을 받았습니다!",
-      author: "홍길동",
-      category: "인허가",
-      createdAt: "2023.06.03",
-      views: 654,
-      likes: 102,
-      comments: 45,
-      status: "정상",
-    },
-    {
-      id: 2,
-      title: "건축허가 관련 질문드립니다",
-      author: "건축초보",
-      category: "Q&A",
-      createdAt: "2023.06.02",
-      views: 876,
-      likes: 45,
-      comments: 28,
-      status: "정상",
-    },
-    {
-      id: 3,
-      title: "음식점 영업허가 신청 시 주의사항",
-      author: "음식점사장",
-      category: "인허가",
-      createdAt: "2023.06.01",
-      views: 1245,
-      likes: 89,
-      comments: 67,
-      status: "신고됨",
-    },
-  ];
+  // const allPosts = [
+  //   {
+  //     id: 1,
+  //     title: "오늘 드디어 사업자등록증을 받았습니다!",
+  //     author: "홍길동",
+  //     category: "인허가",
+  //     createdAt: "2023.06.03",
+  //     views: 654,
+  //     likes: 102,
+  //     comments: 45,
+  //     status: "정상",
+  //   },
+  // ];
 
-  const userList = [
-    {
-      id: 1,
-      name: "홍길동",
-      email: "hong@example.com",
-      businessType: "음식점업",
-      joinDate: "2023.05.15",
-      posts: 15,
-      comments: 42,
-      status: "활성",
-      lastLogin: "2023.06.03",
-    },
-    {
-      id: 2,
-      name: "김사장",
-      email: "kim@example.com",
-      businessType: "소매업",
-      joinDate: "2023.04.20",
-      posts: 8,
-      comments: 23,
-      status: "활성",
-      lastLogin: "2023.06.02",
-    },
-    {
-      id: 3,
-      name: "이대표",
-      email: "lee@example.com",
-      businessType: "서비스업",
-      joinDate: "2023.03.10",
-      posts: 3,
-      comments: 12,
-      status: "정지",
-      lastLogin: "2023.05.28",
-    },
-  ];
-  // 총 계수 데이터 불러오는 공간
   useEffect(() => {
     const getUsercount = async () => {
       try {
@@ -190,6 +132,112 @@ export default function AdminPage() {
 
     getReportcount();
   }, [reportCount]);
+  interface Post {
+  id: string; // ← 백엔드에서는 id가 String 타입이므로 수정
+  title: string;
+  content: string;
+  preview: string;
+  userid: string;
+  category: string;
+  tags: string[];
+  comments: number;
+  likes: number;
+  views: number;
+  hot: boolean;         // ✔ isHot → hot
+  notice: boolean;      // ✔ isNotice → notice
+  reported: boolean;    // ✔ isReported → reported
+  createdAt: string;
+  updatedAt: string;
+  reports: number;
+  _class: string;
+}
+
+
+
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+  const fetchAllPosts = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/posts", {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("서버 응답 오류");
+      }
+
+      const data = await response.json();
+      console.log("전체 게시글:", data);
+      setAllPosts(data);
+    } catch (error) {
+      console.error("전체 게시글 가져오기 실패:", error);
+    }
+  };
+
+  fetchAllPosts();
+}, []);
+
+interface User {
+  id: number;
+  email: string;
+  name: string;
+  userid: string;
+  birthDate: string;
+  phone: string;
+  businessType: string;
+  address: string;
+  profile: string;
+  provider: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  password: string | null;
+  likedPosts: string[];
+  isReported: boolean;
+}
+
+  const [userList, setUserList] = useState<User[]>([]);
+
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/users/allUsers", {
+          method: "GET",
+        });
+
+        if (!response.ok) {
+          throw new Error("서버 응답 오류");
+        }
+
+        const data = await response.json();
+        console.log("전체 회원 정보:", data); // 🔍 콘솔 출력
+        setUserList(data);
+      } catch (error) {
+        console.error("전체 회원 정보 가져오기 실패:", error);
+      }
+    };
+
+    fetchAllUsers();
+  }, []); // ✅ 최초 한 번만 실행
+
+  const handleDelete = async (postId: number) => {
+  try {
+    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+      method: "DELETE",
+    });
+
+    if (response.ok) {
+      console.log("삭제 성공!");
+      // 상태에서 해당 글 제거
+      setAllPosts((prev) => prev.filter((post) => post.id !== String(postId)));
+    } else {
+      console.error("삭제 실패");
+    }
+  } catch (err) {
+    console.error("에러 발생:", err);
+  }
+};
+
 
   const handleQuickReply = (qnaId: number, reply: string) => {
     console.log(`QnA ${qnaId}에 답변: ${reply}`);
@@ -501,7 +549,7 @@ export default function AdminPage() {
                               댓글 {post.comments}개
                             </div>
                           </td>
-                          <td className="p-3 text-gray-700">{post.author}</td>
+                          <td className="p-3 text-gray-700">{post.userid}</td>
                           <td className="p-3">
                             <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-sm">
                               {post.category}
@@ -516,20 +564,24 @@ export default function AdminPage() {
                           <td className="p-3">
                             <span
                               className={`px-2 py-1 rounded text-sm ${
-                                post.status === "정상"
-                                  ? "bg-green-100 text-green-600"
-                                  : "bg-red-100 text-red-600"
+                                post.reported
+                                  ? "bg-red-100 text-red-600"
+                                  : "bg-green-100 text-green-600"
                               }`}
                             >
-                              {post.status}
+                              {post.reported ? "신고" : "정상"}
                             </span>
                           </td>
                           <td className="p-3">
                             <div className="flex gap-1">
-                              <button className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs hover:bg-blue-200">
-                                수정
-                              </button>
-                              <button className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
+                              
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault(); // 폼 제출 막기
+                                  handleDelete(post.id);
+                                }}
+                                className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
+                              >
                                 삭제
                               </button>
                             </div>
@@ -653,7 +705,7 @@ export default function AdminPage() {
                           <td className="p-3 text-gray-600">
                             {user.businessType}
                           </td>
-                          <td className="p-3 text-gray-600">{user.joinDate}</td>
+                          <td className="p-3 text-gray-600">{user.createdAt}</td>
                           <td className="p-3 text-gray-600">
                             <div className="text-sm">
                               <div>글 {user.posts}개</div>
@@ -663,7 +715,7 @@ export default function AdminPage() {
                           <td className="p-3">
                             <span
                               className={`px-2 py-1 rounded text-sm ${
-                                user.status === "활성"
+                                user.status === "true"
                                   ? "bg-green-100 text-green-600"
                                   : "bg-red-100 text-red-600"
                               }`}
