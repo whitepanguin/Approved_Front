@@ -188,6 +188,7 @@ export default function MyPage() {
   // 모달 열기
   // 📌 수정본
   const openPostModal = async (post: Post) => {
+    console.log("🔍 post._id:", post._id, typeof post._id);
     // 1) 우선 모달 열고 현재 글 기억
     setSelectedPost(post);
     setShowPostModal(true);
@@ -240,45 +241,48 @@ export default function MyPage() {
       setComments([]);
     }
 
-    // 4) 좋아요 상태 / 개수 불러오기 ───────────────────
-    try {
-      const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const p = await r.json();
+   // 4) 좋아요 상태 / 개수 불러오기 ───────────────────
+try {
+  // 게시글 좋아요 수 가져오기
+  const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const p = await r.json();
 
-      const likesField = p.likes; // 배열 | 숫자 | undefined
-      const nowLiked = Array.isArray(likesField) // 내가 눌렀나?
-        ? likesField.includes(user?.userid)
-        : p.liked ?? false;
+  const nowLikeCnt = typeof p.likes === "number" ? p.likes : 0;
 
-      const nowLikeCnt = Array.isArray(likesField)
-        ? likesField.length
-        : typeof likesField === "number"
-        ? likesField
-        : 0;
+  // 유저의 좋아요 목록 불러오기
+  const likeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/likes/user/${user.userid}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const likeList = await likeRes.json();
+  const nowLiked = likeList.some((like: any) => like.postId?._id === post._id);
 
-      setLiked(nowLiked);
-      setLikeCount(nowLikeCnt);
+  setLiked(nowLiked);
+  setLikeCount(nowLikeCnt);
 
-      // 카드에 즉시 반영
-      setMyPosts((prev) =>
-        prev.map((p) => (p._id === post._id ? { ...p, likes: nowLikeCnt } : p))
-      );
-      // 모달 post 최신화
-      setSelectedPost((prev) => (prev ? { ...prev, likes: nowLikeCnt } : prev));
-    } catch (err) {
-      console.error("좋아요 상태 불러오기 실패:", err);
-      setLiked(false);
-      setLikeCount(0);
-    }
+  // 카드에도 반영
+  setMyPosts((prev) =>
+    prev.map((p) =>
+      p._id === post._id ? { ...p, likes: nowLikeCnt } : p
+    )
+  );
+
+  // 모달에도 반영
+  setSelectedPost((prev) =>
+    prev ? { ...prev, likes: nowLikeCnt } : prev
+  );
+} catch (err) {
+  console.error("좋아요 상태 불러오기 실패:", err);
+  setLiked(false);
+  setLikeCount(0);
+}
   };
 
   // const openPostModalById = async (id: string) => {
@@ -337,43 +341,56 @@ export default function MyPage() {
 
   // 좋아요 토글
   const handleToggleLike = async () => {
-    if (!selectedPost) return;
+  if (!selectedPost) return;
 
-    try {
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
-      if (!token) throw new Error("로그인 필요");
+  try {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+    if (!token) throw new Error("로그인이 필요합니다.");
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/likes/${selectedPost._id}?userid=${user.userid}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-      const { liked: nowLiked, likes } = await res.json(); // ← 백엔드가 숫자 반환
-      if (!res.ok) throw new Error("좋아요 실패");
+    const result = await res.text(); // "liked" 또는 "unliked"
+    if (!res.ok) throw new Error("좋아요 요청 실패");
 
-      // 1) 모달 내부
-      setLiked(nowLiked);
-      setLikeCount(likes);
+    // 좋아요 수 새로 가져오기
+    const likeRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like-count`
+    );
+    const { likeCount } = await likeRes.json();
 
-      // 2) 카드 리스트(마이글 탭) 동기화
-      setMyPosts((prev) =>
-        prev.map((p) => (p._id === selectedPost._id ? { ...p, likes } : p))
-      );
+    const nowLiked = result === "liked";
 
-      // 3) 현재 선택된 post 객체도 갱신 ― 모달이 닫혔다 다시 열려도 유지
-      setSelectedPost((prev) => (prev ? { ...prev, likes } : prev));
-    } catch (err) {
-      console.error("❌ 좋아요 실패:", err);
-      alert(err instanceof Error ? err.message : "좋아요 실패");
-    }
-  };
+    // 상태 업데이트
+    setLiked(nowLiked);
+    setLikeCount(likeCount);
+
+    // 리스트도 동기화
+    setMyPosts((prev) =>
+      prev.map((p) =>
+        p._id === selectedPost._id ? { ...p, likes: likeCount } : p
+      )
+    );
+
+    // 모달 포스트도 동기화
+    setSelectedPost((prev) =>
+      prev ? { ...prev, likes: likeCount } : prev
+    );
+  } catch (err) {
+    console.error("❌ 좋아요 토글 실패:", err);
+    alert(err instanceof Error ? err.message : "좋아요 실패");
+  }
+};
+
 
   // 댓글 등록
   const handleAddComment = async (content: string) => {
@@ -525,7 +542,7 @@ export default function MyPage() {
   // 내 게시글 불러오기
   useEffect(() => {
     const fetchMyPosts = async () => {
-      const userid = user?.email || user?.name;
+      const userid = user?.userid || user?.name;
       if (!userid) {
         console.warn("🟡 userid 또는 name 없음, 요청 중단");
         return;
