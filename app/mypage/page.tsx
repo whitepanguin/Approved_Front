@@ -54,12 +54,9 @@ export default function MyPage() {
   const [token, setToken] = useState<string | null>(null);
 
   // 🔹 프로필 이미지 경로 처리
-  const profileSrc = user?.profile?.startsWith("http")
-    ? user.profile
-    : user?.profile
-    ? `${process.env.NEXT_PUBLIC_API_URL}/${user.profile}`
+  const profileSrc = user?.profile
+    ? `${process.env.NEXT_PUBLIC_API_URL}${user.profile}?v=${Date.now()}`
     : "/default-profile.jpg";
-
   // 🔹 프로필 수정 상태
   const [profileData, setProfileData] = useState({
     userid: "",
@@ -105,36 +102,57 @@ export default function MyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
 
   useEffect(() => {
-    if (!user) return;
+    // ✅ 수정 1: 조건문에 user.currentUser.email, user.currentUser.userid 체크 추가
+    if (!user?.currentUser?.email || !token || !user?.currentUser?.userid)
+      return;
 
     const fetchAllStats = async () => {
-      const email = user.email;
-      const userid = user.userid;
+      // ✅ 수정 2: user에서 email과 userid 추출 시 경로 수정 (user → user.currentUser)
+      const email = user.currentUser.email;
+      const userid = user.currentUser.userid;
 
       try {
-        // 1. 내가 쓴 글
+        // ✅ 내가 쓴 글
         const postRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${email}`
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${user.userid}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (postRes.ok) {
           const posts = await postRes.json();
           setMyPosts(posts);
         }
 
-        // 2. 내가 쓴 댓글
+        // ✅ 내가 쓴 댓글
         const commentRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/comments/user/${email}`
+          `${process.env.NEXT_PUBLIC_API_URL}/comments/user/${email}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (commentRes.ok) {
           const comments = await commentRes.json();
           setMyComments(comments);
         }
 
-        // 3. 내가 좋아요한 글
+        // ✅ 좋아요한 글 (userid가 undefined였던 부분 수정 완료)
         const likeRes = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/posts/liked/${encodeURIComponent(
             userid
-          )}`
+          )}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (likeRes.ok) {
           const likes = await likeRes.json();
@@ -145,8 +163,8 @@ export default function MyPage() {
       }
     };
 
-    fetchAllStats(); // 페이지 첫 로딩 시 1회만 실행
-  }, [user]);
+    fetchAllStats();
+  }, [user, token]); // ✅ token 꼭 포함
 
   // 조회수
   const todayKey = () => "viewedPosts_" + new Date().toISOString().slice(0, 10);
@@ -179,7 +197,13 @@ export default function MyPage() {
       if (!hasViewedToday(post._id)) {
         await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/view`,
-          { method: "PATCH" }
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         markViewedToday(post._id);
 
@@ -201,7 +225,13 @@ export default function MyPage() {
     // 3) 댓글 불러오기 ────────────────────────────────
     try {
       const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setComments(await r.json());
@@ -213,7 +243,13 @@ export default function MyPage() {
     // 4) 좋아요 상태 / 개수 불러오기 ───────────────────
     try {
       const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const p = await r.json();
@@ -274,7 +310,13 @@ export default function MyPage() {
       try {
         const r = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/posts/search?title=` +
-            encodeURIComponent(comment.postTitle)
+            encodeURIComponent(comment.postTitle),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         if (r.ok) {
           const list = await r.json();
@@ -299,10 +341,7 @@ export default function MyPage() {
 
     try {
       const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("token") ||
-            sessionStorage.getItem("token")
-          : null;
+        typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
       if (!token) throw new Error("로그인 필요");
 
       const res = await fetch(
@@ -342,7 +381,11 @@ export default function MyPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
         body: JSON.stringify({
           postId: selectedPost?._id,
           userid: user?.userid,
@@ -359,28 +402,26 @@ export default function MyPage() {
   };
 
   useEffect(() => {
-    const t = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const t = localStorage.getItem("jwtToken");
     setToken(t);
   }, []);
 
   useEffect(() => {
-  if (!user) return;
+    if (!user) return;
 
-  setProfileData((prev) => ({
-    ...prev,
-    userid: user.userid ?? "",
-    phone: user.phone ?? "",
-    businessType: user.businessType ?? "",
-    joinDate: user.createdAt?.slice(0, 10) ?? ""
-  }));
-  setOriginalUserId(user.userid ?? ""); // 닉네임 변경 여부 비교용
-}, [user]);
-
+    setProfileData((prev) => ({
+      ...prev,
+      userid: user.userid ?? "",
+      phone: user.phone ?? "",
+      businessType: user.businessType ?? "",
+      joinDate: user.createdAt?.slice(0, 10) ?? "",
+    }));
+    setOriginalUserId(user.userid ?? ""); // 닉네임 변경 여부 비교용
+  }, [user]);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token =
-        localStorage.getItem("token") || sessionStorage.getItem("token");
+      const token = localStorage.getItem("jwtToken");
       if (!token) return;
 
       const res = await fetch(
@@ -402,8 +443,6 @@ export default function MyPage() {
     fetchProfile();
   }, []);
 
- 
-
   useEffect(() => {
     console.log("🔍🔍 activeTab 변경:", activeTab);
   }, [activeTab]);
@@ -418,7 +457,13 @@ export default function MyPage() {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/posts/liked/${encodeURIComponent(
             userid
-          )}`
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (!res.ok) throw new Error("좋아요한 글 조회 실패");
         setLikedPosts(await res.json());
@@ -446,7 +491,13 @@ export default function MyPage() {
         const res = await fetch(
           `${
             process.env.NEXT_PUBLIC_API_URL
-          }/comments/user/${encodeURIComponent(userid)}`
+          }/comments/user/${encodeURIComponent(userid)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
 
         if (!res.ok) throw new Error(`내 댓글 조회 실패: ${res.status}`);
@@ -482,7 +533,13 @@ export default function MyPage() {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${userid}`
+          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${userid}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
         if (!res.ok) throw new Error("내 글 조회 실패");
 
@@ -511,6 +568,7 @@ export default function MyPage() {
         {
           method: "DELETE",
           headers: {
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ email: user?.email }),
@@ -524,8 +582,8 @@ export default function MyPage() {
       alert("회원탈퇴 완료 🥲");
 
       // ✅ 토큰 제거
-      localStorage.removeItem("token");
-      sessionStorage.removeItem("token");
+      localStorage.removeItem("jwtToken");
+      sessionStorage.removeItem("jwtToken");
 
       // ✅ 메인 페이지 이동 (Next.js)
       window.location.href = "/";
@@ -549,6 +607,7 @@ export default function MyPage() {
   };
 
   // 프로필 이미지 업로드
+  // 프로필 이미지 업로드
   const handleUploadPicture = async () => {
     if (!selectedImage) {
       alert("업로드할 이미지를 선택해주세요.");
@@ -564,6 +623,9 @@ export default function MyPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/users/picture`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formData,
         }
       );
@@ -572,17 +634,22 @@ export default function MyPage() {
       if (!res.ok) throw new Error(data.message);
 
       alert("✅ 프로필 이미지 업로드 완료");
-      // 📌 필요시 user 상태 업데이트 추가 필요
+
+      // ✅ user 상태에 새 프로필 이미지 경로 반영
+      dispatch(
+        setUser({
+          ...user,
+          profile: data.filePath, // 새로 저장된 파일 경로
+        })
+      );
     } catch (err: any) {
       console.error("이미지 업로드 실패:", err.message);
       alert("이미지 업로드 중 오류가 발생했습니다.");
     }
   };
-
   // useEffect: 프로필 처음 불러올 때 닉네임 기억해두기
   useEffect(() => {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
+    const token = localStorage.getItem("jwtToken");
 
     if (!token || !user?.email) {
       console.warn("❗ 토큰 또는 user.email이 없습니다. 요청 중단");
@@ -592,7 +659,7 @@ export default function MyPage() {
     const fetchUserProfile = async () => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo?email=${user.email}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -601,6 +668,7 @@ export default function MyPage() {
         );
 
         const data = await res.json();
+        console.log("🔎 getUserInfo 응답:", data);
         setProfileData({
           userid: data.userid || "",
           name: data.name || "",
@@ -650,70 +718,76 @@ export default function MyPage() {
   };
 
   // 저장하기 – DEBUG 버전
-const handleSaveProfile = async () => {
-  // 1) 토큰 읽기
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token") || sessionStorage.getItem("token")
-      : null;
-  console.log("[handleSaveProfile] token →", token);
+  const handleSaveProfile = async () => {
+    // 1) 토큰 읽기
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+    console.log("[handleSaveProfile] token →", token);
 
-  if (!token) {
-    alert("로그인이 필요합니다.");
-    return;
-  }
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
 
-  // 2) 닉네임 변경 여부 + 중복확인 플래그 체크
-  const isNicknameChanged = profileData.userid !== originalUserId;
-  console.log("isNicknameChanged:", isNicknameChanged, "isChecked:", isChecked);
-  if (isNicknameChanged && !isChecked) {
-    alert("닉네임을 변경하셨습니다. 중복확인을 먼저 해주세요.");
-    return;
-  }
-
-  // 3) 전송할 데이터
-  const bodyToSend = {
-    userid: profileData.userid,
-    name: profileData.name,
-    email: profileData.email,
-    phone: profileData.phone,
-    businessType: profileData.businessType,
-  };
-  console.table(bodyToSend);
-
-  try {
-    // 4) fetch 요청
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/profile`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bodyToSend),
-      }
+    const isNicknameChanged = profileData.userid !== originalUserId;
+    console.log(
+      "isNicknameChanged:",
+      isNicknameChanged,
+      "isChecked:",
+      isChecked
     );
+    if (isNicknameChanged && !isChecked) {
+      alert("닉네임을 변경하셨습니다. 중복확인을 먼저 해주세요.");
+      return;
+    }
 
-    // 5) 응답 상태 및 헤더 로깅
-    console.log("response.status:", res.status);
-    console.log("response.headers:", Object.fromEntries(res.headers.entries()));
+    // 3) 전송할 데이터
+    const bodyToSend = {
+      userid: profileData.userid,
+      name: profileData.name,
+      email: profileData.email,
+      phone: profileData.phone,
+      businessType: profileData.businessType,
+    };
+    console.table(bodyToSend);
 
-    // 6) 결과 파싱
-    const result = await res.json().catch(() => ({}));
-    console.log("response.body:", result);
+    try {
+      // 4) fetch 요청
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/modify`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bodyToSend),
+        }
+      );
 
-    if (!res.ok) throw new Error(result.message || "저장 실패");
+      // 5) 응답 상태 및 헤더 로깅
+      console.log("response.status:", res.status);
+      console.log(
+        "response.headers:",
+        Object.fromEntries(res.headers.entries())
+      );
 
-    alert("✅ 저장 완료!");
-    setOriginalUserId(profileData.userid);   // 닉네임 원본 갱신
-    setIsChecked(false);                     // 중복확인 플래그 리셋
-  } catch (err) {
-    console.error("❌ 저장 에러:", err);
-    alert(err instanceof Error ? err.message : "저장 중 오류가 발생했습니다.");
-  }
-};
+      // 6) 결과 파싱
+      const result = await res.json().catch(() => ({}));
+      console.log("response.body:", result);
 
+      if (!res.ok) throw new Error(result.message || "저장 실패");
+
+      alert("✅ 저장 완료!");
+      setOriginalUserId(profileData.userid); // 닉네임 원본 갱신
+      setIsChecked(false); // 중복확인 플래그 리셋
+    } catch (err) {
+      console.error("❌ 저장 에러:", err);
+      alert(
+        err instanceof Error ? err.message : "저장 중 오류가 발생했습니다."
+      );
+    }
+  };
 
   // 프로필 입력 필드 값 변경 핸들러
   const handleInputChange = (
