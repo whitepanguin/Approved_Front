@@ -20,7 +20,7 @@ body {
   height: 100%;
   width: 0;
   position: fixed;
-  z-index: 1000;
+  z-index: 97;
   top: 0;
   left: 0;
   background-color: white;
@@ -113,13 +113,14 @@ body {
   display: flex;
   flex-direction: column;
 
-  background-image: url("/images/background2.jpg");
+  background-image: url("/images/");
   background-size: cover;
   background-position: center;
   background-repeat: repeat;
+  z-index: 30;
 }
 
-#header {
+Header {
   z-index: 99;
 }
 
@@ -131,7 +132,7 @@ body {
 .modal {
   display: none;
   position: fixed;
-  z-index: 1000;
+  z-index: 98;
   left: 0;
   top: 0;
   width: 100%;
