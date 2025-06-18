@@ -5,15 +5,29 @@ import MainLayout from "@/components/layout/main-layout";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { setUser, setUserStatus } from "../../modules/user";
+import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [userCount, setuserCount] = useState(0);
+  const [postCount, setpostCount] = useState(0);
+  const [reportCount, setreportCount] = useState(0);
   const [selectedPosts, setSelectedPosts] = useState<number[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
   );
+  const router = useRouter();
+
+  // useEffect(() => {
+  //   if (
+  //     !currentUser ||
+  //     currentUser.email?.toLowerCase() !== "admin@admin.com"
+  //   ) {
+  //     alert("접근 권한이 없습니다.");
+  //     router.push("/");
+  //   }
+  // }, [currentUser]);
 
   // 샘플 데이터
   const qnaList = [
@@ -122,6 +136,7 @@ export default function AdminPage() {
       lastLogin: "2023.05.28",
     },
   ];
+  // 총 계수 데이터 불러오는 공간
   useEffect(() => {
     const getUsercount = async () => {
       try {
@@ -139,6 +154,42 @@ export default function AdminPage() {
 
     getUsercount();
   }, [userCount]);
+
+  useEffect(() => {
+    const getPostcount = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/posts/PostCount", {
+          method: "GET",
+        });
+
+        const Postcountdata = await res.json();
+        setpostCount(Postcountdata.count);
+        // console.log(postCount);
+      } catch (error) {
+        console.error("실패:", error);
+      }
+    };
+
+    getPostcount();
+  }, [postCount]);
+
+  useEffect(() => {
+    const getReportcount = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/posts/reported/count", {
+          method: "GET",
+        });
+
+        const Reportcountdata = await res.json();
+        setreportCount(Reportcountdata.count);
+        // console.log(Reportcountdata);
+      } catch (error) {
+        console.error("실패:", error);
+      }
+    };
+
+    getReportcount();
+  }, [reportCount]);
 
   const handleQuickReply = (qnaId: number, reply: string) => {
     console.log(`QnA ${qnaId}에 답변: ${reply}`);
@@ -190,7 +241,9 @@ export default function AdminPage() {
                       <p className="text-green-600 text-sm font-medium">
                         총 게시글
                       </p>
-                      <p className="text-2xl font-bold text-green-800">325</p>
+                      <p className="text-2xl font-bold text-green-800">
+                        {postCount}
+                      </p>
                     </div>
                     <i className="fas fa-file-alt text-green-600 text-2xl"></i>
                   </div>
@@ -201,7 +254,7 @@ export default function AdminPage() {
                       <p className="text-orange-600 text-sm font-medium">
                         답변 대기
                       </p>
-                      <p className="text-2xl font-bold text-orange-800">12</p>
+                      <p className="text-2xl font-bold text-orange-800">30</p>
                     </div>
                     <i className="fas fa-question-circle text-orange-600 text-2xl"></i>
                   </div>
@@ -212,7 +265,9 @@ export default function AdminPage() {
                       <p className="text-red-600 text-sm font-medium">
                         신고 게시글
                       </p>
-                      <p className="text-2xl font-bold text-red-800">3</p>
+                      <p className="text-2xl font-bold text-red-800">
+                        {reportCount}
+                      </p>
                     </div>
                     <i className="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
                   </div>
@@ -676,7 +731,7 @@ export default function AdminPage() {
                   </div>
                   <div className="text-center">
                     <span className="block text-xl font-bold text-red-600">
-                      325
+                      {postCount}
                     </span>
                     <span className="text-xs text-gray-600">총 게시글</span>
                   </div>
