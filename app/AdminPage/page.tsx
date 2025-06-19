@@ -65,20 +65,6 @@ export default function AdminPage() {
     },
   ];
 
-  // const allPosts = [
-  //   {
-  //     id: 1,
-  //     title: "오늘 드디어 사업자등록증을 받았습니다!",
-  //     author: "홍길동",
-  //     category: "인허가",
-  //     createdAt: "2023.06.03",
-  //     views: 654,
-  //     likes: 102,
-  //     comments: 45,
-  //     status: "정상",
-  //   },
-  // ];
-
   useEffect(() => {
     const getUsercount = async () => {
       try {
@@ -237,6 +223,34 @@ interface User {
     console.error("에러 발생:", err);
   }
 };
+
+const handleAdminUserDelete = async (email) => {
+  const confirmed = window.confirm("정말 해당 유저를 탈퇴시키겠습니까?");
+  if (!confirmed) return;
+
+  try {
+    const response = await fetch("http://localhost:8080/users/remove", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      alert(data.message); // ex: 회원탈퇴 완료. 다음생에 만나요
+      // 필요 시 사용자 목록 갱신
+    } else {
+      alert(data.message || "탈퇴 실패");
+    }
+  } catch (error) {
+    console.error("탈퇴 중 에러:", error);
+    alert("서버 오류로 탈퇴 요청 실패");
+  }
+};
+
 
 
   const handleQuickReply = (qnaId: number, reply: string) => {
@@ -661,7 +675,7 @@ interface User {
                         <th className="text-left p-3">사업분야</th>
                         <th className="text-left p-3">가입일</th>
                         <th className="text-left p-3">활동</th>
-                        <th className="text-left p-3">상태</th>
+                        <th className="text-left p-3">Provider</th>
                         <th className="text-left p-3">관리</th>
                       </tr>
                     </thead>
@@ -688,9 +702,18 @@ interface User {
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                <i className="fas fa-user text-white"></i>
-                              </div>
+                              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                              <img
+                                src={user.profile || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"}
+                                alt="프로필 이미지"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+                                }}
+                              />
+                            </div>
+
+
                               <div>
                                 <div className="font-medium text-gray-800">
                                   {user.name}
@@ -714,14 +737,19 @@ interface User {
                           </td>
                           <td className="p-3">
                             <span
-                              className={`px-2 py-1 rounded text-sm ${
-                                user.status === "true"
-                                  ? "bg-green-100 text-green-600"
-                                  : "bg-red-100 text-red-600"
-                              }`}
-                            >
-                              {user.status}
-                            </span>
+  className={`px-2 py-1 rounded text-sm ${
+    user.provider === "google"
+      ? "bg-blue-100 text-blue-600"
+      : user.provider === "naver"
+      ? "bg-green-100 text-green-600"
+      : user.provider === "kakao"
+      ? "bg-yellow-100 text-yellow-600"
+      : "bg-purple-100 text-purple-600"
+  }`}
+>
+  {user.provider}
+</span>
+
                           </td>
                           <td className="p-3">
                             <div className="flex gap-1">
@@ -731,7 +759,10 @@ interface User {
                               <button className="px-2 py-1 bg-orange-100 text-orange-600 rounded text-xs hover:bg-orange-200">
                                 정지
                               </button>
-                              <button className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200">
+                              <button
+                                className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
+                                onClick={() => handleAdminUserDelete(user.email)}
+                              >
                                 삭제
                               </button>
                             </div>
