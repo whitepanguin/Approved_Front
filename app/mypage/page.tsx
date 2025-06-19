@@ -56,7 +56,7 @@ export default function MyPage() {
 
   // 🔹 프로필 이미지 경로 처리
   const profileSrc = user?.profile
-    ? `${process.env.NEXT_PUBLIC_API_URL}${user.profile}?v=${Date.now()}`
+    ? `http://localhost:8000${user.profile}?v=${Date.now()}`
     : "/default-profile.jpg";
   // 🔹 프로필 수정 상태
   const [profileData, setProfileData] = useState({
@@ -113,7 +113,7 @@ export default function MyPage() {
         const userid = user.userid;
 
         const postRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${userid}`,
+          `http://localhost:8000/posts/user/${userid}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -124,7 +124,7 @@ export default function MyPage() {
         const posts = postRes.ok ? await postRes.json() : [];
 
         const commentRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/comments/user/${email}`,
+          `http://localhost:8000/comments/user/${email}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -135,7 +135,7 @@ export default function MyPage() {
         const comments = commentRes.ok ? await commentRes.json() : [];
 
         const likeRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/likes/user/${encodeURIComponent(
+          `http://localhost:8000/likes/user/${encodeURIComponent(
             userid
           )}/posts`,
           {
@@ -200,7 +200,7 @@ export default function MyPage() {
     // 1) 조회수 PATCH (하루 1회)
     try {
       if (!hasViewedToday(postId)) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${postId}/view`, {
+        await fetch(`http://localhost:8000/posts/${postId}/view`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -227,15 +227,12 @@ export default function MyPage() {
 
     // 2) 댓글 불러오기
     try {
-      const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/comments/${postId}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const r = await fetch(`http://localhost:8000/comments/${postId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setComments(await r.json());
     } catch (err) {
@@ -245,22 +242,19 @@ export default function MyPage() {
 
     // 3) 좋아요 상태 및 개수 불러오기
     try {
-      const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/${postId}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const r = await fetch(`http://localhost:8000/posts/${postId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const p = await r.json();
 
       const nowLikeCnt = typeof p.likes === "number" ? p.likes : 0;
 
       const likeRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/likes/user/${user.userid}`,
+        `http://localhost:8000/likes/user/${user.userid}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -317,7 +311,7 @@ export default function MyPage() {
     if (!post) {
       try {
         const r = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/search?title=` +
+          `http://localhost:8000/posts/search?title=` +
             encodeURIComponent(comment.postTitle),
           {
             headers: {
@@ -360,9 +354,9 @@ export default function MyPage() {
 
     try {
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL
-        }/likes/${postId}?userid=${encodeURIComponent(userid)}`,
+        `http://localhost:8000/likes/${postId}?userid=${encodeURIComponent(
+          userid
+        )}`,
         {
           method: "PATCH",
           headers: {
@@ -377,7 +371,7 @@ export default function MyPage() {
       const result = await res.text(); // "liked" or "unliked"
 
       const countRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/${postId}/like-count`
+        `http://localhost:8000/posts/${postId}/like-count`
       );
       const { likeCount } = await countRes.json();
 
@@ -397,7 +391,7 @@ export default function MyPage() {
   const handleAddComment = async (content: string) => {
     if (!content.trim()) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
+      const res = await fetch(`http://localhost:8000/comments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -442,14 +436,11 @@ export default function MyPage() {
       const token = localStorage.getItem("jwtToken");
       if (!token) return;
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/mypage/profile`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await fetch(`http://localhost:8000/mypage/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (res.ok) {
         const data = await res.json();
@@ -473,7 +464,7 @@ export default function MyPage() {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/likes/user/${encodeURIComponent(
+          `http://localhost:8000/likes/user/${encodeURIComponent(
             userid
           )}/posts`,
           {
@@ -517,9 +508,7 @@ export default function MyPage() {
 
       try {
         const res = await fetch(
-          `${
-            process.env.NEXT_PUBLIC_API_URL
-          }/comments/user/${encodeURIComponent(userid)}`,
+          `http://localhost:8000/comments/user/${encodeURIComponent(userid)}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -560,15 +549,12 @@ export default function MyPage() {
       }
 
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/user/${userid}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const res = await fetch(`http://localhost:8000/posts/user/${userid}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         if (!res.ok) throw new Error("내 글 조회 실패");
 
         const posts = await res.json();
@@ -591,17 +577,14 @@ export default function MyPage() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/remove`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: user?.email }),
-        }
-      );
+      const res = await fetch(`http://localhost:8000/users/remove`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: user?.email }),
+      });
 
       const result = await res.json();
 
@@ -647,16 +630,13 @@ export default function MyPage() {
     formData.append("email", user?.email || "");
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/picture`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
+      const res = await fetch(`http://localhost:8000/users/picture`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -686,14 +666,11 @@ export default function MyPage() {
 
     const fetchUserProfile = async () => {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/users/getUserInfo`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await fetch(`http://localhost:8000/users/getUserInfo`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const data = await res.json();
         console.log("🔎 getUserInfo 응답:", data);
@@ -718,7 +695,7 @@ export default function MyPage() {
   const handleCheckDuplicate = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/check-duplicate?userid=${profileData.userid}`
+        `http://localhost:8000/users/check-duplicate?userid=${profileData.userid}`
       );
 
       console.log("📡 중복확인 응답 상태:", res.status);
@@ -781,17 +758,14 @@ export default function MyPage() {
 
     try {
       // 4) fetch 요청
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/users/modify`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(bodyToSend),
-        }
-      );
+      const res = await fetch(`http://localhost:8000/users/modify`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bodyToSend),
+      });
 
       // 5) 응답 상태 및 헤더 로깅
       console.log("response.status:", res.status);
