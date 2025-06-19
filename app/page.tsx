@@ -19,7 +19,9 @@ export default function HomePage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem("introPassed");
-    if (stored === "true") {
+    if (!stored) {
+      sessionStorage.setItem("introPassed", "false");
+    } else if (stored === "true") {
       setIntroPassed(true);
       document.body.style.overflow = "auto";
     } else {

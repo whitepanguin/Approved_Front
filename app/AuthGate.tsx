@@ -27,7 +27,6 @@ const AuthGate = () => {
             },
           });
 
-          if (!res.ok) throw new Error("Invalid token");
 
           const data = await res.json();
           if (searchParams.get("jwtToken")) {

@@ -689,9 +689,9 @@ export default function CommunityPage() {
                   </div>
                 ) : (
                   <>
-                    {currentPosts.map((post) => (
+                    {currentPosts.map((post, index) => (
                       <div
-                        key={post._id}
+                        key={post._id || index}
                         onClick={() => openPostModal(post)}
                         className="border border-gray-200 rounded-lg p-4 transition-all duration-300 bg-white cursor-pointer hover:border-blue-600 hover:shadow-lg"
                       >

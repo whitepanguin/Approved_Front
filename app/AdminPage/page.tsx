@@ -19,6 +19,15 @@ export default function AdminPage() {
   );
   const router = useRouter();
 
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+const [editedName, setEditedName] = useState<string>("");
+// 상태 추가
+const [editField, setEditField] = useState<{ postId: string; type: "views" | "likes" | "reports"} | null>(null);
+const [editValue, setEditValue] = useState<string>("");
+
+
+
+
   // useEffect(() => {
   //   if (
   //     !currentUser ||
@@ -119,7 +128,7 @@ export default function AdminPage() {
     getReportcount();
   }, [reportCount]);
   interface Post {
-  id: string; // ← 백엔드에서는 id가 String 타입이므로 수정
+  id: string;
   title: string;
   content: string;
   preview: string;
@@ -229,7 +238,7 @@ const handleAdminUserDelete = async (email) => {
   if (!confirmed) return;
 
   try {
-    const response = await fetch("http://localhost:8080/users/remove", {
+    const response = await fetch("http://localhost:8000/users/remove", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -242,6 +251,8 @@ const handleAdminUserDelete = async (email) => {
     if (response.ok) {
       alert(data.message); // ex: 회원탈퇴 완료. 다음생에 만나요
       // 필요 시 사용자 목록 갱신
+
+      window.location.reload();
     } else {
       alert(data.message || "탈퇴 실패");
     }
@@ -269,6 +280,83 @@ const handleAdminUserDelete = async (email) => {
     alert(`${userIds.length}명 유저 ${action} 완료`);
     setSelectedUsers([]);
   };
+         const handleSave = async (user: any) => {
+  try {
+    const response = await fetch("http://localhost:8000/users/modify", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...user, name: editedName }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.updateSuccess) {
+      alert(data.message);
+
+      // 화면에서도 수정된 이름 반영
+      setUserList((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, name: editedName } : u))
+      );
+
+      setEditingUserId(null); // 수정 모드 종료
+    } else {
+      alert(data.message || "수정 실패");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("서버 오류");
+  }
+};
+
+const handleUpdate = async (postId: string, type: "views" | "likes" | "reports", newValue: number) => {
+  try {
+    const targetPost = allPosts.find((p) => p.id === postId);
+    if (!targetPost) {
+      console.warn("post를 찾을 수 없습니다:", postId);
+      return;
+    }
+
+    const updatedPost = {
+      ...targetPost,
+      views: type === "views" ? newValue : targetPost.views,
+      likes: type === "likes" ? newValue : targetPost.likes,
+      reports: type === "reports" ? newValue : targetPost.reports,
+      updatedAt: new Date().toISOString(),
+    };
+
+    console.log("보내는 데이터:", updatedPost);
+
+    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updatedPost),
+    });
+
+    const resText = await response.text();
+    console.log("서버 응답:", resText);
+
+    if (response.ok) {
+      setAllPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, [type]: newValue } : p
+        )
+      );
+      setEditField(null);
+    } else {
+      console.error("서버 저장 실패:", resText);
+    }
+  } catch (err) {
+    console.error("수정 실패:", err);
+  }
+};
+
+
+
+
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -529,7 +617,7 @@ const handleAdminUserDelete = async (email) => {
                         <th className="text-left p-3">작성자</th>
                         <th className="text-left p-3">카테고리</th>
                         <th className="text-left p-3">작성일</th>
-                        <th className="text-left p-3">조회/좋아요</th>
+                        <th className="text-left p-3">조회/좋아요/신고됨</th>
                         <th className="text-left p-3">상태</th>
                         <th className="text-left p-3">관리</th>
                       </tr>
@@ -573,7 +661,80 @@ const handleAdminUserDelete = async (email) => {
                             {post.createdAt}
                           </td>
                           <td className="p-3 text-gray-600">
-                            {post.views} / {post.likes}
+                            {editField?.postId === post.id && editField.type === "views" ? (
+                              <input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleUpdate(post.id, "views", parseInt(editValue));
+                                  }
+                                }}
+                                className="w-12 border px-1 py-0.5 rounded"
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => {
+                                  setEditField({ postId: post.id, type: "views" });
+                                  setEditValue(String(post.views));
+                                }}
+                                className="cursor-pointer hover:underline"
+                              >
+                                {post.views}
+                              </span>
+                            )}
+                            {" / "}
+                            {editField?.postId === post.id && editField.type === "likes" ? (
+                              <input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleUpdate(post.id, "likes", parseInt(editValue));
+                                  }
+                                }}
+                                className="w-12 border px-1 py-0.5 rounded"
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => {
+                                  setEditField({ postId: post.id, type: "likes" });
+                                  setEditValue(String(post.likes));
+                                }}
+                                className="cursor-pointer hover:underline"
+                              >
+                                {post.likes}
+                              </span>
+                            )}
+                            {" / "}
+                            {editField?.postId === post.id && editField.type === "reports" ? (
+                              <input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleUpdate(post.id, "reports", parseInt(editValue));
+                                  }
+                                }}
+                                className="w-12 border px-1 py-0.5 rounded"
+                                autoFocus
+                              />
+                            ) : (
+                              <span
+                                onClick={() => {
+                                  setEditField({ postId: post.id, type: "reports" });
+                                  setEditValue(String(post.reports));
+                                }}
+                                className="cursor-pointer hover:underline"
+                              >
+                                {post.reports}
+                              </span>
+                            )}
                           </td>
                           <td className="p-3">
                             <span
@@ -610,6 +771,8 @@ const handleAdminUserDelete = async (email) => {
           </div>
         );
 
+
+ 
       case "users":
         return (
           <div className="w-full space-y-8">
@@ -715,9 +878,17 @@ const handleAdminUserDelete = async (email) => {
 
 
                               <div>
-                                <div className="font-medium text-gray-800">
-                                  {user.name}
-                                </div>
+                                {editingUserId === user.id ? (
+  <input
+    type="text"
+    value={editedName}
+    onChange={(e) => setEditedName(e.target.value)}
+    className="border rounded px-2 py-1 text-sm"
+  />
+) : (
+  <div className="font-medium text-gray-800">{user.name}</div>
+)}
+
                                 <div className="text-sm text-gray-500">
                                   최근 로그인: {user.lastLogin}
                                 </div>
@@ -737,28 +908,56 @@ const handleAdminUserDelete = async (email) => {
                           </td>
                           <td className="p-3">
                             <span
-  className={`px-2 py-1 rounded text-sm ${
-    user.provider === "google"
-      ? "bg-blue-100 text-blue-600"
-      : user.provider === "naver"
-      ? "bg-green-100 text-green-600"
-      : user.provider === "kakao"
-      ? "bg-yellow-100 text-yellow-600"
-      : "bg-purple-100 text-purple-600"
-  }`}
->
-  {user.provider}
-</span>
-
+                              className={`px-2 py-1 rounded text-sm ${
+                                user.provider === "google"
+                                  ? "bg-blue-100 text-blue-600"
+                                  : user.provider === "naver"
+                                  ? "bg-green-100 text-green-600"
+                                  : user.provider === "kakao"
+                                  ? "bg-yellow-100 text-yellow-600"
+                                  : "bg-purple-100 text-purple-600"
+                              }`}
+                            >
+                              {user.provider}
+                            </span>
                           </td>
                           <td className="p-3">
                             <div className="flex gap-1">
-                              <button className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs hover:bg-blue-200">
-                                수정
-                              </button>
-                              <button className="px-2 py-1 bg-orange-100 text-orange-600 rounded text-xs hover:bg-orange-200">
-                                정지
-                              </button>
+                              {editingUserId === user.id ? (
+                                <>
+                                  <button
+                                    className="px-2 py-1 bg-green-100 text-green-600 rounded text-xs hover:bg-green-200"
+                                    onClick={() => handleSave(user)}
+                                  >
+                                    저장
+                                  </button>
+                                  <button
+                                    className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200"
+                                    onClick={() => setEditingUserId(null)}
+                                  >
+                                    취소
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs hover:bg-blue-200"
+                                    onClick={() => {
+                                      setEditingUserId(user.id);
+                                      setEditedName(user.name); // 기존 이름을 입력창에 미리 넣기
+                                    }}
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
+                                    onClick={() => handleAdminUserDelete(user.email)}
+                                  >
+                                    삭제
+                                  </button>
+                                </>
+                              )}
+
                               <button
                                 className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
                                 onClick={() => handleAdminUserDelete(user.email)}

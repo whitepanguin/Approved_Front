@@ -37,7 +37,6 @@ type Comment = {
   postTitle: string;
   content: string;
   createdAt: string | Date;
-  postTitle: string;
 };
 
 export default function MyPage() {
