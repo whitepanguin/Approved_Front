@@ -6,11 +6,16 @@ import Link from "next/link";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "./providers";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import { useRouter } from "next/navigation";
+import { RootState } from "@/store";
+import { useSelector } from "react-redux";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [introPassed, setIntroPassed] = useState(false);
   const { addToSearchHistory } = useApp();
+  const router = useRouter();
+  const isLogin = useSelector((state: RootState) => state.user.isLogin);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("introPassed");
@@ -45,14 +50,19 @@ export default function HomePage() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const mainSection = document.getElementById("main");
-      if (mainSection) {
-        mainSection.scrollIntoView({ behavior: "smooth" });
-        if (searchQuery.trim()) {
-          addToSearchHistory(searchQuery);
-        }
+      if (!isLogin) {
+        alert("로그인 후 이용해주세요.");
+        router.push("/login");
+        return;
+      }
+
+      if (searchQuery.trim()) {
+        addToSearchHistory(searchQuery);
+        router.push(
+          `/searchpage?search=${encodeURIComponent(searchQuery.trim())}`
+        );
       }
     }
   };
