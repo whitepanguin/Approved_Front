@@ -30,7 +30,9 @@ const AuthGate = () => {
           if (!res.ok) throw new Error("Invalid token");
 
           const data = await res.json();
-          router.push("/");
+          if (searchParams.get("jwtToken")) {
+            router.push("/");
+          }
           console.log("응답 데이터:", data);
           if (!data.user || !data.user.name)
             throw new Error("유저 데이터 없음");
