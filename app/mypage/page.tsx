@@ -934,16 +934,14 @@ export default function MyPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      가입일
-                    </label>
-                    <input
+                    <label className="block text-sm font-medium text-gray-700 mb-11"></label>
+                    {/* <input
                       type="text"
                       name="joinDate"
                       value={user?.createdAt?.slice(0, 10) || ""}
                       disabled
                       className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
-                    />
+                    /> */}
 
                     <div className="flex justify-end mt-3">
                       <button
@@ -1301,9 +1299,12 @@ export default function MyPage() {
                 {/*사진 올라가는 곳 */}
                 <div className="flex justify-center">
                   <img
-                    src={profileSrc}
+                    src={profileSrc || "/images/default-profile.png"} // src가 빈 경우도 대비
                     alt="프로필 이미지"
                     className="w-24 h-24 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/images/default-profile.png";
+                    }}
                   />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">
