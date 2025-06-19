@@ -14,9 +14,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  /* Redux 상태 */
   const { currentUser, isLogin } = useSelector(
-    (state: RootState) => state.user
+    (state: RootState) => state.user || {}
   );
 
   /* 로그아웃 */

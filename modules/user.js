@@ -11,7 +11,11 @@ export const setPreviousUrl = createAction(
 );
 
 // ✅ user 전체가 아닌 user.user를 저장
-export const setUser = createAction(SET_USER, (response) => response.user);
+// null일 수 있으니 안전하게 null 처리
+export const setUser = createAction(
+  SET_USER,
+  (response) => response?.user ?? null
+);
 
 export const setUserStatus = createAction(
   SET_USER_STATUS,
