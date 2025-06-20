@@ -452,18 +452,23 @@ export default function CommunityPage() {
         } else if (Array.isArray(data.posts)) {
           postArray = data.posts;
         } else {
-          console.error(" 예기치 않은 응답:", data);
+          console.error("❌ 예기치 않은 응답:", data);
           setPosts([]);
           return;
         }
 
-        // 최신글 먼저 오도록 정렬
+        // 최신글 먼저 정렬
         const sortedPosts = postArray.sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
 
-        setPosts(sortedPosts);
+        // "dev" 카테고리 제외 후 저장
+        const filteredPosts = sortedPosts.filter(
+          (post) => post.category?.trim().toLowerCase() !== "dev"
+        );
+
+        setPosts(filteredPosts);
       } catch (err) {
         console.error("❌ 게시글 로딩 실패:", err);
         setPosts([]);
@@ -503,7 +508,9 @@ export default function CommunityPage() {
 
   const filteredPosts = posts
     .filter(
-      (post) => currentCategory === "all" || post.category === currentCategory
+      (post) =>
+        post.category !== "dev" && // ← dev 카테고리 제외
+        (currentCategory === "all" || post.category === currentCategory)
     )
     .sort((a, b) => {
       switch (currentSort) {
@@ -521,6 +528,7 @@ export default function CommunityPage() {
           return 0;
       }
     });
+
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
   const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
