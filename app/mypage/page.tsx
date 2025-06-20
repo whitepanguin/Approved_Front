@@ -107,45 +107,44 @@ export default function MyPage() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
 
- // ✅ 최초 통계 한방에 불러오기
-useEffect(() => {
-  if (!user?.userid || !token) return;
+  // ✅ 최초 통계 한방에 불러오기
+  useEffect(() => {
+    if (!user?.userid || !token) return;
 
-  const fetchAllStats = async () => {
-    try {
-      const userid = user.userid;
+    const fetchAllStats = async () => {
+      try {
+        const userid = user.userid;
 
-      const [postRes, commentRes, likeRes] = await Promise.all([
-        fetch(`http://localhost:8000/posts/user/${userid}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        // 🔽 userid 로 변경
-        fetch(`http://localhost:8000/comments/user/${userid}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(
-          `http://localhost:8000/likes/user/${encodeURIComponent(
-            userid
-          )}/posts`,
-          {
+        const [postRes, commentRes, likeRes] = await Promise.all([
+          fetch(`http://localhost:8000/posts/user/${userid}`, {
             headers: { Authorization: `Bearer ${token}` },
-          }
-        ),
-      ]);
+          }),
+          // 🔽 userid 로 변경
+          fetch(`http://localhost:8000/comments/user/${userid}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(
+            `http://localhost:8000/likes/user/${encodeURIComponent(
+              userid
+            )}/posts`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
+        ]);
 
-      setMyPosts(postRes.ok ? await postRes.json() : []);
-      setMyComments(commentRes.ok ? await commentRes.json() : []);
-      setLikedPosts(likeRes.ok ? await likeRes.json() : []);
-    } catch (e) {
-      console.error("📛 통계 불러오기 에러:", e);
-    } finally {
-      setIsStatsLoaded(true);
-    }
-  };
+        setMyPosts(postRes.ok ? await postRes.json() : []);
+        setMyComments(commentRes.ok ? await commentRes.json() : []);
+        setLikedPosts(likeRes.ok ? await likeRes.json() : []);
+      } catch (e) {
+        console.error("📛 통계 불러오기 에러:", e);
+      } finally {
+        setIsStatsLoaded(true);
+      }
+    };
 
-  fetchAllStats();
-}, [user, token]);
-
+    fetchAllStats();
+  }, [user, token]);
 
   // 조회수
   const todayKey = () => "viewedPosts_" + new Date().toISOString().slice(0, 10);
@@ -271,53 +270,55 @@ useEffect(() => {
 
   // 불만사항/신고글 작성
   const handleReportSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  /* 폼 → payload */
-  const form = new FormData(e.currentTarget);
-  const payload = {
-    category: "dev",            // 고정
-    title: form.get("title"),
-    content: form.get("content"),
-    userid: user?.userid,
-  };
+    /* 폼 → payload */
+    const form = new FormData(e.currentTarget);
+    const rawContent = (form.get("content") as string) || "";
 
-  try {
-    /*  fetch */
-    const res = await fetch("http://localhost:8000/posts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    // ✅ 미리보기 내용 (80자 + …)
+    const preview =
+      rawContent.replace(/\n+/g, " ").slice(0, 80).trim() +
+      (rawContent.length > 80 ? "…" : "");
 
-    /* 에러 판정 */
-    const resultText = await res.clone().text(); // 메시지 추출
-    if (!res.ok) throw new Error(resultText || `HTTP ${res.status}`);
+    const payload = {
+      category: "dev", // 고정
+      title: form.get("title"),
+      content: rawContent,
+      preview, // 추가됨
+      userid: user?.userid,
+    };
 
-    /* 성공 로직 */
-    alert("✅ 접수되었습니다!");
+    try {
+      /* fetch 요청 */
+      const res = await fetch("http://localhost:8000/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    // reset 먼저
-    if (e.currentTarget) {
-      e.currentTarget.reset();
+      /* 에러 판정 */
+      const resultText = await res.clone().text();
+      if (!res.ok) throw new Error(resultText || `HTTP ${res.status}`);
+
+      /* 성공 처리 */
+      alert("✅ 접수되었습니다!");
+      if (e.currentTarget) {
+        e.currentTarget.reset(); // 폼 초기화
+      }
+      setShowReportModal(false); // 모달 닫기
+    } catch (err) {
+      /* 실패 처리 */
+      alert(
+        err instanceof Error
+          ? `등록 실패: ${err.message}`
+          : "등록 중 알 수 없는 오류가 발생했습니다."
+      );
     }
-
-    // 모달 닫기
-    setShowReportModal(false);
-  } catch (err) {
-    /* 5️⃣ 실패 로직 */
-    alert(
-      err instanceof Error
-        ? `등록 실패: ${err.message}`
-        : "등록 중 알 수 없는 오류가 발생했습니다."
-    );
-  }
-};
-
-
+  };
 
   /** 댓글을 클릭했을 때 실행 */
   const openPostFromComment = async (comment: Comment) => {
@@ -1018,9 +1019,9 @@ useEffect(() => {
               {/* 게시글 리스트 */}
               {pagedPosts.length > 0 ? (
                 <div className="space-y-4">
-                  {pagedPosts.map((post) => (
+                  {pagedPosts.map((post, index) => (
                     <PostCard
-                      key={post._id}
+                      key={post._id || index}
                       post={{
                         _id: post._id,
                         title: post.title,
@@ -1113,9 +1114,9 @@ useEffect(() => {
             ) : (
               <>
                 <div className="space-y-4">
-                  {pagedComments.map((comment) => (
+                  {pagedComments.map((comment, index) => (
                     <div
-                      key={comment._id}
+                      key={comment._id || index}
                       onClick={() => openPostFromComment(comment)}
                       className="p-5 border border-gray-200 rounded-lg cursor-pointer hover:border-blue-600 hover:shadow transition-colors"
                     >
@@ -1208,9 +1209,9 @@ useEffect(() => {
             ) : (
               <>
                 <div className="space-y-4">
-                  {pagedLikes.map((post) => (
+                  {pagedLikes.map((post, index) => (
                     <PostCard
-                      key={post._id}
+                      key={post._id || index}
                       post={{
                         _id: post._id,
                         title: post.title,
@@ -1298,7 +1299,9 @@ useEffect(() => {
                 </div>
               </div>
               <div className="p-5 border border-gray-200 rounded-lg">
-                <h4 className="font-semibold text-gray-800 mb-4">불만사항 / 신고</h4>
+                <h4 className="font-semibold text-gray-800 mb-4">
+                  불만사항 / 신고
+                </h4>
                 <div className="space-y-3">
                   <button
                     onClick={() => setShowReportModal(true)}
@@ -1482,74 +1485,72 @@ useEffect(() => {
           setNewComment={setNewComment}
         />
       )}
-{showReportModal && (
-  <div className="modal open">
-    <div className="modal-content w-full max-w-lg mx-3">
-      <div className="modal-header">
-        <h2>
-          <FontAwesomeIcon icon={faPen} className="mr-2" />
-          불만사항 / 신고
-        </h2>
-        <span
-          className="close"
-          onClick={() => setShowReportModal(false)}
-        >
-          &times;
-        </span>
-      </div>
+      {showReportModal && (
+        <div className="modal open">
+          <div className="modal-content w-full max-w-lg mx-3">
+            <div className="modal-header">
+              <h2>
+                <FontAwesomeIcon icon={faPen} className="mr-2" />
+                불만사항 / 신고
+              </h2>
+              <span className="close" onClick={() => setShowReportModal(false)}>
+                &times;
+              </span>
+            </div>
 
-      {/* === 실제 폼 === */}
-      <div className="modal-body">
-        <form onSubmit={handleReportSubmit} className="flex flex-col gap-5">
-           <input type="hidden" name="category" value="dev" />
-          <div className="flex flex-col gap-2">
-            <label className="text-base font-medium text-gray-800">
-              제목
-            </label>
-            <input
-              type="text"
-              name="title"
-              placeholder="제목을 입력하세요"
-              required
-              className="px-3 py-3 border border-gray-300 rounded-lg focus:border-blue-600"
-            />
+            {/* === 실제 폼 === */}
+            <div className="modal-body">
+              <form
+                onSubmit={handleReportSubmit}
+                className="flex flex-col gap-5"
+              >
+                <input type="hidden" name="category" value="dev" />
+                <div className="flex flex-col gap-2">
+                  <label className="text-base font-medium text-gray-800">
+                    제목
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    placeholder="제목을 입력하세요"
+                    required
+                    className="px-3 py-3 border border-gray-300 rounded-lg focus:border-blue-600"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-base font-medium text-gray-800">
+                    내용
+                  </label>
+                  <textarea
+                    name="content"
+                    rows={8}
+                    placeholder="자세한 내용을 입력해주세요"
+                    required
+                    className="px-3 py-3 border border-gray-300 rounded-lg focus:border-blue-600 resize-vertical min-h-[150px]"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-4 mt-5">
+                  <button
+                    type="button"
+                    onClick={() => setShowReportModal(false)}
+                    className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    제출하기
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-base font-medium text-gray-800">
-              내용
-            </label>
-            <textarea
-              name="content"
-              rows={8}
-              placeholder="자세한 내용을 입력해주세요"
-              required
-              className="px-3 py-3 border border-gray-300 rounded-lg focus:border-blue-600 resize-vertical min-h-[150px]"
-            />
-          </div>
-
-          <div className="flex justify-end gap-4 mt-5">
-            <button
-              type="button"
-              onClick={() => setShowReportModal(false)}
-              className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-200"
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              제출하기
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-)}
-
-      
+        </div>
+      )}
     </MainLayout>
   );
 }
