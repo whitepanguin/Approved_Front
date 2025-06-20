@@ -109,21 +109,26 @@ export default function MyPage() {
   // 🔹 게시글 상세보기 모달 관련
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
+  const getPostKey = (p: Partial<Post>) => p._id || (p as any).id;
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
 
   // ✅ 최초 통계 한방에 불러오기
   useEffect(() => {
-    if (!user?.userid || !token) return;
+    if (!user?.email || !token) return;
 
     const fetchAllStats = async () => {
       try {
-        const userid = user.userid;
+        const email = user.email;
+        const userid = user.userid; // 댓글/좋아요용은 여전히 userid 사용
 
         const [postRes, commentRes, likeRes] = await Promise.all([
-          fetch(`http://localhost:8000/posts/user/${userid}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          // 🔽 userid 로 변경
+          // 🔵 email 기준으로 변경
+          fetch(
+            `http://localhost:8000/posts/email/${encodeURIComponent(email)}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
           fetch(`http://localhost:8000/comments/user/${userid}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -201,7 +206,7 @@ export default function MyPage() {
         // 리스트 카드 +1
         setMyPosts((prev) =>
           prev.map((p) =>
-            p._id === postId ? { ...p, views: (p.views ?? 0) + 1 } : p
+            getPostKey(p) === postId ? { ...p, views: (p.views ?? 0) + 1 } : p
           )
         );
 
@@ -216,7 +221,7 @@ export default function MyPage() {
 
     // 2) 댓글 불러오기
     try {
-      const r = await fetch(`http://localhost:8000/comments/${postId}`, {
+      const r = await fetch(`http://localhost:8000/email/${postId}`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -289,7 +294,7 @@ export default function MyPage() {
       category: "dev", // 고정
       title: form.get("title"),
       content: rawContent,
-      preview, // 추가됨
+      preview,
       userid: user?.userid,
     };
 
@@ -425,6 +430,7 @@ export default function MyPage() {
         body: JSON.stringify({
           postId: selectedPost?._id,
           userid: user?.userid,
+          email: user?.email,
           content,
         }),
       });
@@ -523,16 +529,16 @@ export default function MyPage() {
     const fetchMyComments = async () => {
       console.log("🗨️ fetchMyComments 호출");
 
-      const userid = user?.userid;
+      const email = user?.email;
 
-      if (!userid) {
+      if (!email) {
         console.warn("🟡 userid/email/name 없음, 요청 중단");
         return;
       }
-
+      console.log(user.email);
       try {
         const res = await fetch(
-          `http://localhost:8000/comments/user/${encodeURIComponent(userid)}`,
+          `http://localhost:8000/comments/email/${user.email}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -544,14 +550,8 @@ export default function MyPage() {
         if (!res.ok) throw new Error(`내 댓글 조회 실패: ${res.status}`);
 
         const data = await res.json();
-        console.log("✅ 받아온 댓글:", data);
-        console.log("user:", user);
-        console.log("user.userid:", user?.userid);
-        console.log("user.email:", user?.email);
-        console.log("user.name:", user?.name);
-        console.log("userid:", userid);
-
-        setMyComments(data);
+        console.log("diashjdlhaishdl", data);
+        // setMyComments(data);
       } catch (err) {
         console.error("❌ 내 댓글 조회 에러:", err);
       }
@@ -566,19 +566,22 @@ export default function MyPage() {
   // 내 게시글 불러오기
   useEffect(() => {
     const fetchMyPosts = async () => {
-      const userid = user?.userid || user?.name;
-      if (!userid) {
-        console.warn("🟡 userid 또는 name 없음, 요청 중단");
+      const email = user?.email;
+      if (!email) {
+        console.warn("🟡 이메일 없음, 요청 중단");
         return;
       }
 
       try {
-        const res = await fetch(`http://localhost:8000/posts/user/${userid}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const res = await fetch(
+          `http://localhost:8000/posts/email/${encodeURIComponent(email)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
         if (!res.ok) throw new Error("내 글 조회 실패");
 
         const posts = await res.json();
@@ -589,11 +592,10 @@ export default function MyPage() {
       }
     };
 
-    // 🔑 탭이 'posts' 이고, user 정보가 로드된 뒤에만 실행
     if (activeTab === "posts" && user) {
       fetchMyPosts();
     }
-  }, [activeTab, user]); // ← 의존성도 user.currentUser → user
+  }, [activeTab, user, token]); // token도 의존성에 포함
 
   // 회원탈퇴
   const handleDeleteAccount = async () => {
@@ -947,13 +949,172 @@ export default function MyPage() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
                     >
                       <option value=""></option>
-                      <option value="음식점업">음식점업</option>
-                      <option value="소매업">소매업</option>
-                      <option value="서비스업">서비스업</option>
-                      <option value="제조업">제조업</option>
-                      <option value="건설업">건설업</option>
-                      <option value="IT/소프트웨어">IT/소프트웨어</option>
-                      <option value="기타">기타</option>
+                      <option value="1차 금속 제조업">1차 금속 제조업</option>
+                      <option value="가구 내 고용활동">가구 내 고용활동</option>
+                      <option value="가구 제조업">가구 제조업</option>
+                      <option value="가죽, 가방 및 신발 제조업">
+                        가죽, 가방 및 신발 제조업
+                      </option>
+                      <option value="개인 및 소비용품 수리업">
+                        개인 및 소비용품 수리업
+                      </option>
+                      <option value="건축 기술, 엔지니어링 및 기타 과학기술 서비스업">
+                        건축 기술, 엔지니어링 및 기타 과학기술 서비스업
+                      </option>
+                      <option value="고무 및 플라스틱제품 제조업">
+                        고무 및 플라스틱제품 제조업
+                      </option>
+                      <option value="공공 행정, 국방 및 사회보장 행정">
+                        공공 행정, 국방 및 사회보장 행정
+                      </option>
+                      <option value="광업 지원 서비스업">
+                        광업 지원 서비스업
+                      </option>
+                      <option value="교육 서비스업">교육 서비스업</option>
+                      <option value="국제 및 외국기관">국제 및 외국기관</option>
+                      <option value="금속 가공제품 제조업; 기계 및 가구 제외">
+                        금속 가공제품 제조업; 기계 및 가구 제외
+                      </option>
+                      <option value="금속 광업">금속 광업</option>
+                      <option value="금융 및 보험관련 서비스업">
+                        금융 및 보험관련 서비스업
+                      </option>
+                      <option value="금융업">금융업</option>
+                      <option value="기타 개인 서비스업">
+                        기타 개인 서비스업
+                      </option>
+                      <option value="기타 기계 및 장비 제조업">
+                        기타 기계 및 장비 제조업
+                      </option>
+                      <option value="기타 운송장비 제조업">
+                        기타 운송장비 제조업
+                      </option>
+                      <option value="기타 전문, 과학 및 기술 서비스업">
+                        기타 전문, 과학 및 기술 서비스업
+                      </option>
+                      <option value="기타 제품 제조업">기타 제품 제조업</option>
+                      <option value="농업">농업</option>
+                      <option value="담배 제조업">담배 제조업</option>
+                      <option value="도매 및 상품 중개업">
+                        도매 및 상품 중개업
+                      </option>
+                      <option value="목재 및 나무제품 제조업; 가구 제외">
+                        목재 및 나무제품 제조업; 가구 제외
+                      </option>
+                      <option value="방송업">방송업</option>
+                      <option value="보건업">보건업</option>
+                      <option value="보험 및 연금업">보험 및 연금업</option>
+                      <option value="부동산업">부동산업</option>
+                      <option value="비금속 광물제품 제조업">
+                        비금속 광물제품 제조업
+                      </option>
+                      <option value="비금속광물 광업; 연료용 제외">
+                        비금속광물 광업; 연료용 제외
+                      </option>
+                      <option value="사업 지원 서비스업">
+                        사업 지원 서비스업
+                      </option>
+                      <option value="사업시설 관리 및 조경 서비스업">
+                        사업시설 관리 및 조경 서비스업
+                      </option>
+                      <option value="사업지원서비스업">사업지원서비스업</option>
+                      <option value="사회복지 서비스업">
+                        사회복지 서비스업
+                      </option>
+                      <option value="산업용 기계 및 장비 수리업">
+                        산업용 기계 및 장비 수리업
+                      </option>
+                      <option value="석탄, 원유 및 천연가스 광업">
+                        석탄, 원유 및 천연가스 광업
+                      </option>
+                      <option value="섬유제품 제조업; 의복 제외">
+                        섬유제품 제조업; 의복 제외
+                      </option>
+                      <option value="소매업; 자동차 제외">
+                        소매업; 자동차 제외
+                      </option>
+                      <option value="수도업">수도업</option>
+                      <option value="수상 운송업">수상 운송업</option>
+                      <option value="숙박업">숙박업</option>
+                      <option value="스포츠 및 오락관련 서비스업">
+                        스포츠 및 오락관련 서비스업
+                      </option>
+                      <option value="식료품 제조업">식료품 제조업</option>
+                      <option value="어업">어업</option>
+                      <option value="연구개발업">연구개발업</option>
+                      <option value="영상ㆍ오디오 기록물 제작 및 배급업">
+                        영상ㆍ오디오 기록물 제작 및 배급업
+                      </option>
+                      <option value="우편 및 통신업">우편 및 통신업</option>
+                      <option value="육상 운송 및 파이프라인 운송업">
+                        육상 운송 및 파이프라인 운송업
+                      </option>
+                      <option value="음료 제조업">음료 제조업</option>
+                      <option value="음식점 및 주점업">음식점 및 주점업</option>
+                      <option value="의료, 정밀, 광학 기기 및 시계 제조업">
+                        의료, 정밀, 광학 기기 및 시계 제조업
+                      </option>
+                      <option value="의료용 물질 및 의약품 제조업">
+                        의료용 물질 및 의약품 제조업
+                      </option>
+                      <option value="의복, 의복 액세서리 및 모피제품 제조업">
+                        의복, 의복 액세서리 및 모피제품 제조업
+                      </option>
+                      <option value="인쇄 및 기록매체 복제업">
+                        인쇄 및 기록매체 복제업
+                      </option>
+                      <option value="인적용역">인적용역</option>
+                      <option value="임대업; 부동산 제외">
+                        임대업; 부동산 제외
+                      </option>
+                      <option value="임업">임업</option>
+                      <option value="자동차 및 부품 판매업">
+                        자동차 및 부품 판매업
+                      </option>
+                      <option value="자동차 및 트레일러 제조업">
+                        자동차 및 트레일러 제조업
+                      </option>
+                      <option value="전기, 가스, 증기 및 공기 조절 공급업">
+                        전기, 가스, 증기 및 공기 조절 공급업
+                      </option>
+                      <option value="전기장비 제조업">전기장비 제조업</option>
+                      <option value="전문 서비스업">전문 서비스업</option>
+                      <option value="전문직별 공사업">전문직별 공사업</option>
+                      <option value="전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업">
+                        전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업
+                      </option>
+                      <option value="정보서비스업">정보서비스업</option>
+                      <option value="종합 건설업">종합 건설업</option>
+                      <option value="창고 및 운송관련 서비스업">
+                        창고 및 운송관련 서비스업
+                      </option>
+                      <option value="창작, 예술 및 여가관련 서비스업">
+                        창작, 예술 및 여가관련 서비스업
+                      </option>
+                      <option value="출판업">출판업</option>
+                      <option value="컴퓨터 프로그래밍, 시스템 통합 및 관리업">
+                        컴퓨터 프로그래밍, 시스템 통합 및 관리업
+                      </option>
+                      <option value="코크스, 연탄 및 석유정제품 제조업">
+                        코크스, 연탄 및 석유정제품 제조업
+                      </option>
+                      <option value="펄프, 종이 및 종이제품 제조업">
+                        펄프, 종이 및 종이제품 제조업
+                      </option>
+                      <option value="폐기물 수집, 운반, 처리 및 원료 재생업">
+                        폐기물 수집, 운반, 처리 및 원료 재생업
+                      </option>
+                      <option value="하수, 폐수 및 분뇨 처리업">
+                        하수, 폐수 및 분뇨 처리업
+                      </option>
+                      <option value="항공 운송업">항공 운송업</option>
+                      <option value="협회 및 단체">협회 및 단체</option>
+                      <option value="화학 물질 및 화학제품 제조업; 의약품 제외">
+                        화학 물질 및 화학제품 제조업; 의약품 제외
+                      </option>
+                      <option value="환경 정화 및 복원업">
+                        환경 정화 및 복원업
+                      </option>
                     </select>
                   </div>
 

@@ -126,8 +126,11 @@ export default function PostModal({
             {comments.length === 0 ? (
               <p className="text-sm text-gray-400">등록된 댓글이 없습니다.</p>
             ) : (
-              comments.map((c) => (
-                <div key={c._id} className="p-3 bg-gray-50 rounded text-sm">
+              comments.map((c, index) => (
+                <div
+                  key={c._id || index}
+                  className="p-3 bg-gray-50 rounded text-sm"
+                >
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-medium">{c.userid}</span>
                     <span className="text-xs text-gray-500">
