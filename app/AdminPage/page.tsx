@@ -26,18 +26,6 @@ const [editField, setEditField] = useState<{ postId: string; type: "views" | "li
 const [editValue, setEditValue] = useState<string>("");
 
 
-
-
-  // useEffect(() => {
-  //   if (
-  //     !currentUser ||
-  //     currentUser.email?.toLowerCase() !== "admin@admin.com"
-  //   ) {
-  //     alert("접근 권한이 없습니다.");
-  //     router.push("/");
-  //   }
-  // }, [currentUser]);
-
   // 샘플 데이터
   const qnaList = [
     {
@@ -150,6 +138,13 @@ const [editValue, setEditValue] = useState<string>("");
 
 
   const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지
+const postsPerPage = 5; // 한 페이지당 게시글 수
+
+const [currentUserPage, setCurrentUserPage] = useState(1);
+const usersPerPage = 3;
+
+
 
   useEffect(() => {
   const fetchAllPosts = async () => {
@@ -554,6 +549,9 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
         );
 
       case "posts":
+        const indexOfLastPost = currentPage * postsPerPage;
+const indexOfFirstPost = indexOfLastPost - postsPerPage;
+const currentPosts = allPosts.slice(indexOfFirstPost, indexOfLastPost);
         return (
           <div className="w-full space-y-8">
             <div>
@@ -623,7 +621,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                       </tr>
                     </thead>
                     <tbody>
-                      {allPosts.map((post) => (
+                      {currentPosts.map((post) => (
                         <tr
                           key={post.id}
                           className="border-b border-gray-100 hover:bg-gray-50"
@@ -760,11 +758,27 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                                 삭제
                               </button>
                             </div>
+                            
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  <div className="flex justify-center mt-4">
+                    {Array.from({ length: Math.ceil(allPosts.length / postsPerPage) }, (_, i) => (
+                      <button
+                             key={i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                     className={`mx-1 px-3 py-1 rounded ${
+                          currentPage === i + 1
+                            ? "bg-red-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                        ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -774,6 +788,10 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
 
  
       case "users":
+        const indexOfLastUser = currentUserPage * usersPerPage;
+const indexOfFirstUser = indexOfLastUser - usersPerPage;
+const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
+
         return (
           <div className="w-full space-y-8">
             <div>
@@ -843,7 +861,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                       </tr>
                     </thead>
                     <tbody>
-                      {userList.map((user) => (
+                      {currentUsers.map((user) => (
                         <tr
                           key={user.id}
                           className="border-b border-gray-100 hover:bg-gray-50"
@@ -957,19 +975,27 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                                   </button>
                                 </>
                               )}
-
-                              <button
-                                className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
-                                onClick={() => handleAdminUserDelete(user.email)}
-                              >
-                                삭제
-                              </button>
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  <div className="flex justify-center mt-4">
+                    {Array.from({ length: Math.ceil(userList.length / usersPerPage) }, (_, i) => (
+                      <button
+                        key={i + 1}
+                        onClick={() => setCurrentUserPage(i + 1)}
+                        className={`mx-1 px-3 py-1 rounded ${
+                          currentUserPage === i + 1
+                            ? "bg-red-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
