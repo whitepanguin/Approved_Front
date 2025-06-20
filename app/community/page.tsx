@@ -132,9 +132,12 @@ export default function CommunityPage() {
     if (!confirm("정말 삭제하시겠습니까?")) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/posts/${postId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `http://localhost:8000/posts/${selectedPost?._id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!res.ok) throw new Error("삭제 실패");
 
@@ -179,7 +182,7 @@ export default function CommunityPage() {
           )
         );
       }
-
+      console.log("ddddd", postId);
       // ✅ 2) 댓글 불러오기
       const res = await fetch(`http://localhost:8000/comments/${postId}`);
       if (!res.ok) throw new Error("댓글 가져오기 실패");
@@ -273,6 +276,23 @@ export default function CommunityPage() {
     } catch (err) {
       console.error(":x: 댓글 추가 실패:", err);
       alert("댓글 등록 중 오류가 발생했습니다.");
+    }
+  };
+  // 게시글 상세페이지 신고 로직
+  const handleReport = async (postId: string) => {
+    console.log("신고버튼", selectedPost?._id);
+    try {
+      const res = await fetch(
+        `http://localhost:8000/posts/${selectedPost?._id}/report`,
+        {
+          method: "PATCH",
+        }
+      );
+      const data = await res.json();
+      console.log(data);
+    } catch (err) {
+      console.error("❌ 신고 실패:", err);
+      alert("신고 중 오류가 발생했습니다.");
     }
   };
 
@@ -1289,6 +1309,22 @@ export default function CommunityPage() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
                 >
                   등록
+                </button>
+              </div>
+
+              {/* 🔽 댓글 입력 아래에 신고/삭제 버튼 추가 🔽 */}
+              <div className="flex justify-end gap-4 px-2 pt-4 text-sm text-gray-600">
+                <button
+                  onClick={handleDelete}
+                  className="text-red-500 hover:underline"
+                >
+                  삭제
+                </button>
+                <button
+                  onClick={handleReport}
+                  className="text-orange-500 hover:underline"
+                >
+                  신고
                 </button>
               </div>
             </div>
