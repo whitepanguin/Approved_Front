@@ -37,8 +37,11 @@ import {
   faComment as farComment,
 } from "@fortawesome/free-regular-svg-icons";
 
+const API_BASE_URL = "http://localhost:8000";
+
 interface Post {
   _id?: string;
+  id?: string;
   title: string;
   preview: string;
   userid: string;
@@ -53,16 +56,17 @@ interface Post {
 }
 
 interface Comment {
-  _id: string;
+  _id?: string;
   userid: string;
   createdAt: string | Date;
   content?: string;
   text?: string;
-  id: string;
+  // id?: string;
 }
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [content, setContent] = useState("");
   const [currentCategory, setCurrentCategory] = useState("all");
   const [currentSort, setCurrentSort] = useState("latest");
   const [showWriteModal, setShowWriteModal] = useState(false);
@@ -75,6 +79,22 @@ export default function CommunityPage() {
   const user = useSelector((state: RootState) => state.user);
 
   const [postCount, setPostCount] = useState(0);
+
+  const [title, setTitle] = useState("");
+
+  const [category, setCategory] = useState("");
+
+  useEffect(() => {
+    if (editingPost) {
+      setTitle(editingPost.title || "");
+      setContent(editingPost.content || "");
+      setCategory(editingPost.category || "");
+    } else {
+      setTitle("");
+      setContent("");
+      setCategory("");
+    }
+  }, [editingPost]);
 
   // 포스트 상세 모달 관련 상태
   const [showPostModal, setShowPostModal] = useState(false);
@@ -102,6 +122,7 @@ export default function CommunityPage() {
 
   // 수정 버튼 핸들러
   const handleEdit = (post: Post) => {
+    console.log("수정할 글:", post);
     setEditingPost(post);
     setShowWriteModal(true);
   };
@@ -136,61 +157,72 @@ export default function CommunityPage() {
   );
 
   /* 상세 모달 OPEN ─ 조회수·댓글·좋아요 갱신 */
+  // ✅ 안전하게 ID 추출하는 함수
   const openPostModal = async (post: Post) => {
-    try {
-      // 1) 조회수 PATCH (하루 1회)
-      if (!hasViewedToday(post._id!)) {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/posts/${post._id}/view`,
-          {
-            method: "PATCH",
-          }
-        );
-        markViewedToday(post._id!);
+    const postId = post._id || post.id;
+    if (!postId) {
+      console.error("❌ post._id도 없고 post.id도 없음:", post);
+      alert("유효하지 않은 게시글입니다.");
+      return;
+    }
 
-        // 카드 조회수 +1 동기화
+    try {
+      // ✅ 1) 조회수 PATCH (하루 1회)
+      if (!hasViewedToday(postId)) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${postId}/view`, {
+          method: "PATCH",
+        });
+        markViewedToday(postId);
         setPosts((prev) =>
           prev.map((p) =>
-            p._id === post._id ? { ...p, views: p.views + 1 } : p
+            (p._id || p.id) === postId ? { ...p, views: p.views + 1 } : p
           )
         );
       }
 
-      // 2) 댓글 가져오기
-      const r = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/comments/${post._id}`
-      );
-      setPostComments(await r.json());
+      // ✅ 2) 댓글 불러오기
+      const res = await fetch(`http://localhost:8000/comments/${postId}`);
+      if (!res.ok) throw new Error("댓글 가져오기 실패");
+      const comments: Comment[] = await res.json();
+      setPostComments(comments);
 
-      // 3) 좋아요 초기화(추후 서버에서 상태 확인 로직 넣을 수 있음)
+      // ✅ 3) 좋아요 상태 초기화
       setLiked(false);
       setLikeCount(post.likes);
 
-      // 4) 모달 열기
-      setSelectedPost({ ...post, content: post.content ?? post.preview });
+      // ✅ 4) 게시글 모달 띄우기
+      setSelectedPost({
+        ...post,
+        _id: post._id ?? post.id ?? "", // ← 이후 기능을 위해 _id 세팅
+        content: post.content ?? post.preview,
+      });
       setShowPostModal(true);
     } catch (err) {
-      console.error("❌ 게시글 상세 로딩 실패:", err);
-      alert("게시글을 불러오지 못했습니다.");
+      console.error(":x: 게시글 상세 정보 로딩 실패:", err);
+      alert("게시글을 불러오는데 실패했습니다.");
     }
   };
 
-  /* 모달 CLOSE */
   const closePostModal = () => {
     setShowPostModal(false);
     setSelectedPost(null);
     setNewComment("");
   };
-
-  /* 좋아요 토글 */
+  // 좋아요 기능
   const handleToggleLike = async () => {
     if (!selectedPost?._id) return;
-
+    // 1) 토큰 준비
     const token =
-      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
-    if (!token) return alert("로그인 필요!");
-
+      localStorage.getItem("token") ||
+      localStorage.getItem("jwtToken") ||
+      sessionStorage.getItem("token") ||
+      sessionStorage.getItem("jwtToken");
+    if (!token) {
+      alert("로그인 후 이용해 주세요!");
+      return;
+    }
     try {
+      // 2) 서버에 PATCH /posts/:postId/like 요청
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`,
         {
@@ -201,22 +233,21 @@ export default function CommunityPage() {
           },
         }
       );
-      const { liked: nowLiked, likes } = await res.json();
-
+      if (!res.ok) throw new Error("좋아요 처리 실패");
+      const { liked: nowLiked, likes } = await res.json(); // { liked, likes }
+      // 3) 모달 상태 & 메인 카드 동기화
       setLiked(nowLiked);
       setLikeCount(likes);
       setPosts((prev) =>
         prev.map((p) => (p._id === selectedPost._id ? { ...p, likes } : p))
       );
     } catch (err) {
-      console.error("❌ 좋아요 실패:", err);
+      console.error(":x: 좋아요 처리 실패:", err);
+      alert("좋아요 처리 중 오류가 발생했습니다.");
     }
   };
-
-  /* 댓글 등록 */
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
-
     try {
       const payload = {
         postId: selectedPost._id,
@@ -228,17 +259,20 @@ export default function CommunityPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const saved = await res.json();
-
-      setPostComments((prev) => [...prev, saved]);
+      if (!res.ok) throw new Error("댓글 등록 실패");
+      const savedComment: Comment = await res.json();
+      // 1) 모달 내 댓글 리스트 갱신
+      setPostComments((prev) => [...prev, savedComment]);
       setNewComment("");
+      // 2) 메인 게시글 카드의 댓글 카운트 +1
       setPosts((prev) =>
         prev.map((p) =>
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
         )
       );
     } catch (err) {
-      console.error("❌ 댓글 등록 실패:", err);
+      console.error(":x: 댓글 추가 실패:", err);
+      alert("댓글 등록 중 오류가 발생했습니다.");
     }
   };
 
@@ -248,6 +282,7 @@ export default function CommunityPage() {
       try {
         const res = await fetch("http://localhost:8000/posts/category-counts");
         const data = await res.json();
+        console.log("카테고리 수", data);
         setCategoryCounts(data);
       } catch (err) {
         console.error("❌ 카테고리 수 불러오기 실패:", err);
@@ -297,14 +332,36 @@ export default function CommunityPage() {
 
   const fetchPostCount = async () => {
     try {
-      console.log("유저 ID 찍어보기", user);
+      const token =
+        localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+      if (!token) {
+        console.warn("❌ 토큰 없음: 로그인 필요");
+        return;
+      }
+
       const res = await fetch(
-        `http://localhost:8000/posts/count/${user.currentUser.name}`
+        `http://localhost:8000/posts/count/${encodeURIComponent(
+          user.currentUser.userid
+        )}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("❌ 작성글 수 조회 실패:", res.status, errorText);
+        return;
+      }
+
       const data = await res.json();
+      console.log("✅ 작성글 수 불러오기 성공:", data.count);
       setPostCount(data.count);
     } catch (err) {
-      console.error("❌ 작성글 수 조회 실패:", err);
+      console.error("❌ 작성글 수 조회 중 오류:", err);
     }
   };
 
@@ -387,10 +444,29 @@ export default function CommunityPage() {
       try {
         const res = await fetch("http://localhost:8000/posts");
         const data = await res.json();
-        setPosts(data);
-        console.log("✅ 게시글 불러오기 성공:", data);
+
+        let postArray: Post[] = [];
+
+        if (Array.isArray(data)) {
+          postArray = data;
+        } else if (Array.isArray(data.posts)) {
+          postArray = data.posts;
+        } else {
+          console.error(" 예기치 않은 응답:", data);
+          setPosts([]);
+          return;
+        }
+
+        // 최신글 먼저 오도록 정렬
+        const sortedPosts = postArray.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        setPosts(sortedPosts);
       } catch (err) {
         console.error("❌ 게시글 로딩 실패:", err);
+        setPosts([]);
       }
     };
 
@@ -399,15 +475,23 @@ export default function CommunityPage() {
 
   // 2. 작성글 수 불러오기 (user가 있을 경우에만)
   useEffect(() => {
-    if (!user?.currentUser?.name) return;
-
+    console.log("📌 현재 user id:", user?.currentUser?.userid);
+    if (!user?.currentUser?.userid) return;
+    const jwtToken = localStorage.getItem("jwtToken");
     const fetchPostCount = async () => {
       try {
         const res = await fetch(
-          `http://localhost:8000/posts/count/${user.currentUser.name}`
+          `http://localhost:8000/posts/count/${user.currentUser.userid}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
         );
         const data = await res.json();
-        setPostCount(data.count);
+        console.log("ㅇㅇㅇㅇ", data);
+        setPostCount(data);
         console.log("✅ 작성글 수 불러오기 성공:", data.count);
       } catch (err) {
         console.error("❌ 작성글 수 조회 실패:", err);
@@ -415,7 +499,7 @@ export default function CommunityPage() {
     };
 
     fetchPostCount();
-  }, [user?.currentUser?.name]);
+  }, [user?.currentUser?.userid]);
 
   const filteredPosts = posts
     .filter(
@@ -481,7 +565,7 @@ export default function CommunityPage() {
     const preview = content.substring(0, 100) + "...";
 
     const payload = {
-      userid: user.currentUser.name,
+      userid: user.currentUser.userid,
       title,
       content,
       category,
@@ -492,14 +576,28 @@ export default function CommunityPage() {
       preview,
       isHot: false,
       isNotice: false,
+      email: user.currentUser.email,
     };
+
+    if (editingPost) {
+      console.log("🛠 수정 모드입니다");
+      console.log("📌 editingPost 객체:", editingPost);
+      console.log("📌 editingPost._id 값:", editingPost._id);
+      console.log("📌 editingPost.id 값:", editingPost.id);
+    }
 
     try {
       let res;
 
-      // ✅ 수정인지 확인
+      // ✅ 수정인지 확인 (id 보완)
       if (editingPost) {
-        res = await fetch(`http://localhost:8000/posts/${editingPost._id}`, {
+        const postId = editingPost._id || editingPost.id;
+        if (!postId) {
+          alert("수정할 게시글 ID가 없습니다.");
+          return;
+        }
+
+        res = await fetch(`http://localhost:8000/posts/${postId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -522,11 +620,11 @@ export default function CommunityPage() {
       const updatedPosts = await fetch("http://localhost:8000/posts").then(
         (res) => res.json()
       );
-
+      console.log("📌 최신 글 목록:", updatedPosts);
       setPosts(updatedPosts);
       await fetchPostCount();
       setShowWriteModal(false);
-      setEditingPost(null); // ← 수정 후 초기화
+      setEditingPost(null);
       alert(
         editingPost ? "게시글이 수정되었습니다." : "게시글이 등록되었습니다."
       );
@@ -745,7 +843,7 @@ export default function CommunityPage() {
                             </button>
 
                             {/* 수정/삭제 버튼 (본인 글만 표시) */}
-                            {post.userid === user.currentUser.name && (
+                            {post.userid === user.currentUser.userid && (
                               <div className="flex gap-2 ml-3">
                                 <button
                                   onClick={(e) => {
@@ -759,7 +857,7 @@ export default function CommunityPage() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDelete(post._id!);
+                                    handleDelete(post.id);
                                   }}
                                   className="text-red-600 hover:underline"
                                 >
@@ -852,12 +950,23 @@ export default function CommunityPage() {
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg text-gray-800 mb-1">
-                    {user.currentUser.name} {/* 닉네임 */}
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    {user?.currentUser?.email || "이메일 없음"} {/* 이메일 */}
-                  </p>
+                  {user?.currentUser ? (
+                    <>
+                      <h3 className="text-lg text-gray-800 mb-1">
+                        {user.currentUser.userid} {/* 닉네임 */}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        {user.currentUser.email || "이메일 없음"} {/* 이메일 */}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-lg text-gray-400 mb-1">
+                        로그인 필요
+                      </h3>
+                      <p className="text-gray-400 text-sm">이메일 없음</p>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex justify-between py-4 border-t border-b border-gray-200 mb-5">
@@ -950,15 +1059,22 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* 글쓰기 모달 */}
+      {/* 수정하기 상세페이지 모달 */}
       {showWriteModal && (
         <div className="modal open">
           <div className="modal-content w-full max-w-lg mx-3">
             <div className="modal-header">
               <h2>
-                <FontAwesomeIcon icon={faPen} className="mr-2" /> 글쓰기
+                <FontAwesomeIcon icon={faPen} className="mr-2" />
+                {editingPost ? "수정하기" : "글쓰기"}
               </h2>
-              <span className="close" onClick={() => setShowWriteModal(false)}>
+              <span
+                className="close"
+                onClick={() => {
+                  setShowWriteModal(false);
+                  setEditingPost(null); // 닫을 때 초기화
+                }}
+              >
                 &times;
               </span>
             </div>
@@ -967,6 +1083,7 @@ export default function CommunityPage() {
                 onSubmit={handleWriteSubmit}
                 className="flex flex-col gap-5"
               >
+                {/* 카테고리 선택 */}
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor="category"
@@ -976,6 +1093,8 @@ export default function CommunityPage() {
                   </label>
                   <select
                     name="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
                     required
                     className="px-3 py-3 border border-gray-300 rounded-lg text-base outline-none transition-colors focus:border-blue-600"
                   >
@@ -989,6 +1108,7 @@ export default function CommunityPage() {
                   </select>
                 </div>
 
+                {/* 제목 입력 */}
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor="title"
@@ -998,13 +1118,17 @@ export default function CommunityPage() {
                   </label>
                   <input
                     type="text"
-                    name="title"
+                    id="title"
+                    name="title" // ✅ 이거 꼭 추가
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     placeholder="제목을 입력하세요"
                     required
                     className="px-3 py-3 border border-gray-300 rounded-lg text-base outline-none transition-colors focus:border-blue-600"
                   />
                 </div>
 
+                {/* 내용 입력 */}
                 <div className="flex flex-col gap-2">
                   <label
                     htmlFor="content"
@@ -1013,52 +1137,30 @@ export default function CommunityPage() {
                     내용
                   </label>
                   <textarea
-                    name="content"
+                    id="content"
+                    name="content" //추가
+                    value={content || ""}
+                    onChange={(e) => setContent(e.target.value)}
                     placeholder="내용을 입력하세요"
-                    rows={8}
-                    required
-                    className="px-3 py-3 border border-gray-300 rounded-lg text-base outline-none transition-colors focus:border-blue-600 resize-vertical min-h-[150px]"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="tags"
-                    className="text-base font-medium text-gray-800"
-                  >
-                    태그
-                  </label>
-                  <input
-                    type="text"
-                    name="tags"
-                    placeholder="태그를 입력하세요 (쉼표로 구분)"
                     className="px-3 py-3 border border-gray-300 rounded-lg text-base outline-none transition-colors focus:border-blue-600"
+                    rows={6}
+                    required
                   />
-                  <div className="text-xs text-gray-500">
-                    예: #인허가, #창업, #음식점
-                  </div>
                 </div>
 
-                <div className="flex justify-end gap-4 mt-5">
-                  <button
-                    type="button"
-                    onClick={() => setShowWriteModal(false)}
-                    className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg text-base font-medium cursor-pointer transition-all hover:bg-gray-200"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-3 bg-blue-600 text-white border-none rounded-lg text-base font-medium cursor-pointer transition-all hover:bg-blue-700"
-                  >
-                    등록하기
-                  </button>
-                </div>
+                {/* 제출 버튼 */}
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  {editingPost ? "수정 완료" : "글 등록"}
+                </button>
               </form>
             </div>
           </div>
         </div>
       )}
+
       {/* 게시글 상세 모달 */}
       {showPostModal && selectedPost && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">

@@ -27,7 +27,6 @@ const AuthGate = () => {
             },
           });
 
-
           const data = await res.json();
           if (searchParams.get("jwtToken")) {
             router.push("/");
