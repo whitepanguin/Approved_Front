@@ -10,7 +10,11 @@ import { useDispatch } from "react-redux";
 import { setUser } from "@/modules/user";
 import { faCommentDots } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPen } from "@fortawesome/free-solid-svg-icons";
+import {
+  faPen,
+  faUserTimes,
+  faBullhorn,
+} from "@fortawesome/free-solid-svg-icons";
 
 import PostCard from "@/components/postCard/postCard"; // 꼭 경로 맞게
 import PostModal from "@/components/postModal/postModal";
@@ -1293,7 +1297,7 @@ export default function MyPage() {
                     onClick={handleDeleteAccount}
                     className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                   >
-                    <i className="fas fa-user-times mr-3"></i>
+                    <FontAwesomeIcon icon={faUserTimes} className="mr-3" />
                     회원 탈퇴
                   </button>
                 </div>
@@ -1307,7 +1311,7 @@ export default function MyPage() {
                     onClick={() => setShowReportModal(true)}
                     className="w-full text-left p-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                   >
-                    <i className="fas fa-user-times mr-3"></i>
+                    <FontAwesomeIcon icon={faBullhorn} className="mr-3" />
                     접수 / 신고하기
                   </button>
                 </div>
