@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/main-layout";
@@ -84,6 +85,8 @@ export default function CommunityPage() {
 
   const [category, setCategory] = useState("");
 
+  const router = useRouter();
+
   useEffect(() => {
     if (editingPost) {
       setTitle(editingPost.title || "");
@@ -128,16 +131,15 @@ export default function CommunityPage() {
   };
 
   // 삭제 버튼 핸들러
+
   const handleDelete = async (postId: string) => {
+    console.log("🗑️ 삭제 요청 postId:", postId); // 디버깅
     if (!confirm("정말 삭제하시겠습니까?")) return;
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/posts/${selectedPost?._id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const res = await fetch(`http://localhost:8000/posts/${postId}`, {
+        method: "DELETE",
+      });
 
       if (!res.ok) throw new Error("삭제 실패");
 
@@ -149,6 +151,10 @@ export default function CommunityPage() {
       await fetchPostCount();
 
       alert("✅ 삭제 완료");
+      setShowPostModal(false); // 모달 닫기
+      setSelectedPost(null); // 선택 글 초기화
+      router.push("/community"); // 커뮤니티 이동
+      router.push("/community"); // ✅ 커뮤니티 페이지로 이동 추가
     } catch (err) {
       console.error("❌ 삭제 오류:", err);
       alert("게시글 삭제 중 오류가 발생했습니다.");
@@ -236,8 +242,11 @@ export default function CommunityPage() {
           },
         }
       );
+
       if (!res.ok) throw new Error("좋아요 처리 실패");
+
       const { liked: nowLiked, likes } = await res.json(); // { liked, likes }
+
       // 3) 모달 상태 & 메인 카드 동기화
       setLiked(nowLiked);
       setLikeCount(likes);
@@ -262,8 +271,11 @@ export default function CommunityPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       if (!res.ok) throw new Error("댓글 등록 실패");
+
       const savedComment: Comment = await res.json();
+
       // 1) 모달 내 댓글 리스트 갱신
       setPostComments((prev) => [...prev, savedComment]);
       setNewComment("");
@@ -278,6 +290,7 @@ export default function CommunityPage() {
       alert("댓글 등록 중 오류가 발생했습니다.");
     }
   };
+
   // 게시글 상세페이지 신고 로직
   const handleReport = async (postId: string) => {
     console.log("신고버튼", selectedPost?._id);
@@ -290,6 +303,7 @@ export default function CommunityPage() {
       );
       const data = await res.json();
       console.log(data);
+      alert(data.message); // ✅ 알림 추가
     } catch (err) {
       console.error("❌ 신고 실패:", err);
       alert("신고 중 오류가 발생했습니다.");
@@ -548,6 +562,8 @@ export default function CommunityPage() {
           return 0;
       }
     });
+  // 디버깅용
+  useEffect(() => {}, [selectedPost, user.currentUser]);
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
@@ -1312,21 +1328,30 @@ export default function CommunityPage() {
                 </button>
               </div>
 
-              {/* 🔽 댓글 입력 아래에 신고/삭제 버튼 추가 🔽 */}
-              <div className="flex justify-end gap-4 px-2 pt-4 text-sm text-gray-600">
-                <button
-                  onClick={handleDelete}
-                  className="text-red-500 hover:underline"
-                >
-                  삭제
-                </button>
-                <button
-                  onClick={handleReport}
-                  className="text-orange-500 hover:underline"
-                >
-                  신고
-                </button>
-              </div>
+              {/* 상세페이지 신고/삭제  🔽 */}
+              {selectedPost && user.currentUser && (
+                <div className="flex justify-end gap-4 px-2 pt-4 text-sm text-gray-600">
+                  {/* ✅ 자기 글일 때만 삭제 버튼 */}
+                  {selectedPost.userid === user.currentUser.userid && (
+                    <button
+                      onClick={() => handleDelete(selectedPost._id)}
+                      className="text-red-500 hover:underline"
+                    >
+                      삭제
+                    </button>
+                  )}
+
+                  {/* ✅ 자기 글이 아닐 때만 신고 버튼 */}
+                  {selectedPost.userid !== user.currentUser.userid && (
+                    <button
+                      onClick={handleReport}
+                      className="text-orange-500 hover:underline"
+                    >
+                      신고
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
