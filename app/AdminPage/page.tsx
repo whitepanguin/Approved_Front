@@ -14,6 +14,18 @@ export default function AdminPage() {
   const [reportCount, setreportCount] = useState(0);
   const [selectedPosts, setSelectedPosts] = useState<number[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [qnaList, setQnaList] = useState<Post[]>([]);
+  const [currentQnaPage, setCurrentQnaPage] = useState(1);
+  const qnasPerPage = 3;
+
+  const [selectedFilter, setSelectedFilter] = useState("전체");
+
+  const filteredQnaList = qnaList.filter((qna) => {
+  if (selectedFilter === "전체") return true;
+  return qna.status === selectedFilter;
+});
+
+
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
   );
@@ -25,42 +37,35 @@ const [editedName, setEditedName] = useState<string>("");
 const [editField, setEditField] = useState<{ postId: string; type: "views" | "likes" | "reports"} | null>(null);
 const [editValue, setEditValue] = useState<string>("");
 
+useEffect(() => {
+  const fetchAllPosts = async () => {
+    const response = await fetch("http://localhost:8000/posts");
+    const data = await response.json();
+
+    const devOnly = data.filter((post: Post) => post.category === "dev");
+    setQnaList(devOnly);
+  };
+
+  fetchAllPosts();
+}, []);
+
+
+
 
   // 샘플 데이터
-  const qnaList = [
-    {
-      id: 1,
-      title: "건축허가 관련 질문드립니다",
-      content:
-        "단독주택 신축 시 건축허가 절차가 어떻게 되나요? 건축과에 직접 방문해야 하는지 궁금합니다.",
-      author: "건축초보",
-      createdAt: "2023.06.03 14:30",
-      status: "답변대기",
-      views: 45,
-      isUrgent: true,
-    },
-    {
-      id: 2,
-      title: "식품위생교육 어디서 받나요?",
-      content:
-        "카페 창업 준비 중인데 식품위생교육을 어디서 받을 수 있는지 알려주세요.",
-      author: "카페준비생",
-      createdAt: "2023.06.02 16:20",
-      status: "답변완료",
-      views: 78,
-      isUrgent: false,
-    },
-    {
-      id: 3,
-      title: "사업자등록증 발급 기간이 얼마나 걸리나요?",
-      content: "온라인으로 신청했는데 언제쯤 받을 수 있을까요?",
-      author: "신규사업자",
-      createdAt: "2023.06.01 09:15",
-      status: "답변대기",
-      views: 32,
-      isUrgent: false,
-    },
-  ];
+  // const qnaList = [
+  //   {
+  //     id: 1,
+  //     title: "건축허가 관련 질문드립니다",
+  //     content:
+  //       "단독주택 신축 시 건축허가 절차가 어떻게 되나요? 건축과에 직접 방문해야 하는지 궁금합니다.",
+  //     author: "건축초보",
+  //     createdAt: "2023.06.03 14:30",
+  //     status: "답변대기",
+  //     views: 45,
+  //     isUrgent: true,
+  //   },
+  // ];
 
   useEffect(() => {
     const getUsercount = async () => {
@@ -115,6 +120,7 @@ const [editValue, setEditValue] = useState<string>("");
 
     getReportcount();
   }, [reportCount]);
+
   interface Post {
   id: string;
   title: string;
@@ -133,6 +139,7 @@ const [editValue, setEditValue] = useState<string>("");
   updatedAt: string;
   reports: number;
   _class: string;
+  status: "답변대기" | "답변완료";
 }
 
 
@@ -259,16 +266,54 @@ const handleAdminUserDelete = async (email) => {
 
 
 
-  const handleQuickReply = (qnaId: number, reply: string) => {
-    console.log(`QnA ${qnaId}에 답변: ${reply}`);
-    alert("답변이 등록되었습니다.");
-  };
+  // const handleQuickReply = (qnaId: number, reply: string) => {
+  //   console.log(`QnA ${qnaId}에 답변: ${reply}`);
+  //   alert("답변이 등록되었습니다.");
+  // };
 
-  const handlePostAction = (action: string, postIds: number[]) => {
-    console.log(`${action} 실행:`, postIds);
-    alert(`${postIds.length}개 게시글 ${action} 완료`);
-    setSelectedPosts([]);
-  };
+  const handleQuickReply = async (qnaId: number, reply: string) => {
+  try {
+    // 1. 댓글 등록
+    const commentRes = await fetch("http://localhost:8000/comments", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        postId: qnaId,
+        content: reply,
+        author: currentUser?.userid || "관리자",
+      }),
+    });
+
+    if (!commentRes.ok) throw new Error("댓글 등록 실패");
+
+    // 2. QnA 상태를 '답변완료'로 백엔드에 저장
+    const statusRes = await fetch(`http://localhost:8000/posts/${qnaId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: "답변완료",
+      }),
+    });
+
+    if (!statusRes.ok) throw new Error("상태 변경 실패");
+
+    // 3. 프론트에서도 상태 반영
+    setQnaList((prev) =>
+      prev.map((qna) =>
+        qna.id === String(qnaId) ? { ...qna, status: "답변완료" } : qna
+      )
+    );
+
+    alert("답변이 등록되었습니다.");
+  } catch (err) {
+    console.error("빠른 답변 처리 중 오류:", err);
+    alert("답변 등록 또는 상태 변경 실패");
+  }
+};
 
   const handleUserAction = (action: string, userIds: number[]) => {
     console.log(`${action} 실행:`, userIds);
@@ -456,6 +501,10 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
         );
 
       case "qna":
+        const indexOfLastQna = currentQnaPage * qnasPerPage;
+        const indexOfFirstQna = indexOfLastQna - qnasPerPage;
+        const currentQnas = filteredQnaList.slice(indexOfFirstQna, indexOfLastQna);
+
         return (
           <div className="w-full space-y-8">
             <div>
@@ -470,17 +519,17 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">질문 목록</h4>
                   <div className="flex gap-2">
-                    <select className="p-2 border border-gray-300 rounded-lg text-sm">
-                      <option>전체</option>
-                      <option>답변대기</option>
-                      <option>답변완료</option>
-                      <option>긴급</option>
+                    <select 
+                   value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm">
+                      <option value="전체">전체</option>
+                      <option value="답변대기">답변대기</option>
+                      <option value="답변완료">답변완료</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {qnaList.map((qna) => (
+                  {currentQnas.map((qna) => (
                     <div
                       key={qna.id}
                       className="border border-gray-200 rounded-lg p-5"
@@ -496,11 +545,6 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                           >
                             {qna.status}
                           </span>
-                          {qna.isUrgent && (
-                            <span className="px-2 py-1 bg-red-100 text-red-600 rounded-full text-xs font-medium">
-                              긴급
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-500">
                           <span>조회 {qna.views}</span>
@@ -519,7 +563,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                             <i className="fas fa-user text-white text-xs"></i>
                           </div>
                           <span className="text-sm font-medium text-gray-700">
-                            {qna.author}
+                            {qna.userid}
                           </span>
                         </div>
 
@@ -544,6 +588,21 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                   ))}
                 </div>
               </div>
+            </div>
+            <div className="flex justify-center mt-4">
+              {Array.from({ length: Math.ceil(filteredQnaList.length / qnasPerPage) }, (_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentQnaPage(i + 1)}
+                  className={`mx-1 px-3 py-1 rounded ${
+                    currentQnaPage === i + 1
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
             </div>
           </div>
         );
