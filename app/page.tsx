@@ -13,6 +13,7 @@ import { useSelector } from "react-redux";
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [introPassed, setIntroPassed] = useState(false);
+  const [count, setCount] = useState<number>(0);
   const { addToSearchHistory } = useApp();
   const router = useRouter();
   const isLogin = useSelector((state: RootState) => state.user.isLogin);
@@ -68,6 +69,24 @@ export default function HomePage() {
       }
     }
   };
+
+  useEffect(() => {
+    const getcount = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/searchllm/count", {
+          method: "GET",
+        });
+
+        const data = await res.json();
+        setCount(data.count);
+        // console.log(userCount);
+      } catch (error) {
+        console.error("실패:", error);
+      }
+    };
+
+    getcount();
+  }, []);
 
   return (
     <>
@@ -159,14 +178,20 @@ export default function HomePage() {
                 <i className="fas fa-map-marked-alt text-white text-lg"></i>
               </Link>
             </div>
-            <div className="w-full max-w-6xl flex justify-start items-center">
+            <div className="w-full max-w-6xl flex justify-start items-center gap-4">
               <Link
                 href="/popular"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-10 border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-blue-100 transition"
+                className="flex items-center gap-8 px-4 py-2 bg-blue-10 border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-blue-100 transition"
               >
                 <i className="fas fa-fire text-red-500"></i>
                 지금 인기있는 법률 검색어
               </Link>
+              <div className="flex items-center gap-8 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow">
+                <i className="fas fa-chart-line text-green-500"></i>총 검색수:
+                <span className="font-semibold">
+                  {(count + 9900).toLocaleString()}
+                </span>
+              </div>
             </div>
           </div>
         </div>
