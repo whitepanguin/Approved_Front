@@ -6,6 +6,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { setUser, setUserStatus } from "../../modules/user";
 import { useRouter } from "next/navigation";
+import PieChart  from "./providerChart";
+import CategoryChart  from "./categoryChart";
+
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -616,6 +619,40 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        );
+
+        case "chart":
+        return (
+          <div className="w-full space-y-8">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                차트
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                커뮤니티 현황을 차트로 확인하세요
+              </p>
+
+              
+
+              
+              <div className="flex flex-wrap gap-6 mt-8">
+  <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+    <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
+    <div className="w-full max-w-[400px] h-[400px] mx-auto">
+      <PieChart />
+    </div>
+  </div>
+
+  <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+    <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
+    <div className="w-full max-w-[400px] h-[400px] mx-auto">
+      <CategoryChart />
+    </div>
+  </div>
+</div>
+
             </div>
           </div>
         );
@@ -1251,6 +1288,24 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
                     }`}
                   ></i>
                   <span>대시보드</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("chart")}
+                  className={`flex items-center gap-3 w-full p-4 text-left border-l-4 ${
+                    activeTab === "chart"
+                      ? "border-red-600 bg-red-50 text-red-600"
+                      : "border-transparent hover:bg-gray-50"
+                  }`}
+                >
+                  <i
+                    className={`fas fa-chart-bar ${
+                      activeTab === "chart"
+                        ? "text-red-600"
+                        : "text-gray-500"
+                    }`}
+                  ></i>
+                  <span>차트</span>
                 </button>
 
                 <button
