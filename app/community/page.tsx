@@ -87,6 +87,9 @@ export default function CommunityPage() {
 
   const router = useRouter();
 
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   useEffect(() => {
     if (editingPost) {
       setTitle(editingPost.title || "");
@@ -178,7 +181,7 @@ export default function CommunityPage() {
     try {
       // ✅ 1) 조회수 PATCH (하루 1회)
       if (!hasViewedToday(postId)) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${postId}/view`, {
+        await fetch(`${API_BASE_URL}/posts/${postId}/view`, {
           method: "PATCH",
         });
         markViewedToday(postId);
@@ -190,7 +193,7 @@ export default function CommunityPage() {
       }
       console.log("ddddd", postId);
       // ✅ 2) 댓글 불러오기
-      const res = await fetch(`http://localhost:8000/comments/${postId}`);
+      const res = await fetch(`${API_BASE_URL}/comments/${postId}`);
       if (!res.ok) throw new Error("댓글 가져오기 실패");
       const comments: Comment[] = await res.json();
       setPostComments(comments);
@@ -217,10 +220,11 @@ export default function CommunityPage() {
     setSelectedPost(null);
     setNewComment("");
   };
+
   // 좋아요 기능
   const handleToggleLike = async () => {
     if (!selectedPost?._id) return;
-    // 1) 토큰 준비
+
     const token =
       localStorage.getItem("token") ||
       localStorage.getItem("jwtToken") ||
@@ -231,9 +235,8 @@ export default function CommunityPage() {
       return;
     }
     try {
-      // 2) 서버에 PATCH /posts/:postId/like 요청
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/posts/${selectedPost._id}/like`,
+        `${API_BASE_URL}/posts/${selectedPost._id}/like`,
         {
           method: "PATCH",
           headers: {
@@ -245,9 +248,8 @@ export default function CommunityPage() {
 
       if (!res.ok) throw new Error("좋아요 처리 실패");
 
-      const { liked: nowLiked, likes } = await res.json(); // { liked, likes }
+      const { liked: nowLiked, likes } = await res.json();
 
-      // 3) 모달 상태 & 메인 카드 동기화
       setLiked(nowLiked);
       setLikeCount(likes);
       setPosts((prev) =>
@@ -258,6 +260,7 @@ export default function CommunityPage() {
       alert("좋아요 처리 중 오류가 발생했습니다.");
     }
   };
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
     try {
@@ -266,7 +269,7 @@ export default function CommunityPage() {
         userid: user.currentUser.name,
         content: newComment,
       };
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/comments`, {
+      const res = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -276,10 +279,8 @@ export default function CommunityPage() {
 
       const savedComment: Comment = await res.json();
 
-      // 1) 모달 내 댓글 리스트 갱신
       setPostComments((prev) => [...prev, savedComment]);
       setNewComment("");
-      // 2) 메인 게시글 카드의 댓글 카운트 +1
       setPosts((prev) =>
         prev.map((p) =>
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
@@ -1041,6 +1042,7 @@ export default function CommunityPage() {
               </button>
             </div>
 
+            {/* 인기 태그 */}
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <h3 className="text-base text-gray-800 mb-4 flex items-center gap-2">
                 <FontAwesomeIcon icon={faTags} /> 인기 태그
@@ -1064,6 +1066,7 @@ export default function CommunityPage() {
               </div>
             </div>
 
+            {/* 커뮤니티 현황 */}
             <div className="bg-white rounded-xl p-5 shadow-lg">
               <h3 className="text-base text-gray-800 mb-4 flex items-center gap-2">
                 <FontAwesomeIcon icon={faChartBar} /> 커뮤니티 현황
@@ -1072,19 +1075,19 @@ export default function CommunityPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">전체 회원</span>
                   <span className="text-blue-600 font-semibold text-sm">
-                    1,234명
+                    김
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">오늘 방문자</span>
                   <span className="text-blue-600 font-semibold text-sm">
-                    89명
+                    사
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">전체 게시글</span>
                   <span className="text-blue-600 font-semibold text-sm">
-                    325개
+                    과
                   </span>
                 </div>
               </div>
