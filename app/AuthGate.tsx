@@ -19,7 +19,7 @@ const AuthGate = () => {
     const jwtToken =
       localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
 
-    if (isLogin) {
+    if (jwtToken) {
       localStorage.setItem("jwtToken", jwtToken);
 
       const authenticate = async () => {
