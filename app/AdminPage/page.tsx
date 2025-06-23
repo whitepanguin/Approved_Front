@@ -20,10 +20,15 @@ export default function AdminPage() {
 
   const [selectedFilter, setSelectedFilter] = useState("전체");
 
-  const filteredQnaList = qnaList.filter((qna) => {
-  if (selectedFilter === "전체") return true;
-  return qna.status === selectedFilter;
-});
+  const filteredQnaList = qnaList
+  .filter((qna) => {
+    if (selectedFilter === "전체") return true;
+    return qna.status === selectedFilter;
+  })
+  .sort((a, b) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
 
 
   const { currentUser, isLogin } = useSelector(
@@ -49,6 +54,32 @@ useEffect(() => {
   fetchAllPosts();
 }, []);
 
+const [qnaNum, setQnaNum] = useState(0)
+
+useEffect(() => {
+  const fetchQnas = async () => {
+    const response = await fetch("http://localhost:8000/posts");
+    const data = await response.json();
+
+    const yetOnly = data.filter((post: Post) => post.category === "dev" && post.status === "답변대기")
+    setQnaNum(yetOnly.length)
+  }
+
+  fetchQnas();
+})
+
+const [reportedNum, setReportedNum] = useState(0)
+
+useEffect(() => {
+  const fetchReportedNum = async () => {
+    const response = await fetch("http://localhost:8000/posts");
+    const data = await response.json();
+
+    const reportedNums = data.filter((post: Post) => post.category === "dev")
+    setReportedNum(reportedNums.length)
+  }
+  fetchReportedNum();
+})
 
 
 
@@ -194,6 +225,94 @@ interface User {
 }
 
   const [userList, setUserList] = useState<User[]>([]);
+
+  const newestUserName = [...userList]
+  .filter((user) => user.createdAt !== null)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  )[0]?.name || "알 수 없음";
+
+
+  const newestPostName = [...allPosts]
+  .filter((post) => post.category !== "dev" && post.createdAt !== null)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  )[0]?.title || "알 수 없음";
+
+  const newestQnaName = [...allPosts]
+  .filter((post) => post.category == "dev" && post.createdAt !== null)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  )[0]?.title || "알 수 없음";
+
+// "2025-06-21 14:16:55" 문자열 → KST(LocalTime)으로 강제 처리
+const parseDateKST = (dateString: string): Date => {
+  const [datePart, timePart] = dateString.split(" ");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second] = timePart.split(":").map(Number);
+
+  return new Date(year, month - 1, day, hour, minute, second); // ✅ 로컬 시간 기준 Date 객체 생성
+};
+
+const getTimeAgo = (createdAt: string | null) => {
+  if (!createdAt) return "알 수 없음";
+
+  const created = parseDateKST(createdAt);
+  const now = new Date();
+
+  const diffMs = now.getTime() - created.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 1) return "방금 전";
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  return `${diffDays}일 전`;
+};
+
+
+const newestUser = [...userList]
+  .filter((user) => user.createdAt !== null)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  )[0];
+
+const newestPost = [...allPosts]
+  .filter((post) => post.category !== "dev" && post.createdAt !== null)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  )[0];
+
+const newestQna = [...allPosts]
+  .filter((post) => post.category == "dev" && post.createdAt !== null)
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  )[0];
+
+const newestUserJoinedAgo = getTimeAgo(newestUser?.createdAt || null);
+const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
+const newestQnaAgo = getTimeAgo(newestQna?.createdAt || null);
+
+const sortedPosts = [...allPosts]
+  .filter((post) => post.createdAt !== null && post.category !== "dev")
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  );
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -444,7 +563,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                       <p className="text-orange-600 text-sm font-medium">
                         답변 대기
                       </p>
-                      <p className="text-2xl font-bold text-orange-800">30</p>
+                      <p className="text-2xl font-bold text-orange-800">{qnaNum}</p>
                     </div>
                     <i className="fas fa-question-circle text-orange-600 text-2xl"></i>
                   </div>
@@ -456,7 +575,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                         신고 게시글
                       </p>
                       <p className="text-2xl font-bold text-red-800">
-                        {reportCount}
+                        {reportedNum}
                       </p>
                     </div>
                     <i className="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
@@ -470,29 +589,30 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <i className="fas fa-user-plus text-blue-600"></i>
-                      <span className="text-gray-700">
-                        새 회원 가입: 박창업
+                      <span className="text-gray-700">새 회원 가입: {newestUserName}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">5분 전</span>
+                    <span className="text-sm text-gray-500">
+                      {newestUserJoinedAgo}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <i className="fas fa-file-alt text-green-600"></i>
                       <span className="text-gray-700">
-                        새 게시글: "카페 창업 후기"
+                        새 게시글: {newestPostName}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">15분 전</span>
+                    <span className="text-sm text-gray-500">{newestPostAgo}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <i className="fas fa-question-circle text-orange-600"></i>
                       <span className="text-gray-700">
-                        새 질문: "건축허가 관련"
+                        새 질문: {newestQnaName}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">30분 전</span>
+                    <span className="text-sm text-gray-500">{newestQnaAgo}</span>
                   </div>
                 </div>
               </div>
@@ -610,7 +730,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
       case "posts":
         const indexOfLastPost = currentPage * postsPerPage;
 const indexOfFirstPost = indexOfLastPost - postsPerPage;
-const currentPosts = allPosts.slice(indexOfFirstPost, indexOfLastPost);
+const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
         return (
           <div className="w-full space-y-8">
             <div>
@@ -1104,7 +1224,7 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
                   </div>
                   <div className="text-center">
                     <span className="block text-xl font-bold text-red-600">
-                      12
+                      {qnaNum}
                     </span>
                     <span className="text-xs text-gray-600">답변대기</span>
                   </div>
@@ -1148,7 +1268,7 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
                   ></i>
                   <span>Q&A 관리</span>
                   <span className="ml-auto bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-xs">
-                    2
+                    {qnaNum}
                   </span>
                 </button>
 
