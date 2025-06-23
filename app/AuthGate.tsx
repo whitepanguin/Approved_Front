@@ -2,20 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser, setUserStatus } from "../modules/user";
+import { RootState } from "@/store";
 
 const AuthGate = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const [checked, setChecked] = useState(false);
+  const { currentUser, isLogin } = useSelector(
+    (state: RootState) => state.user || {}
+  );
 
   useEffect(() => {
     const jwtToken =
       localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
 
-    if (jwtToken) {
+    if (isLogin) {
       localStorage.setItem("jwtToken", jwtToken);
 
       const authenticate = async () => {
