@@ -230,18 +230,26 @@ export default function CommunityPage() {
       localStorage.getItem("jwtToken") ||
       sessionStorage.getItem("token") ||
       sessionStorage.getItem("jwtToken");
+
     if (!token) {
       alert("로그인 후 이용해 주세요!");
       return;
     }
+
     try {
+      const userid = user.currentUser.userid;
+      const email = user.currentUser.email;
+
+      // ✅ 정확한 URL로 수정
       const res = await fetch(
-        `${API_BASE_URL}/posts/${selectedPost._id}/like`,
+        `${API_BASE_URL}/likes/${selectedPost._id}?userid=${encodeURIComponent(
+          userid
+        )}&email=${encodeURIComponent(email)}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`, // ← 현재는 백엔드에서 사용 안 함이지만, 나중 대비 유지
           },
         }
       );
@@ -266,8 +274,9 @@ export default function CommunityPage() {
     try {
       const payload = {
         postId: selectedPost._id,
-        userid: user.currentUser.name,
+        userid: user.currentUser.userid,
         content: newComment,
+        email: user.currentUser.email,
       };
       const res = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
@@ -312,10 +321,22 @@ export default function CommunityPage() {
   };
 
   useEffect(() => {
-    console.log("유저 ID 찍어보기", user);
+    const token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("jwtToken") ||
+      sessionStorage.getItem("token") ||
+      sessionStorage.getItem("jwtToken");
+
+    console.log("유저 token 찍어보기", token);
     const fetchCategoryCounts = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts/category-counts");
+        const res = await fetch("http://localhost:8000/posts/category-counts", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const data = await res.json();
         console.log("카테고리 수", data);
         setCategoryCounts(data);
@@ -888,7 +909,7 @@ export default function CommunityPage() {
                             </button>
 
                             {/* 수정/삭제 버튼 (본인 글만 표시) */}
-                            {post.userid === user.currentUser.userid && (
+                            {post.email === user.currentUser.email && (
                               <div className="flex gap-2 ml-3">
                                 <button
                                   onClick={(e) => {
