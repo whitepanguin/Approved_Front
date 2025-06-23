@@ -129,9 +129,12 @@ export default function MyPage() {
               headers: { Authorization: `Bearer ${token}` },
             }
           ),
-          fetch(`http://localhost:8000/comments/email/${encodeURIComponent(email)}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetch(
+            `http://localhost:8000/comments/email/${encodeURIComponent(email)}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
           fetch(
             `http://localhost:8000/likes/email/${encodeURIComponent(
               email
@@ -221,7 +224,6 @@ export default function MyPage() {
 
     // 2) 댓글 불러오기
     try {
-      
       const r = await fetch(`http://localhost:8000/comments/${postId}`, {
         headers: {
           "Content-Type": "application/json",
@@ -230,7 +232,6 @@ export default function MyPage() {
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setComments(await r.json());
-
     } catch (err) {
       console.error("댓글 불러오기 실패:", err);
       setComments([]);
@@ -249,10 +250,10 @@ export default function MyPage() {
 
       const nowLikeCnt = typeof p.likes === "number" ? p.likes : 0;
 
-     const likeRes = await fetch(
+      const likeRes = await fetch(
         `http://localhost:8000/likes/email/${encodeURIComponent(
-         user.email
-       )}/posts`,
+          user.email
+        )}/posts`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -297,6 +298,7 @@ export default function MyPage() {
       content: rawContent,
       preview,
       userid: user?.userid,
+      email: user.email,
     };
 
     try {
@@ -384,16 +386,18 @@ export default function MyPage() {
     }
 
     try {
-    const res = await fetch(
-  `http://localhost:8000/likes/${postId}?userid=${encodeURIComponent(userid)}&email=${encodeURIComponent(user.email)}`,
-  {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  }
-);
+      const res = await fetch(
+        `http://localhost:8000/likes/${postId}?userid=${encodeURIComponent(
+          userid
+        )}&email=${encodeURIComponent(user.email)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!res.ok) throw new Error(await res.text());
 
       const result = await res.text(); // "liked" or "unliked"
@@ -486,39 +490,41 @@ export default function MyPage() {
   }, [activeTab]);
 
   // 좋아요 한 글 불러오기
- useEffect(() => {
-  const fetchLikedPosts = async () => {
-    const email = user?.email;
-    if (!email) return;
+  useEffect(() => {
+    const fetchLikedPosts = async () => {
+      const email = user?.email;
+      if (!email) return;
 
-    try {
-      const res = await fetch(
-        `http://localhost:8000/likes/email/${encodeURIComponent(email)}/posts`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+      try {
+        const res = await fetch(
+          `http://localhost:8000/likes/email/${encodeURIComponent(
+            email
+          )}/posts`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await res.json(); // ✅ 본문은 한 번만 읽는다
+
+        console.log("📡 좋아요 조회 응답 상태:", res.status);
+
+        if (!res.ok) {
+          console.error("📡 좋아요 응답 내용:", data);
+          throw new Error("좋아요한 글 조회 실패");
         }
-      );
 
-      const data = await res.json(); // ✅ 본문은 한 번만 읽는다
-
-      console.log("📡 좋아요 조회 응답 상태:", res.status);
-
-      if (!res.ok) {
-        console.error("📡 좋아요 응답 내용:", data);
-        throw new Error("좋아요한 글 조회 실패");
+        setLikedPosts(data); // ✅ 성공 시 좋아요 목록 저장
+      } catch (err) {
+        console.error("❌ 좋아요한 글 불러오기 에러:", err);
       }
+    };
 
-      setLikedPosts(data); // ✅ 성공 시 좋아요 목록 저장
-    } catch (err) {
-      console.error("❌ 좋아요한 글 불러오기 에러:", err);
-    }
-  };
-
-  if (activeTab === "likes" && user) fetchLikedPosts();
-}, [activeTab, user, token]); // ✅ token 포함
+    if (activeTab === "likes" && user) fetchLikedPosts();
+  }, [activeTab, user, token]); // ✅ token 포함
 
   // 내 댓글 불러오기
   useEffect(() => {
