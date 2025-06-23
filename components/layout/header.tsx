@@ -28,7 +28,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="flex justify-between items-center p-4">
+    <header className="flex justify-between items-center ">
       {/* 왼쪽: 메뉴 + 로고 */}
       <div className="flex items-center">
         <span

@@ -108,7 +108,7 @@ body {
 /* 메인 콘텐츠 스타일 */
 #main {
   transition: margin-left 0.5s;
-  padding: 16px;
+  padding: 16px 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
