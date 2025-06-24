@@ -464,26 +464,26 @@ export default function MyPage() {
     setOriginalUserId(user.userid ?? ""); // 닉네임 변경 여부 비교용
   }, [user]);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem("jwtToken");
-      if (!token) return;
+  // useEffect(() => {
+  //   const fetchProfile = async () => {
+  //     const token = localStorage.getItem("jwtToken");
+  //     if (!token) return;
 
-      const res = await fetch(`http://localhost:8000/mypage/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  //     const res = await fetch(`http://localhost:8000/mypage/profile`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
 
-      if (res.ok) {
-        const data = await res.json();
-        console.log("🔵 JWT 기반 프로필 불러옴:", data);
-        dispatch(setUser(data)); // ✅ 여기서 Redux에 저장!
-      }
-    };
+  //     if (res.ok) {
+  //       const data = await res.json();
+  //       console.log("🔵 JWT 기반 프로필 불러옴:", data);
+  //       dispatch(setUser(data)); // ✅ 여기서 Redux에 저장!
+  //     }
+  //   };
 
-    fetchProfile();
-  }, []);
+  //   fetchProfile();
+  // }, []);
 
   useEffect(() => {
     console.log("🔍🔍 activeTab 변경:", activeTab);
