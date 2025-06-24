@@ -52,7 +52,7 @@ export default function SearchPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div id="sidemain" className="max-w-4xl mx-auto px-4 py-10">
         <h1 className="text-2xl font-bold mb-6">
           🔍 <span className="text-blue-600">"{query}"</span> 검색 결과
         </h1>

@@ -97,7 +97,10 @@ export default function LoginPage() {
 
   return (
     <MainLayout>
-      <div className="margin-top-100px flex justify-center items-center min-h-[calc(100vh-80px)] p-5">
+      <div
+        id="sidemain"
+        className="margin-top-100px flex justify-center items-center min-h-[calc(100vh-80px)] p-5"
+      >
         <div className="bg-white rounded-2xl p-10 shadow-xl w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-5">

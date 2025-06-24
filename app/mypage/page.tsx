@@ -1490,7 +1490,7 @@ export default function MyPage() {
 
   return (
     <MainLayout>
-      <div className="max-w-6xl mx-auto p-5">
+      <div id="sidemain" className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* 왼쪽 사이드바 */}
           <div className="lg:col-span-1">

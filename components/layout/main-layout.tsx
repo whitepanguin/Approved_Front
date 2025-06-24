@@ -17,7 +17,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div id="main" className={sidebarOpen ? "shifted" : ""}>
+      <div id="sidemain" className={sidebarOpen ? "shifted" : ""}>
         <Header onMenuClick={() => setSidebarOpen(true)} />
         {children}
         <FloatingDictButton />

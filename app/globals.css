@@ -108,20 +108,29 @@ body {
 /* 메인 콘텐츠 스타일 */
 #main {
   transition: margin-left 0.5s;
-  padding: 16px 0;
-  height: 100vh;
+  padding: 0 0;
+  /* height: 100vh; */
   display: flex;
   flex-direction: column;
 
-  background-image: url("/images/");
-  background-size: cover;
-  background-position: center;
-  background-repeat: repeat;
-  z-index: 30;
+  /* background-color: #dbeafe; */
+  z-index: 10;
+}
+
+#sidemain {
+  transition: margin-left 0.5s;
+  padding: 0 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  background-color: #dbeafe;
+  z-index: 10;
 }
 
 Header {
-  z-index: 99;
+  z-index: 5;
+  background: linear-gradient(to right, #f0f4f9, #dbeafe);
 }
 
 #main.shifted {

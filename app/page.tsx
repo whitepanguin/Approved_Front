@@ -46,10 +46,18 @@ export default function HomePage() {
     }
   };
 
-  const handleSearch = (type: "ai" | "normal") => {
+  const handleClick = () => {
+    if (!isLogin) {
+      alert("로그인 후 이용해주세요.");
+      router.push("/login");
+      return;
+    }
+
     if (searchQuery.trim()) {
       addToSearchHistory(searchQuery);
-      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`);
+      router.push(
+        `/searchpage?search=${encodeURIComponent(searchQuery.trim())}`
+      );
     }
   };
 
@@ -134,9 +142,9 @@ export default function HomePage() {
 
       <MainLayout>
         {/* 🎨 배경 래퍼 추가 - 여기가 새로 추가된 부분입니다! */}
-        <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-100 to-indigo-200 relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-100 to-indigo-200 relative overflow-hidden ">
           {/* 동적 배경 요소들 */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-[99]">
             {/* 떠다니는 문서 아이콘들 - 📄 크기 증가 (w-8 h-8 → w-12 h-12, opacity-20 → opacity-35) */}
             <div
               className="absolute top-20 left-10 text-blue-200 opacity-35 animate-bounce"
@@ -351,18 +359,18 @@ export default function HomePage() {
 
           <div
             id="main"
-            className="relative w-full h-screen overflow-hidden max-w-5xl mx-auto flex flex-col items-center justify-center px-5 -translate-y-10 z-10"
+            className="relative w-full h-screen overflow-hidden max-w-5xl mx-auto flex flex-col items-center justify-center px-5 -translate-y-10 z-[99]"
           >
             <div className="w-full flex flex-col items-center">
-              <div className="w-full flex items-start mb-6">
-                <div className="flex items-start gap-3">
+              <div className="w-full flex items-start mb-2 pl-[35px]">
+                <div className="flex items-start gap-1">
                   <img
                     src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
                     alt="허가요 로고"
                     className="w-14 h-14 object-contain"
                   />
                   <div className="flex items-baseline mt-2">
-                    <h1 className="text-3xl font-bold text-gray-800">
+                    <h1 className="text-3xl font-bold text-gray-800 mt-[6px]">
                       <span className="text-blue-600">허가요</span>
                     </h1>
                     <div className="text-sm text-black-500 ml-[30px] whitespace-nowrap">
@@ -398,18 +406,23 @@ export default function HomePage() {
                     className="flex-1 py-4 pr-4 outline-none border-none text-base bg-transparent"
                   />
                 </div>
-                <Link
-                  href="/map"
+                <button
+                  onClick={handleClick}
                   className="h-[56px] px-5 py-3 bg-blue-600 text-white text-sm rounded-full shadow-lg hover:bg-blue-700 whitespace-nowrap flex items-center justify-center"
                 >
                   <svg
                     className="w-5 h-5"
                     fill="currentColor"
                     viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                    <path
+                      fillRule="evenodd"
+                      d="M10 2a8 8 0 105.293 14.293l4.707 4.707a1 1 0 001.414-1.414l-4.707-4.707A8 8 0 0010 2zm-6 8a6 6 0 1112 0 6 6 0 01-12 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
-                </Link>
+                </button>
               </div>
               <div className="w-full max-w-6xl flex justify-start items-center gap-4">
                 <Link
@@ -444,6 +457,48 @@ export default function HomePage() {
                     {(count + 9900).toLocaleString()}
                   </span>
                 </div>
+                <Link
+                  href="/community"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
+                >
+                  <svg
+                    className="w-4 h-4 text-blue-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.94 6.06l-2.5 6.14a1 1 0 01-.54.54l-6.14 2.5 2.5-6.14a1 1 0 01.54-.54l6.14-2.5z" />
+                  </svg>
+                  커뮤니티
+                </Link>
+                <Link
+                  href="/map"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
+                >
+                  <svg
+                    className="w-4 h-4 text-blue-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.94 6.06l-2.5 6.14a1 1 0 01-.54.54l-6.14 2.5 2.5-6.14a1 1 0 01.54-.54l6.14-2.5z" />
+                  </svg>
+                  지도
+                </Link>
+                <Link
+                  href="/mypage"
+                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
+                >
+                  <svg
+                    className="w-4 h-4 text-blue-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.94 6.06l-2.5 6.14a1 1 0 01-.54.54l-6.14 2.5 2.5-6.14a1 1 0 01.54-.54l6.14-2.5z" />
+                  </svg>
+                  마이페이지
+                </Link>
               </div>
             </div>
           </div>

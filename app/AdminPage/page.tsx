@@ -6,9 +6,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { setUser, setUserStatus } from "../../modules/user";
 import { useRouter } from "next/navigation";
-import PieChart  from "./providerChart";
-import CategoryChart  from "./categoryChart";
-
+import PieChart from "./providerChart";
+import CategoryChart from "./categoryChart";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -33,15 +32,13 @@ const [qnaComments, setQnaComments] = useState([]); // 댓글 저장용
   const [selectedFilter, setSelectedFilter] = useState("전체");
 
   const filteredQnaList = qnaList
-  .filter((qna) => {
-    if (selectedFilter === "전체") return true;
-    return qna.status === selectedFilter;
-  })
-  .sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
-
+    .filter((qna) => {
+      if (selectedFilter === "전체") return true;
+      return qna.status === selectedFilter;
+    })
+    .sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
@@ -49,51 +46,54 @@ const [qnaComments, setQnaComments] = useState([]); // 댓글 저장용
   const router = useRouter();
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-const [editedName, setEditedName] = useState<string>("");
-// 상태 추가
-const [editField, setEditField] = useState<{ postId: string; type: "views" | "likes" | "reports"} | null>(null);
-const [editValue, setEditValue] = useState<string>("");
+  const [editedName, setEditedName] = useState<string>("");
+  // 상태 추가
+  const [editField, setEditField] = useState<{
+    postId: string;
+    type: "views" | "likes" | "reports";
+  } | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
 
-useEffect(() => {
-  const fetchAllPosts = async () => {
-    const response = await fetch("http://localhost:8000/posts");
-    const data = await response.json();
+  useEffect(() => {
+    const fetchAllPosts = async () => {
+      const response = await fetch("http://localhost:8000/posts");
+      const data = await response.json();
 
-    const devOnly = data.filter((post: Post) => post.category === "dev");
-    setQnaList(devOnly);
-  };
+      const devOnly = data.filter((post: Post) => post.category === "dev");
+      setQnaList(devOnly);
+    };
 
-  fetchAllPosts();
-}, []);
+    fetchAllPosts();
+  }, []);
 
-const [qnaNum, setQnaNum] = useState(0)
+  const [qnaNum, setQnaNum] = useState(0);
 
-useEffect(() => {
-  const fetchQnas = async () => {
-    const response = await fetch("http://localhost:8000/posts");
-    const data = await response.json();
+  useEffect(() => {
+    const fetchQnas = async () => {
+      const response = await fetch("http://localhost:8000/posts");
+      const data = await response.json();
 
-    const yetOnly = data.filter((post: Post) => post.category === "dev" && post.status === "답변대기")
-    setQnaNum(yetOnly.length)
-  }
+      const yetOnly = data.filter(
+        (post: Post) => post.category === "dev" && post.status === "답변대기"
+      );
+      setQnaNum(yetOnly.length);
+    };
 
-  fetchQnas();
-})
+    fetchQnas();
+  });
 
-const [reportedNum, setReportedNum] = useState(0)
+  const [reportedNum, setReportedNum] = useState(0);
 
-useEffect(() => {
-  const fetchReportedNum = async () => {
-    const response = await fetch("http://localhost:8000/posts");
-    const data = await response.json();
+  useEffect(() => {
+    const fetchReportedNum = async () => {
+      const response = await fetch("http://localhost:8000/posts");
+      const data = await response.json();
 
-    const reportedNums = data.filter((post: Post) => post.category === "dev")
-    setReportedNum(reportedNums.length)
-  }
-  fetchReportedNum();
-})
-
-
+      const reportedNums = data.filter((post: Post) => post.category === "dev");
+      setReportedNum(reportedNums.length);
+    };
+    fetchReportedNum();
+  });
 
   // 샘플 데이터
   // const qnaList = [
@@ -183,6 +183,7 @@ useEffect(() => {
   }, [reportCount]);
 
   interface Post {
+<<<<<<< Updated upstream
   id: string;
   title: string;
   content: string;
@@ -210,67 +211,105 @@ const postsPerPage = 4; // 한 페이지당 게시글 수
 const [currentUserPage, setCurrentUserPage] = useState(1);
 const usersPerPage = 3;
 
+=======
+    id: string;
+    title: string;
+    content: string;
+    preview: string;
+    userid: string;
+    category: string;
+    tags: string[];
+    comments: number;
+    likes: number;
+    views: number;
+    hot: boolean; // ✔ isHot → hot
+    notice: boolean; // ✔ isNotice → notice
+    reported: boolean; // ✔ isReported → reported
+    createdAt: string;
+    updatedAt: string;
+    reports: number;
+    _class: string;
+    status: "답변대기" | "답변완료";
+  }
 
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [currentPage, setCurrentPage] = useState(1); // 현재 페이지
+  const postsPerPage = 5; // 한 페이지당 게시글 수
+>>>>>>> Stashed changes
+
+  const [currentUserPage, setCurrentUserPage] = useState(1);
+  const usersPerPage = 3;
 
   useEffect(() => {
-  const fetchAllPosts = async () => {
-    try {
-      const response = await fetch("http://localhost:8000/posts", {
-        method: "GET",
-      });
+    const fetchAllPosts = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/posts", {
+          method: "GET",
+        });
 
-      if (!response.ok) {
-        throw new Error("서버 응답 오류");
+        if (!response.ok) {
+          throw new Error("서버 응답 오류");
+        }
+
+        const data = await response.json();
+        console.log("전체 게시글:", data);
+        setAllPosts(data);
+      } catch (error) {
+        console.error("전체 게시글 가져오기 실패:", error);
       }
+    };
 
-      const data = await response.json();
-      console.log("전체 게시글:", data);
-      setAllPosts(data);
-    } catch (error) {
-      console.error("전체 게시글 가져오기 실패:", error);
-    }
-  };
+    fetchAllPosts();
+  }, []);
 
-  fetchAllPosts();
-}, []);
-
-interface User {
-  id: number;
-  email: string;
-  name: string;
-  userid: string;
-  birthDate: string;
-  phone: string;
-  businessType: string;
-  address: string;
-  profile: string;
-  provider: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-  password: string | null;
-  likedPosts: string[];
-  isReported: boolean;
-}
+  interface User {
+    id: number;
+    email: string;
+    name: string;
+    userid: string;
+    birthDate: string;
+    phone: string;
+    businessType: string;
+    address: string;
+    profile: string;
+    provider: string;
+    createdAt: string | null;
+    updatedAt: string | null;
+    password: string | null;
+    likedPosts: string[];
+    isReported: boolean;
+  }
 
   const [userList, setUserList] = useState<User[]>([]);
 
-  const newestUserName = [...userList]
-  .filter((user) => user.createdAt !== null)
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  )[0]?.name || "알 수 없음";
+  const newestUserName =
+    [...userList]
+      .filter((user) => user.createdAt !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt as string).getTime() -
+          new Date(a.createdAt as string).getTime()
+      )[0]?.name || "알 수 없음";
 
+  const newestPostName =
+    [...allPosts]
+      .filter((post) => post.category !== "dev" && post.createdAt !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt as string).getTime() -
+          new Date(a.createdAt as string).getTime()
+      )[0]?.title || "알 수 없음";
 
-  const newestPostName = [...allPosts]
-  .filter((post) => post.category !== "dev" && post.createdAt !== null)
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  )[0]?.title || "알 수 없음";
+  const newestQnaName =
+    [...allPosts]
+      .filter((post) => post.category == "dev" && post.createdAt !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt as string).getTime() -
+          new Date(a.createdAt as string).getTime()
+      )[0]?.title || "알 수 없음";
 
+<<<<<<< Updated upstream
   const newestQnaName = [...allPosts]
   .filter((post) => post.category !== "dev" && post.createdAt !== null)
   .sort(
@@ -278,69 +317,69 @@ interface User {
       new Date(b.createdAt as string).getTime() -
       new Date(a.createdAt as string).getTime()
   )[0]?.title || "알 수 없음";
+=======
+  // "2025-06-21 14:16:55" 문자열 → KST(LocalTime)으로 강제 처리
+  const parseDateKST = (dateString: string): Date => {
+    const [datePart, timePart] = dateString.split(" ");
+    const [year, month, day] = datePart.split("-").map(Number);
+    const [hour, minute, second] = timePart.split(":").map(Number);
+>>>>>>> Stashed changes
 
-// "2025-06-21 14:16:55" 문자열 → KST(LocalTime)으로 강제 처리
-const parseDateKST = (dateString: string): Date => {
-  const [datePart, timePart] = dateString.split(" ");
-  const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute, second] = timePart.split(":").map(Number);
+    return new Date(year, month - 1, day, hour, minute, second); // ✅ 로컬 시간 기준 Date 객체 생성
+  };
 
-  return new Date(year, month - 1, day, hour, minute, second); // ✅ 로컬 시간 기준 Date 객체 생성
-};
+  const getTimeAgo = (createdAt: string | null) => {
+    if (!createdAt) return "알 수 없음";
 
-const getTimeAgo = (createdAt: string | null) => {
-  if (!createdAt) return "알 수 없음";
+    const created = parseDateKST(createdAt);
+    const now = new Date();
 
-  const created = parseDateKST(createdAt);
-  const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-  const diffMs = now.getTime() - created.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
+    if (diffMinutes < 1) return "방금 전";
+    if (diffMinutes < 60) return `${diffMinutes}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    return `${diffDays}일 전`;
+  };
 
-  if (diffMinutes < 1) return "방금 전";
-  if (diffMinutes < 60) return `${diffMinutes}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  return `${diffDays}일 전`;
-};
+  const newestUser = [...userList]
+    .filter((user) => user.createdAt !== null)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt as string).getTime() -
+        new Date(a.createdAt as string).getTime()
+    )[0];
 
+  const newestPost = [...allPosts]
+    .filter((post) => post.category !== "dev" && post.createdAt !== null)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt as string).getTime() -
+        new Date(a.createdAt as string).getTime()
+    )[0];
 
-const newestUser = [...userList]
-  .filter((user) => user.createdAt !== null)
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  )[0];
+  const newestQna = [...allPosts]
+    .filter((post) => post.category == "dev" && post.createdAt !== null)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt as string).getTime() -
+        new Date(a.createdAt as string).getTime()
+    )[0];
 
-const newestPost = [...allPosts]
-  .filter((post) => post.category !== "dev" && post.createdAt !== null)
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  )[0];
+  const newestUserJoinedAgo = getTimeAgo(newestUser?.createdAt || null);
+  const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
+  const newestQnaAgo = getTimeAgo(newestQna?.createdAt || null);
 
-const newestQna = [...allPosts]
-  .filter((post) => post.category == "dev" && post.createdAt !== null)
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  )[0];
-
-const newestUserJoinedAgo = getTimeAgo(newestUser?.createdAt || null);
-const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
-const newestQnaAgo = getTimeAgo(newestQna?.createdAt || null);
-
-const sortedPosts = [...allPosts]
-  .filter((post) => post.createdAt !== null && post.category !== "dev")
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  );
+  const sortedPosts = [...allPosts]
+    .filter((post) => post.createdAt !== null && post.category !== "dev")
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt as string).getTime() -
+        new Date(a.createdAt as string).getTime()
+    );
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -365,53 +404,53 @@ const sortedPosts = [...allPosts]
   }, []); // ✅ 최초 한 번만 실행
 
   const handleDelete = async (postId: number) => {
-  try {
-    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
-      method: "DELETE",
-    });
+    try {
+      const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+        method: "DELETE",
+      });
 
-    if (response.ok) {
-      console.log("삭제 성공!");
-      // 상태에서 해당 글 제거
-      setAllPosts((prev) => prev.filter((post) => post.id !== String(postId)));
-    } else {
-      console.error("삭제 실패");
+      if (response.ok) {
+        console.log("삭제 성공!");
+        // 상태에서 해당 글 제거
+        setAllPosts((prev) =>
+          prev.filter((post) => post.id !== String(postId))
+        );
+      } else {
+        console.error("삭제 실패");
+      }
+    } catch (err) {
+      console.error("에러 발생:", err);
     }
-  } catch (err) {
-    console.error("에러 발생:", err);
-  }
-};
+  };
 
-const handleAdminUserDelete = async (email) => {
-  const confirmed = window.confirm("정말 해당 유저를 탈퇴시키겠습니까?");
-  if (!confirmed) return;
+  const handleAdminUserDelete = async (email) => {
+    const confirmed = window.confirm("정말 해당 유저를 탈퇴시키겠습니까?");
+    if (!confirmed) return;
 
-  try {
-    const response = await fetch("http://localhost:8000/users/remove", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const response = await fetch("http://localhost:8000/users/remove", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok) {
-      alert(data.message); // ex: 회원탈퇴 완료. 다음생에 만나요
-      // 필요 시 사용자 목록 갱신
+      if (response.ok) {
+        alert(data.message); // ex: 회원탈퇴 완료. 다음생에 만나요
+        // 필요 시 사용자 목록 갱신
 
-      window.location.reload();
-    } else {
-      alert(data.message || "탈퇴 실패");
+        window.location.reload();
+      } else {
+        alert(data.message || "탈퇴 실패");
+      }
+    } catch (error) {
+      console.error("탈퇴 중 에러:", error);
+      alert("서버 오류로 탈퇴 요청 실패");
     }
-  } catch (error) {
-    console.error("탈퇴 중 에러:", error);
-    alert("서버 오류로 탈퇴 요청 실패");
-  }
-};
-
-
+  };
 
   // const handleQuickReply = (qnaId: number, reply: string) => {
   //   console.log(`QnA ${qnaId}에 답변: ${reply}`);
@@ -419,54 +458,55 @@ const handleAdminUserDelete = async (email) => {
   // };
 
   const handleQuickReply = async (qnaId: number, reply: string) => {
-  try {
-    // 1. 댓글 등록
-    const commentRes = await fetch("http://localhost:8000/comments", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        postId: qnaId,
-        content: reply,
-        author: currentUser?.userid || "관리자",
-      }),
-    });
+    try {
+      // 1. 댓글 등록
+      const commentRes = await fetch("http://localhost:8000/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          postId: qnaId,
+          content: reply,
+          author: currentUser?.userid || "관리자",
+        }),
+      });
 
-    if (!commentRes.ok) throw new Error("댓글 등록 실패");
+      if (!commentRes.ok) throw new Error("댓글 등록 실패");
 
-    // 2. QnA 상태를 '답변완료'로 백엔드에 저장
-    const statusRes = await fetch(`http://localhost:8000/posts/${qnaId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        status: "답변완료",
-      }),
-    });
+      // 2. QnA 상태를 '답변완료'로 백엔드에 저장
+      const statusRes = await fetch(`http://localhost:8000/posts/${qnaId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "답변완료",
+        }),
+      });
 
-    if (!statusRes.ok) throw new Error("상태 변경 실패");
+      if (!statusRes.ok) throw new Error("상태 변경 실패");
 
-    // 3. 프론트에서도 상태 반영
-    setQnaList((prev) =>
-      prev.map((qna) =>
-        qna.id === String(qnaId) ? { ...qna, status: "답변완료" } : qna
-      )
-    );
+      // 3. 프론트에서도 상태 반영
+      setQnaList((prev) =>
+        prev.map((qna) =>
+          qna.id === String(qnaId) ? { ...qna, status: "답변완료" } : qna
+        )
+      );
 
-    alert("답변이 등록되었습니다.");
-  } catch (err) {
-    console.error("빠른 답변 처리 중 오류:", err);
-    alert("답변 등록 또는 상태 변경 실패");
-  }
-};
+      alert("답변이 등록되었습니다.");
+    } catch (err) {
+      console.error("빠른 답변 처리 중 오류:", err);
+      alert("답변 등록 또는 상태 변경 실패");
+    }
+  };
 
   const handleUserAction = (action: string, userIds: number[]) => {
     console.log(`${action} 실행:`, userIds);
     alert(`${userIds.length}명 유저 ${action} 완료`);
     setSelectedUsers([]);
   };
+<<<<<<< Updated upstream
  const handleSave = async (user: any) => {
   try {
     const response = await fetch("http://localhost:8000/users/modify", {
@@ -476,74 +516,83 @@ const handleAdminUserDelete = async (email) => {
       },
       body: JSON.stringify({ ...user, userid: editedName }),
     });
+=======
+  const handleSave = async (user: any) => {
+    try {
+      const response = await fetch("http://localhost:8000/users/modify", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...user, name: editedName }),
+      });
+>>>>>>> Stashed changes
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (response.ok && data.updateSuccess) {
-      alert(data.message);
+      if (response.ok && data.updateSuccess) {
+        alert(data.message);
 
-      // 화면에서도 수정된 이름 반영
-      setUserList((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, name: editedName } : u))
-      );
+        // 화면에서도 수정된 이름 반영
+        setUserList((prev) =>
+          prev.map((u) => (u.id === user.id ? { ...u, name: editedName } : u))
+        );
 
-      setEditingUserId(null); // 수정 모드 종료
-    } else {
-      alert(data.message || "수정 실패");
+        setEditingUserId(null); // 수정 모드 종료
+      } else {
+        alert(data.message || "수정 실패");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("서버 오류");
     }
-  } catch (err) {
-    console.error(err);
-    alert("서버 오류");
-  }
-};
+  };
 
-const handleUpdate = async (postId: string, type: "views" | "likes" | "reports", newValue: number) => {
-  try {
-    const targetPost = allPosts.find((p) => p.id === postId);
-    if (!targetPost) {
-      console.warn("post를 찾을 수 없습니다:", postId);
-      return;
+  const handleUpdate = async (
+    postId: string,
+    type: "views" | "likes" | "reports",
+    newValue: number
+  ) => {
+    try {
+      const targetPost = allPosts.find((p) => p.id === postId);
+      if (!targetPost) {
+        console.warn("post를 찾을 수 없습니다:", postId);
+        return;
+      }
+
+      const updatedPost = {
+        ...targetPost,
+        views: type === "views" ? newValue : targetPost.views,
+        likes: type === "likes" ? newValue : targetPost.likes,
+        reports: type === "reports" ? newValue : targetPost.reports,
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log("보내는 데이터:", updatedPost);
+
+      const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedPost),
+      });
+
+      const resText = await response.text();
+      console.log("서버 응답:", resText);
+
+      if (response.ok) {
+        setAllPosts((prev) =>
+          prev.map((p) => (p.id === postId ? { ...p, [type]: newValue } : p))
+        );
+        setEditField(null);
+      } else {
+        console.error("서버 저장 실패:", resText);
+      }
+    } catch (err) {
+      console.error("수정 실패:", err);
     }
-
-    const updatedPost = {
-      ...targetPost,
-      views: type === "views" ? newValue : targetPost.views,
-      likes: type === "likes" ? newValue : targetPost.likes,
-      reports: type === "reports" ? newValue : targetPost.reports,
-      updatedAt: new Date().toISOString(),
-    };
-
-    console.log("보내는 데이터:", updatedPost);
-
-    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updatedPost),
-    });
-
-    const resText = await response.text();
-    console.log("서버 응답:", resText);
-
-    if (response.ok) {
-      setAllPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId ? { ...p, [type]: newValue } : p
-        )
-      );
-      setEditField(null);
-    } else {
-      console.error("서버 저장 실패:", resText);
-    }
-  } catch (err) {
-    console.error("수정 실패:", err);
-  }
-};
-
-
-
-
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -591,7 +640,9 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                       <p className="text-orange-600 text-sm font-medium">
                         답변 대기
                       </p>
-                      <p className="text-2xl font-bold text-orange-800">{qnaNum}</p>
+                      <p className="text-2xl font-bold text-orange-800">
+                        {qnaNum}
+                      </p>
                     </div>
                     <i className="fas fa-question-circle text-orange-600 text-2xl"></i>
                   </div>
@@ -617,7 +668,8 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <i className="fas fa-user-plus text-blue-600"></i>
-                      <span className="text-gray-700">새 회원 가입: {newestUserName}
+                      <span className="text-gray-700">
+                        새 회원 가입: {newestUserName}
                       </span>
                     </div>
                     <span className="text-sm text-gray-500">
@@ -631,7 +683,9 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                         새 게시글: {newestPostName}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">{newestPostAgo}</span>
+                    <span className="text-sm text-gray-500">
+                      {newestPostAgo}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
@@ -640,7 +694,9 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                         새 질문: {newestQnaName}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">{newestQnaAgo}</span>
+                    <span className="text-sm text-gray-500">
+                      {newestQnaAgo}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -648,10 +704,11 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
           </div>
         );
 
-        case "chart":
+      case "chart":
         return (
           <div className="space-y-8 w-[850px] h-[800px]">
             <div>
+<<<<<<< Updated upstream
               <h3 className="text-xl font-semibold text-gray-800 mb-4 w-[900px]">
                 차트
               </h3>
@@ -661,13 +718,31 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
               <div className="flex flex-wrap gap-6 mt-8">
                 <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
                   <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
+=======
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">차트</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                커뮤니티 현황을 차트로 확인하세요
+              </p>
+
+              <div className="flex flex-wrap gap-6 mt-8">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+                  <h4 className="font-medium text-gray-800 mb-4">
+                    가입 플랫폼
+                  </h4>
+>>>>>>> Stashed changes
                   <div className="w-full max-w-[400px] h-[400px] mx-auto">
                     <PieChart />
                   </div>
                 </div>
 
                 <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+<<<<<<< Updated upstream
                   <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
+=======
+                  <h4 className="font-medium text-gray-800 mb-4">
+                    카테고리 주제
+                  </h4>
+>>>>>>> Stashed changes
                   <div className="w-full max-w-[400px] h-[400px] mx-auto">
                     <CategoryChart />
                   </div>
@@ -680,7 +755,10 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
       case "qna":
         const indexOfLastQna = currentQnaPage * qnasPerPage;
         const indexOfFirstQna = indexOfLastQna - qnasPerPage;
-        const currentQnas = filteredQnaList.slice(indexOfFirstQna, indexOfLastQna);
+        const currentQnas = filteredQnaList.slice(
+          indexOfFirstQna,
+          indexOfLastQna
+        );
 
         return (
           <div className="space-y-8 w-[850px]">
@@ -696,8 +774,11 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">질문 목록</h4>
                   <div className="flex gap-2">
-                    <select 
-                   value={selectedFilter} onChange={(e) => setSelectedFilter(e.target.value)} className="p-2 border border-gray-300 rounded-lg text-sm">
+                    <select
+                      value={selectedFilter}
+                      onChange={(e) => setSelectedFilter(e.target.value)}
+                      className="p-2 border border-gray-300 rounded-lg text-sm"
+                    >
                       <option value="전체">전체</option>
                       <option value="답변대기">답변대기</option>
                       <option value="답변완료">답변완료</option>
@@ -813,6 +894,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
 
 
             <div className="flex justify-center mt-4">
+<<<<<<< Updated upstream
   {(() => {
     const totalQnaPages = Math.ceil(filteredQnaList.length / qnasPerPage);
     const pageGroupSize = 5;
@@ -861,13 +943,39 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
   })()}
 </div>
 
+=======
+              {Array.from(
+                { length: Math.ceil(filteredQnaList.length / qnasPerPage) },
+                (_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setCurrentQnaPage(i + 1)}
+                    className={`mx-1 px-3 py-1 rounded ${
+                      currentQnaPage === i + 1
+                        ? "bg-red-600 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                )
+              )}
+            </div>
+>>>>>>> Stashed changes
           </div>
         );
 
       case "posts":
         const indexOfLastPost = currentPage * postsPerPage;
         const indexOfFirstPost = indexOfLastPost - postsPerPage;
+<<<<<<< Updated upstream
         const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
+=======
+        const currentPosts = sortedPosts.slice(
+          indexOfFirstPost,
+          indexOfLastPost
+        );
+>>>>>>> Stashed changes
         return (
           <div className="space-y-8 w-[850px] h-[800px]">
             <div>
@@ -978,14 +1086,19 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                             {post.createdAt}
                           </td>
                           <td className="p-3 text-gray-600">
-                            {editField?.postId === post.id && editField.type === "views" ? (
+                            {editField?.postId === post.id &&
+                            editField.type === "views" ? (
                               <input
                                 type="number"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
-                                    handleUpdate(post.id, "views", parseInt(editValue));
+                                    handleUpdate(
+                                      post.id,
+                                      "views",
+                                      parseInt(editValue)
+                                    );
                                   }
                                 }}
                                 className="w-12 border px-1 py-0.5 rounded"
@@ -994,7 +1107,10 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                             ) : (
                               <span
                                 onClick={() => {
-                                  setEditField({ postId: post.id, type: "views" });
+                                  setEditField({
+                                    postId: post.id,
+                                    type: "views",
+                                  });
                                   setEditValue(String(post.views));
                                 }}
                                 className="cursor-pointer hover:underline"
@@ -1003,14 +1119,19 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                               </span>
                             )}
                             {" / "}
-                            {editField?.postId === post.id && editField.type === "likes" ? (
+                            {editField?.postId === post.id &&
+                            editField.type === "likes" ? (
                               <input
                                 type="number"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
-                                    handleUpdate(post.id, "likes", parseInt(editValue));
+                                    handleUpdate(
+                                      post.id,
+                                      "likes",
+                                      parseInt(editValue)
+                                    );
                                   }
                                 }}
                                 className="w-12 border px-1 py-0.5 rounded"
@@ -1019,7 +1140,10 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                             ) : (
                               <span
                                 onClick={() => {
-                                  setEditField({ postId: post.id, type: "likes" });
+                                  setEditField({
+                                    postId: post.id,
+                                    type: "likes",
+                                  });
                                   setEditValue(String(post.likes));
                                 }}
                                 className="cursor-pointer hover:underline"
@@ -1028,14 +1152,19 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                               </span>
                             )}
                             {" / "}
-                            {editField?.postId === post.id && editField.type === "reports" ? (
+                            {editField?.postId === post.id &&
+                            editField.type === "reports" ? (
                               <input
                                 type="number"
                                 value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
-                                    handleUpdate(post.id, "reports", parseInt(editValue));
+                                    handleUpdate(
+                                      post.id,
+                                      "reports",
+                                      parseInt(editValue)
+                                    );
                                   }
                                 }}
                                 className="w-12 border px-1 py-0.5 rounded"
@@ -1044,7 +1173,10 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                             ) : (
                               <span
                                 onClick={() => {
-                                  setEditField({ postId: post.id, type: "reports" });
+                                  setEditField({
+                                    postId: post.id,
+                                    type: "reports",
+                                  });
                                   setEditValue(String(post.reports));
                                 }}
                                 className="cursor-pointer hover:underline"
@@ -1066,7 +1198,6 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                           </td>
                           <td className="p-3">
                             <div className="flex gap-1">
-                              
                               <button
                                 onClick={(e) => {
                                   e.preventDefault(); // 폼 제출 막기
@@ -1077,13 +1208,13 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                                 삭제
                               </button>
                             </div>
-                            
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
+<<<<<<< Updated upstream
   {(() => {
     const nonDevPosts = allPosts.filter((post) => post.category !== "dev");
     const totalPages = Math.ceil(nonDevPosts.length / postsPerPage);
@@ -1135,6 +1266,25 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
     );
   })()}
 </div>
+=======
+                    {Array.from(
+                      { length: Math.ceil(allPosts.length / postsPerPage) },
+                      (_, i) => (
+                        <button
+                          key={i + 1}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={`mx-1 px-3 py-1 rounded ${
+                            currentPage === i + 1
+                              ? "bg-red-600 text-white"
+                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      )
+                    )}
+                  </div>
+>>>>>>> Stashed changes
                 </div>
               </div>
             </div>
@@ -1164,8 +1314,6 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
           
         );
 
-
- 
       case "users":
         const indexOfLastUser = currentUserPage * usersPerPage;
         const indexOfFirstUser = indexOfLastUser - usersPerPage;
@@ -1261,34 +1409,69 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                           <td className="p-3">
                             <div className="flex items-center gap-3">
                               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
-                              <img
-                                src={user.profile || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"}
-                                alt="프로필 이미지"
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
-                                }}
-                              />
-                            </div>
-
+                                <img
+                                  src={
+                                    user.profile ||
+                                    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                                  }
+                                  alt="프로필 이미지"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+                                  }}
+                                />
+                              </div>
 
                               <div>
                                 {editingUserId === user.id ? (
                                   <input
                                     type="text"
                                     value={editedName}
+<<<<<<< Updated upstream
                                     onChange={(e) => setEditedName(e.target.value)}
                                     className="border rounded px-2 py-1 text-sm"
                                   />
                                 ) : (
                                   <div className="font-medium text-gray-800">{user.userid}</div>
                                 )}
+=======
+                                    onChange={(e) =>
+                                      setEditedName(e.target.value)
+                                    }
+                                    className="border rounded px-2 py-1 text-sm"
+                                  />
+                                ) : (
+                                  <div className="font-medium text-gray-800">
+                                    {user.name}
+                                  </div>
+                                )}
+
+                                <div className="text-sm text-gray-500">
+                                  최근 로그인: {user.lastLogin}
+                                </div>
+>>>>>>> Stashed changes
                               </div>
                             </div>
                           </td>
                           <td className="p-3 text-gray-700">{user.email}</td>
+<<<<<<< Updated upstream
                           <td className="p-3 text-gray-600">{user.createdAt}</td>
                           
+=======
+                          <td className="p-3 text-gray-600">
+                            {user.businessType}
+                          </td>
+                          <td className="p-3 text-gray-600">
+                            {user.createdAt}
+                          </td>
+                          <td className="p-3 text-gray-600">
+                            <div className="text-sm">
+                              <div>글 {user.posts}개</div>
+                              <div>댓글 {user.comments}개</div>
+                            </div>
+                          </td>
+>>>>>>> Stashed changes
                           <td className="p-3">
                             <span
                               className={`px-2 py-1 rounded text-sm ${
@@ -1334,7 +1517,9 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                                   </button>
                                   <button
                                     className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200"
-                                    onClick={() => handleAdminUserDelete(user.email)}
+                                    onClick={() =>
+                                      handleAdminUserDelete(user.email)
+                                    }
                                   >
                                     삭제
                                   </button>
@@ -1347,6 +1532,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
+<<<<<<< Updated upstream
   {(() => {
     const totalUserPages = Math.ceil(userList.length / usersPerPage);
     const pageGroupSize = 5;
@@ -1395,6 +1581,25 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
   })()}
 </div>
 
+=======
+                    {Array.from(
+                      { length: Math.ceil(userList.length / usersPerPage) },
+                      (_, i) => (
+                        <button
+                          key={i + 1}
+                          onClick={() => setCurrentUserPage(i + 1)}
+                          className={`mx-1 px-3 py-1 rounded ${
+                            currentUserPage === i + 1
+                              ? "bg-red-600 text-white"
+                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      )
+                    )}
+                  </div>
+>>>>>>> Stashed changes
                 </div>
               </div>
             </div>
@@ -1408,7 +1613,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto p-5">
+      <div id="sidemain" className="max-w-7xl mx-auto p-5">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* 왼쪽 사이드바 */}
           <div className="lg:col-span-1">
@@ -1483,9 +1688,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                 >
                   <i
                     className={`fas fa-chart-bar ${
-                      activeTab === "chart"
-                        ? "text-red-600"
-                        : "text-gray-500"
+                      activeTab === "chart" ? "text-red-600" : "text-gray-500"
                     }`}
                   ></i>
                   <span>차트</span>

@@ -181,64 +181,66 @@ export default function SearchableBusinessMap() {
 
   return (
     <MainLayout>
-      <Script
-        src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
-        strategy="beforeInteractive"
-      />
+      <div id="sidemain">
+        <Script
+          src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
+          strategy="beforeInteractive"
+        />
 
-      <div className="max-w-4xl mx-auto p-5">
-        <h1 className="text-2xl font-bold mb-4 text-blue-700">
-          유사업종 / 보완업종 지도
-        </h1>
+        <div className="max-w-4xl mx-auto p-5">
+          <h1 className="text-2xl font-bold mb-4 text-blue-700">
+            유사업종 / 보완업종 지도
+          </h1>
 
-        <div className="bg-gray-100 text-sm p-3 rounded-lg mb-4 shadow">
-          <p className="mb-1">
-            📍 <strong>사용 방법 안내</strong>
-          </p>
-          <ul className="list-disc list-inside">
-            <li>주소와 업종 키워드를 함께 입력하고 검색하세요.</li>
-            <li>
-              반경 <strong>300m 이내</strong> 유사업종 개수에 따라 색상 반경
-              표시:
-            </li>
-            <ul className="list-disc list-inside ml-4">
-              <li>1~2개: 녹색</li>
-              <li>3~4개: 노란색</li>
-              <li>5개 이상: 빨간색</li>
+          <div className="bg-gray-100 text-sm p-3 rounded-lg mb-4 shadow">
+            <p className="mb-1">
+              📍 <strong>사용 방법 안내</strong>
+            </p>
+            <ul className="list-disc list-inside">
+              <li>주소와 업종 키워드를 함께 입력하고 검색하세요.</li>
+              <li>
+                반경 <strong>300m 이내</strong> 유사업종 개수에 따라 색상 반경
+                표시:
+              </li>
+              <ul className="list-disc list-inside ml-4">
+                <li>1~2개: 녹색</li>
+                <li>3~4개: 노란색</li>
+                <li>5개 이상: 빨간색</li>
+              </ul>
+              <li>
+                지도 확대(레벨 3 이하) 시, 유사업종(🔴), 보완업종(🔵) 각각 마커
+                표시
+              </li>
+              <li>마커 클릭 시 업소 이름 및 업종 정보 표시</li>
+              <li>다른 검색을 진행할 경우 지도는 자동 초기화됩니다.</li>
             </ul>
-            <li>
-              지도 확대(레벨 3 이하) 시, 유사업종(🔴), 보완업종(🔵) 각각 마커
-              표시
-            </li>
-            <li>마커 클릭 시 업소 이름 및 업종 정보 표시</li>
-            <li>다른 검색을 진행할 경우 지도는 자동 초기화됩니다.</li>
-          </ul>
-        </div>
+          </div>
 
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            placeholder="예: 맥주집, 노래방, 서점, 문구"
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            className="flex-1 p-3 border rounded-lg"
-          />
-          <input
-            type="text"
-            placeholder="예: 서울 강남구"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="flex-1 p-3 border rounded-lg"
-          />
-          <button
-            onClick={handleSearch}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow"
-          >
-            검색
-          </button>
-        </div>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="예: 맥주집, 노래방, 서점, 문구"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="flex-1 p-3 border rounded-lg"
+            />
+            <input
+              type="text"
+              placeholder="예: 서울 강남구"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="flex-1 p-3 border rounded-lg"
+            />
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow"
+            >
+              검색
+            </button>
+          </div>
 
-        <div id="map" className="w-full h-[600px] rounded-xl shadow-md"></div>
+          <div id="map" className="w-full h-[600px] rounded-xl shadow-md"></div>
+        </div>
       </div>
     </MainLayout>
   );
