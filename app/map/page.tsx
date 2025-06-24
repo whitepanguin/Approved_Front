@@ -207,13 +207,13 @@ export default function SearchableBusinessMap() {
         strategy="beforeInteractive"
       />
 
-      <div className="max-w-7xl mx-auto px-0">
+      <div className="max-w-7xl mx-auto px-0 mt-[24px]">
         <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
           유사업종 / 보완업종 지도
         </h1>
       </div>
 
-      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8">
+      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8 mt-[24px]">
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-sm p-6 rounded-xl shadow-lg">
           <p className="mb-3 text-blue-800 font-semibold text-base">
             📍 <strong>사용 방법 안내</strong>
@@ -243,7 +243,7 @@ export default function SearchableBusinessMap() {
         </div>
       </div>
 
-      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8">
+      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8 mt-[24px]">
         <div className="flex gap-4 w-full">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -280,7 +280,7 @@ export default function SearchableBusinessMap() {
         </div>
       </div>
 
-      <div className="w-full px-4 mt-6">
+      <div className="w-full px-4 mt-6 mb-[24px]">
         <div className="max-w-7xl mx-auto">
           <div
             id="map"
