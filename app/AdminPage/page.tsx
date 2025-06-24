@@ -271,7 +271,7 @@ export default function AdminPage() {
 
   const newestQnaName =
     [...allPosts]
-      .filter((post) => post.category !== "dev" && post.createdAt !== null)
+      .filter((post) => post.category == "dev" && post.createdAt !== null)
       .sort(
         (a, b) =>
           new Date(b.createdAt as string).getTime() -
@@ -609,15 +609,15 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl">
                 <h4 className="font-medium text-gray-800 mb-4">최근 활동</h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
-                      <i className="fas fa-user-plus text-blue-600"></i>
-                      <span className="text-gray-700">
-                        새 회원 가입: {newestUserName}
-                      </span>
+                      <span className="text-2xl">🧑‍💼</span> {/* 회원가입 */}
+        <span className="text-gray-700">
+          새 회원 가입: {newestUserName}
+        </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestUserJoinedAgo}
@@ -625,10 +625,10 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
-                      <i className="fas fa-file-alt text-green-600"></i>
-                      <span className="text-gray-700">
-                        새 게시글: {newestPostName}
-                      </span>
+                      <span className="text-2xl">📝</span> {/* 게시글 */}
+        <span className="text-gray-700">
+          새 게시글: {newestPostName}
+        </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestPostAgo}
@@ -636,10 +636,11 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
-                      <i className="fas fa-question-circle text-orange-600"></i>
-                      <span className="text-gray-700">
-                        새 질문: {newestQnaName}
-                      </span>
+                      <span className="text-2xl">❓</span> {/* 질문 */}
+        <span className="text-gray-700">
+          새 질문: {newestQnaName}
+        </span>
+
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestQnaAgo}
@@ -662,7 +663,7 @@ export default function AdminPage() {
                 커뮤니티 현황을 차트로 확인하세요
               </p>
               <div className="flex flex-wrap gap-6 mt-8">
-                <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl flex-1 min-w-[400px]">
                   <h4 className="font-medium text-gray-800 mb-4">
                     가입 플랫폼
                   </h4>
@@ -671,7 +672,7 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl flex-1 min-w-[400px]">
                   <h4 className="font-medium text-gray-800 mb-4">
                     카테고리 주제
                   </h4>
@@ -702,14 +703,14 @@ export default function AdminPage() {
                 질문에 빠르게 답변하고 관리하세요
               </p>
 
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="bg-white rounded-2xl p-6 ">
                 <div className="flex justify-between items-center mb-6">
-                  <h4 className="font-medium text-gray-800">질문 목록</h4>
+                  <h4 className="font-medium text-gray-800"></h4>
                   <div className="flex gap-2">
                     <select
                       value={selectedFilter}
                       onChange={(e) => setSelectedFilter(e.target.value)}
-                      className="p-2 border border-gray-300 rounded-lg text-sm"
+                      className="p-2 border border-gray-300 rounded-xl text-sm"
                     >
                       <option value="전체">전체</option>
                       <option value="답변대기">답변대기</option>
@@ -722,7 +723,7 @@ export default function AdminPage() {
                   {currentQnas.map((qna) => (
                     <div
                       key={qna.id}
-                      className="border border-gray-200 rounded-lg p-5"
+                      className="border border-gray-200 rounded-2xl p-5"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -922,11 +923,11 @@ export default function AdminPage() {
                 모든 게시글을 관리하고 수정하세요
               </p>
 
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="bg-white rounded-lg p-6 border rounded-xl border-gray-200">
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">전체 게시글</h4>
                   <div className="flex gap-2">
-                    <select className="p-2 border border-gray-300 rounded-lg text-sm">
+                    <select className="p-2 border border-gray-300 rounded-xl text-sm">
                       <option>전체</option>
                       <option>정상</option>
                       <option>신고</option>
@@ -1267,11 +1268,11 @@ export default function AdminPage() {
                 회원 정보를 관리하고 수정하세요
               </p>
 
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl">
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">회원 목록</h4>
                   <div className="flex gap-2">
-                    <select className="p-2 border border-gray-300 rounded-lg text-sm">
+                    <select className="p-2 border border-gray-300 rounded-xl text-sm">
                       <option>전체</option>
                       <option>활성</option>
                       <option>정지</option>
