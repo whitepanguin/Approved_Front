@@ -18,10 +18,8 @@ const AuthGate = () => {
   useEffect(() => {
     const jwtToken =
       localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
-
-    if (jwtToken && isLogin) {
+    if (jwtToken || isLogin) {
       localStorage.setItem("jwtToken", jwtToken);
-
       const authenticate = async () => {
         try {
           const res = await fetch("http://localhost:8000/auth/jwt", {
