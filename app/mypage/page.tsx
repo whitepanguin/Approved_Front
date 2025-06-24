@@ -18,6 +18,7 @@ import {
 
 import PostCard from "@/components/postCard/postCard"; // 꼭 경로 맞게
 import PostModal from "@/components/postModal/postModal";
+import { useRouter } from "next/navigation";
 type Post = {
   _id: string;
   title: string;
@@ -111,6 +112,14 @@ export default function MyPage() {
   const [showPostModal, setShowPostModal] = useState(false);
   const getPostKey = (p: Partial<Post>) => p._id || (p as any).id;
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user.currentUser) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/");
+    }
+  }, []);
 
   // ✅ 최초 통계 한방에 불러오기
   useEffect(() => {
