@@ -9,10 +9,12 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import { useRouter } from "next/navigation";
 import type { RootState } from "@/store";
 import { useSelector } from "react-redux";
+import IntroPreview from "./IntroPreview";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [introPassed, setIntroPassed] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [count, setCount] = useState<number>(0);
   const { addToSearchHistory } = useApp();
   const router = useRouter();
@@ -33,6 +35,15 @@ export default function HomePage() {
 
   useEffect(() => {
     document.body.style.overflow = introPassed ? "auto" : "hidden";
+  }, [introPassed]);
+
+  useEffect(() => {
+    if (!introPassed) {
+      const interval = setInterval(() => {
+        setCurrentStep((prev) => (prev + 1) % 3); // steps.length = 3
+      }, 3000);
+      return () => clearInterval(interval);
+    }
   }, [introPassed]);
 
   const handleStart = () => {
@@ -99,45 +110,10 @@ export default function HomePage() {
   return (
     <>
       {!introPassed && (
-        <div
-          id="intro"
-          className="relative h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat px-10"
-          style={{
-            backgroundImage: `url("https://img.freepik.com/premium-photo/businesswoman-male-lawyer-judge-consult-having-team-meeting-with-client_28283-995.jpg?w=740")`,
-          }}
-        >
-          <div className="absolute inset-0 bg-black opacity-50 z-0" />
-          <div className="relative z-10 flex w-full max-w-7xl justify-between items-center text-white">
-            <div className="flex flex-col max-w-7xl items-start gap-5">
-              <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
-                alt="허가요 로고"
-                className="w-28 h-28 mb-2"
-              />
-              <h1 className="text-3xl md:text-4xl font-bold">
-                대한민국 인허가 정보 플랫폼 <br />
-                <span className="text-blue-400">허가요</span>
-              </h1>
-              <button
-                onClick={handleStart}
-                className="mt-6 px-6 py-3 border border-white text-white rounded-full shadow-lg hover:bg-white hover:text-black transition bg-transparent"
-              >
-                ↓ 시작하기
-              </button>
-            </div>
-            <div className="flex flex-col gap-4 text-right">
-              <div className="px-4 py-2 bg-white/20 rounded-full text-base font-semibold shadow-md backdrop-blur-sm">
-                정부 공식 데이터 기반
-              </div>
-              <div className="px-4 py-2 bg-white/20 rounded-full text-base font-semibold shadow-md backdrop-blur-sm">
-                실시간 업데이트
-              </div>
-              <div className="px-4 py-2 bg-white/20 rounded-full text-base font-semibold shadow-md backdrop-blur-sm">
-                AI 기반 정확한 검색
-              </div>
-            </div>
-          </div>
-        </div>
+        <IntroPreview
+          onStart={handleStart}
+          currentStep={currentStep}
+        />
       )}
 
       <MainLayout introPassed={introPassed}>

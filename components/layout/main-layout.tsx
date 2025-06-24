@@ -12,7 +12,10 @@ interface MainLayoutProps {
   introPassed: boolean;
 }
 
-export default function MainLayout({ children, introPassed }: MainLayoutProps) {
+export default function MainLayout({
+  children,
+  introPassed = true,
+}: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
