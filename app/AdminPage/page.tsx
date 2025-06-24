@@ -21,6 +21,15 @@ export default function AdminPage() {
   const [currentQnaPage, setCurrentQnaPage] = useState(1);
   const qnasPerPage = 3;
 
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
+
+const [selectedQna, setSelectedQna] = useState(null);
+const [isQnaModalOpen, setIsQnaModalOpen] = useState(false);
+const [qnaComments, setQnaComments] = useState([]); // 댓글 저장용
+
+
+
   const [selectedFilter, setSelectedFilter] = useState("전체");
 
   const filteredQnaList = qnaList
@@ -137,6 +146,24 @@ useEffect(() => {
     getPostcount();
   }, [postCount]);
 
+useEffect(() => {
+  const fetchComments = async () => {
+    if (isQnaModalOpen && selectedQna) {
+      try {
+        const res = await fetch(`http://localhost:8000/comments/${selectedQna.id}`);
+        const data = await res.json();
+        console.log(data[0].content)
+        setQnaComments(data[0].content); // 댓글 목록 업데이트
+      } catch (error) {
+        console.error("댓글 불러오기 실패:", error);
+      }
+    }
+  };
+
+  fetchComments();
+}, [isQnaModalOpen, selectedQna]);
+
+
   useEffect(() => {
     const getReportcount = async () => {
       try {
@@ -176,11 +203,9 @@ useEffect(() => {
   status: "답변대기" | "답변완료";
 }
 
-
-
   const [allPosts, setAllPosts] = useState<Post[]>([]);
   const [currentPage, setCurrentPage] = useState(1); // 현재 페이지
-const postsPerPage = 5; // 한 페이지당 게시글 수
+const postsPerPage = 4; // 한 페이지당 게시글 수
 
 const [currentUserPage, setCurrentUserPage] = useState(1);
 const usersPerPage = 3;
@@ -247,7 +272,7 @@ interface User {
   )[0]?.title || "알 수 없음";
 
   const newestQnaName = [...allPosts]
-  .filter((post) => post.category == "dev" && post.createdAt !== null)
+  .filter((post) => post.category !== "dev" && post.createdAt !== null)
   .sort(
     (a, b) =>
       new Date(b.createdAt as string).getTime() -
@@ -442,14 +467,14 @@ const handleAdminUserDelete = async (email) => {
     alert(`${userIds.length}명 유저 ${action} 완료`);
     setSelectedUsers([]);
   };
-         const handleSave = async (user: any) => {
+ const handleSave = async (user: any) => {
   try {
     const response = await fetch("http://localhost:8000/users/modify", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ ...user, name: editedName }),
+      body: JSON.stringify({ ...user, userid: editedName }),
     });
 
     const data = await response.json();
@@ -524,7 +549,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
     switch (activeTab) {
       case "dashboard":
         return (
-          <div className="w-full space-y-8">
+          <div className="space-y-8 w-[850px] h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 관리자 대시보드
@@ -590,7 +615,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                 <h4 className="font-medium text-gray-800 mb-4">최근 활동</h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 h-[70px]">
                       <i className="fas fa-user-plus text-blue-600"></i>
                       <span className="text-gray-700">새 회원 가입: {newestUserName}
                       </span>
@@ -600,7 +625,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                     </span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 h-[70px]">
                       <i className="fas fa-file-alt text-green-600"></i>
                       <span className="text-gray-700">
                         새 게시글: {newestPostName}
@@ -609,7 +634,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                     <span className="text-sm text-gray-500">{newestPostAgo}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 h-[70px]">
                       <i className="fas fa-question-circle text-orange-600"></i>
                       <span className="text-gray-700">
                         새 질문: {newestQnaName}
@@ -625,34 +650,29 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
 
         case "chart":
         return (
-          <div className="w-full space-y-8">
+          <div className="space-y-8 w-[850px] h-[800px]">
             <div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 w-[900px]">
                 차트
               </h3>
               <p className="text-sm text-gray-500 mb-6">
                 커뮤니티 현황을 차트로 확인하세요
               </p>
-
-              
-
-              
               <div className="flex flex-wrap gap-6 mt-8">
-  <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
-    <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
-    <div className="w-full max-w-[400px] h-[400px] mx-auto">
-      <PieChart />
-    </div>
-  </div>
+                <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+                  <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
+                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
+                    <PieChart />
+                  </div>
+                </div>
 
-  <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
-    <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
-    <div className="w-full max-w-[400px] h-[400px] mx-auto">
-      <CategoryChart />
-    </div>
-  </div>
-</div>
-
+                <div className="bg-white rounded-lg p-6 border border-gray-200 flex-1 min-w-[400px]">
+                  <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
+                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
+                    <CategoryChart />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -663,7 +683,7 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
         const currentQnas = filteredQnaList.slice(indexOfFirstQna, indexOfLastQna);
 
         return (
-          <div className="w-full space-y-8">
+          <div className="space-y-8 w-[850px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Q&A 관리
@@ -709,10 +729,16 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                         </div>
                       </div>
 
-                      <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-2" onClick={() => {
+    setSelectedQna(qna);
+    setIsQnaModalOpen(true);
+  }}>
                         {qna.title}
                       </h4>
-                      <p className="text-gray-600 mb-4">{qna.content}</p>
+                      <p className="text-gray-600 mb-4" onClick={() => {
+    setSelectedQna(qna);
+    setIsQnaModalOpen(true);
+  }}>{qna.content}</p>
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -735,7 +761,8 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                             >
                               빠른 답변
                             </button>
-                            <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
+                            <button 
+ className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
                               상세보기
                             </button>
                           </div>
@@ -746,30 +773,103 @@ const handleUpdate = async (postId: string, type: "views" | "likes" | "reports",
                 </div>
               </div>
             </div>
+            {isQnaModalOpen && selectedQna && (
+  <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-white w-[600px] max-h-[85vh] overflow-y-auto p-6 rounded-lg shadow-xl">
+      {/* 제목 */}
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">{selectedQna.title}</h2>
+
+      {/* 메타 정보 */}
+      <div className="mb-3 text-sm text-gray-600 space-y-1">
+        <p><strong>작성자:</strong> {selectedQna.userid || selectedQna.author}</p>
+        <p><strong>작성일:</strong> {selectedQna.createdAt}</p>
+        <p><strong>상태:</strong> {selectedQna.status}</p>
+        <p><strong>조회수:</strong> {selectedQna.views}</p>
+      </div>
+
+      {/* 질문 내용 */}
+      <div className="text-gray-700 whitespace-pre-wrap border-t pt-4 mb-6">
+        {selectedQna.content}
+      </div>
+
+      {/* 댓글 목록 */}
+      <div className="mt-8">
+        <h3 className="text-md font-semibold text-gray-800 mb-2">💬 답변</h3>
+        {qnaComments}
+      </div>
+
+      {/* 닫기 버튼 */}
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={() => setIsQnaModalOpen(false)}
+          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+        >
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
             <div className="flex justify-center mt-4">
-              {Array.from({ length: Math.ceil(filteredQnaList.length / qnasPerPage) }, (_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentQnaPage(i + 1)}
-                  className={`mx-1 px-3 py-1 rounded ${
-                    currentQnaPage === i + 1
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
+  {(() => {
+    const totalQnaPages = Math.ceil(filteredQnaList.length / qnasPerPage);
+    const pageGroupSize = 5;
+    const currentGroup = Math.floor((currentQnaPage - 1) / pageGroupSize);
+    const startPage = currentGroup * pageGroupSize + 1;
+    const endPage = Math.min(startPage + pageGroupSize - 1, totalQnaPages);
+
+    return (
+      <>
+        {/* 이전 그룹 이동 버튼 */}
+        {startPage > 1 && (
+          <button
+            onClick={() => setCurrentQnaPage(startPage - 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &lt;
+          </button>
+        )}
+
+        {/* 현재 그룹 페이지 버튼들 */}
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentQnaPage(page)}
+            className={`mx-1 px-3 py-1 rounded ${
+              currentQnaPage === page
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {/* 다음 그룹 이동 버튼 */}
+        {endPage < totalQnaPages && (
+          <button
+            onClick={() => setCurrentQnaPage(endPage + 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &gt;
+          </button>
+        )}
+      </>
+    );
+  })()}
+</div>
+
           </div>
         );
 
       case "posts":
         const indexOfLastPost = currentPage * postsPerPage;
-const indexOfFirstPost = indexOfLastPost - postsPerPage;
-const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
+        const indexOfFirstPost = indexOfLastPost - postsPerPage;
+        const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
         return (
-          <div className="w-full space-y-8">
+          <div className="space-y-8 w-[850px] h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 게시글 관리
@@ -785,7 +885,7 @@ const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
                     <select className="p-2 border border-gray-300 rounded-lg text-sm">
                       <option>전체</option>
                       <option>정상</option>
-                      <option>신고됨</option>
+                      <option>신고</option>
                       <option>숨김</option>
                     </select>
                     {selectedPosts.length > 0 && (
@@ -827,13 +927,13 @@ const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
                             }}
                           />
                         </th>
-                        <th className="text-left p-3">제목</th>
-                        <th className="text-left p-3">작성자</th>
-                        <th className="text-left p-3">카테고리</th>
-                        <th className="text-left p-3">작성일</th>
-                        <th className="text-left p-3">조회/좋아요/신고됨</th>
-                        <th className="text-left p-3">상태</th>
-                        <th className="text-left p-3">관리</th>
+                        <th className="text-left p-3 w-[20%]">제목</th>
+                        <th className="text-left p-3 w-[10%]">작성자</th>
+                        <th className="text-left p-3 w-[10%]">카테고리</th>
+                        <th className="text-left p-3 w-[10%]">작성일</th>
+                        <th className="text-left p-3 w-[20%]">조회/좋아요/신고</th>
+                        <th className="text-left p-3 w-[10%]">상태</th>
+                        <th className="text-left p-3 w-[10%]">관리</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -858,7 +958,10 @@ const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
                             />
                           </td>
                           <td className="p-3">
-                            <div className="font-medium text-gray-800">
+                            <div className="font-medium text-gray-800" onClick={() => {
+    setSelectedPost(post);
+    setIsModalOpen(true);
+  }}>
                               {post.title}
                             </div>
                             <div className="text-sm text-gray-500">
@@ -981,35 +1084,95 @@ const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
-                    {Array.from({ length: Math.ceil(allPosts.length / postsPerPage) }, (_, i) => (
-                      <button
-                             key={i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                     className={`mx-1 px-3 py-1 rounded ${
-                          currentPage === i + 1
-                            ? "bg-red-600 text-white"
-                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                        ))}
-                  </div>
+  {(() => {
+    const nonDevPosts = allPosts.filter((post) => post.category !== "dev");
+    const totalPages = Math.ceil(nonDevPosts.length / postsPerPage);
+    const pageGroupSize = 5;
+    const currentGroup = Math.floor((currentPage - 1) / pageGroupSize);
+    const startPage = currentGroup * pageGroupSize + 1;
+    const endPage = Math.min(startPage + pageGroupSize - 1, totalPages);
+
+    return (
+      <>
+        {/* 이전 그룹 버튼 */}
+        {startPage > 1 && (
+          <button
+            onClick={() => setCurrentPage(startPage - 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &lt;
+          </button>
+        )}
+
+        {/* 현재 그룹의 페이지 버튼들 */}
+        {Array.from(
+          { length: endPage - startPage + 1 },
+          (_, i) => startPage + i
+        ).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`mx-1 px-3 py-1 rounded ${
+              currentPage === page
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {/* 다음 그룹 버튼 */}
+        {endPage < totalPages && (
+          <button
+            onClick={() => setCurrentPage(endPage + 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &gt;
+          </button>
+        )}
+      </>
+    );
+  })()}
+</div>
                 </div>
               </div>
             </div>
+
+            {isModalOpen && selectedPost && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-[600px] max-h-[90vh] overflow-y-auto">
+      <h2 className="text-xl font-semibold mb-4">{selectedPost.title}</h2>
+      <p className="text-gray-700 mb-2"><strong>작성자:</strong> {selectedPost.userid}</p>
+      <p className="text-gray-700 mb-2"><strong>카테고리:</strong> {selectedPost.category}</p>
+      <p className="text-gray-700 mb-2"><strong>작성일:</strong> {selectedPost.createdAt}</p>
+      <p className="text-gray-700 whitespace-pre-wrap">{selectedPost.content}</p>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={() => setIsModalOpen(false)}
+          className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+        >
+          닫기
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
           </div>
+          
         );
 
 
  
       case "users":
         const indexOfLastUser = currentUserPage * usersPerPage;
-const indexOfFirstUser = indexOfLastUser - usersPerPage;
-const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
+        const indexOfFirstUser = indexOfLastUser - usersPerPage;
+        const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
 
         return (
-          <div className="w-full space-y-8">
+          <div className="space-y-8 w-[850px] h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 유저 관리
@@ -1069,9 +1232,7 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
                         </th>
                         <th className="text-left p-3">회원정보</th>
                         <th className="text-left p-3">이메일</th>
-                        <th className="text-left p-3">사업분야</th>
                         <th className="text-left p-3">가입일</th>
-                        <th className="text-left p-3">활동</th>
                         <th className="text-left p-3">Provider</th>
                         <th className="text-left p-3">관리</th>
                       </tr>
@@ -1113,33 +1274,21 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
 
                               <div>
                                 {editingUserId === user.id ? (
-  <input
-    type="text"
-    value={editedName}
-    onChange={(e) => setEditedName(e.target.value)}
-    className="border rounded px-2 py-1 text-sm"
-  />
-) : (
-  <div className="font-medium text-gray-800">{user.name}</div>
-)}
-
-                                <div className="text-sm text-gray-500">
-                                  최근 로그인: {user.lastLogin}
-                                </div>
+                                  <input
+                                    type="text"
+                                    value={editedName}
+                                    onChange={(e) => setEditedName(e.target.value)}
+                                    className="border rounded px-2 py-1 text-sm"
+                                  />
+                                ) : (
+                                  <div className="font-medium text-gray-800">{user.userid}</div>
+                                )}
                               </div>
                             </div>
                           </td>
                           <td className="p-3 text-gray-700">{user.email}</td>
-                          <td className="p-3 text-gray-600">
-                            {user.businessType}
-                          </td>
                           <td className="p-3 text-gray-600">{user.createdAt}</td>
-                          <td className="p-3 text-gray-600">
-                            <div className="text-sm">
-                              <div>글 {user.posts}개</div>
-                              <div>댓글 {user.comments}개</div>
-                            </div>
-                          </td>
+                          
                           <td className="p-3">
                             <span
                               className={`px-2 py-1 rounded text-sm ${
@@ -1178,7 +1327,7 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
                                     className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs hover:bg-blue-200"
                                     onClick={() => {
                                       setEditingUserId(user.id);
-                                      setEditedName(user.name); // 기존 이름을 입력창에 미리 넣기
+                                      setEditedName(user.userid); // 기존 이름을 입력창에 미리 넣기
                                     }}
                                   >
                                     수정
@@ -1198,20 +1347,54 @@ const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
-                    {Array.from({ length: Math.ceil(userList.length / usersPerPage) }, (_, i) => (
-                      <button
-                        key={i + 1}
-                        onClick={() => setCurrentUserPage(i + 1)}
-                        className={`mx-1 px-3 py-1 rounded ${
-                          currentUserPage === i + 1
-                            ? "bg-red-600 text-white"
-                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                  </div>
+  {(() => {
+    const totalUserPages = Math.ceil(userList.length / usersPerPage);
+    const pageGroupSize = 5;
+    const currentGroup = Math.floor((currentUserPage - 1) / pageGroupSize);
+    const startPage = currentGroup * pageGroupSize + 1;
+    const endPage = Math.min(startPage + pageGroupSize - 1, totalUserPages);
+
+    return (
+      <>
+        {/* 이전 그룹 버튼 */}
+        {startPage > 1 && (
+          <button
+            onClick={() => setCurrentUserPage(startPage - 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &lt;
+          </button>
+        )}
+
+        {/* 현재 그룹의 페이지 버튼들 */}
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentUserPage(page)}
+            className={`mx-1 px-3 py-1 rounded ${
+              currentUserPage === page
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {/* 다음 그룹 버튼 */}
+        {endPage < totalUserPages && (
+          <button
+            onClick={() => setCurrentUserPage(endPage + 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &gt;
+          </button>
+        )}
+      </>
+    );
+  })()}
+</div>
+
                 </div>
               </div>
             </div>
