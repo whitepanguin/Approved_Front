@@ -1,90 +1,92 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import MainLayout from "@/components/layout/main-layout"
-import { useApp } from "./providers"
-import "@fortawesome/fontawesome-free/css/all.min.css"
-import { useRouter } from "next/navigation"
-import type { RootState } from "@/store"
-import { useSelector } from "react-redux"
+import type React from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import MainLayout from "@/components/layout/main-layout";
+import { useApp } from "./providers";
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import { useRouter } from "next/navigation";
+import type { RootState } from "@/store";
+import { useSelector } from "react-redux";
 
 export default function HomePage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [introPassed, setIntroPassed] = useState(false)
-  const [count, setCount] = useState<number>(0)
-  const { addToSearchHistory } = useApp()
-  const router = useRouter()
-  const isLogin = useSelector((state: RootState) => state.user.isLogin)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [introPassed, setIntroPassed] = useState(false);
+  const [count, setCount] = useState<number>(0);
+  const { addToSearchHistory } = useApp();
+  const router = useRouter();
+  const isLogin = useSelector((state: RootState) => state.user.isLogin);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("introPassed")
+    const stored = sessionStorage.getItem("introPassed");
     if (!stored) {
-      sessionStorage.setItem("introPassed", "false")
+      sessionStorage.setItem("introPassed", "false");
     } else if (stored === "true") {
-      setIntroPassed(true)
-      document.body.style.overflow = "auto"
+      setIntroPassed(true);
+      document.body.style.overflow = "auto";
     } else {
-      window.scrollTo(0, 0)
-      document.body.style.overflow = "hidden"
+      window.scrollTo(0, 0);
+      document.body.style.overflow = "hidden";
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    document.body.style.overflow = introPassed ? "auto" : "hidden"
-  }, [introPassed])
+    document.body.style.overflow = introPassed ? "auto" : "hidden";
+  }, [introPassed]);
 
   const handleStart = () => {
-    const mainSection = document.getElementById("main")
+    const mainSection = document.getElementById("main");
     if (mainSection) {
-      mainSection.scrollIntoView({ behavior: "smooth" })
+      mainSection.scrollIntoView({ behavior: "smooth" });
       setTimeout(() => {
-        sessionStorage.setItem("introPassed", "true")
-        setIntroPassed(true)
-      }, 1000)
+        sessionStorage.setItem("introPassed", "true");
+        setIntroPassed(true);
+      }, 1000);
     }
-  }
+  };
 
   const handleSearch = (type: "ai" | "normal") => {
     if (searchQuery.trim()) {
-      addToSearchHistory(searchQuery)
-      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`)
+      addToSearchHistory(searchQuery);
+      alert(`${type === "ai" ? "AI" : "일반"} 검색: ${searchQuery}`);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       if (!isLogin) {
-        alert("로그인 후 이용해주세요.")
-        router.push("/login")
-        return
+        alert("로그인 후 이용해주세요.");
+        router.push("/login");
+        return;
       }
 
       if (searchQuery.trim()) {
-        addToSearchHistory(searchQuery)
-        router.push(`/searchpage?search=${encodeURIComponent(searchQuery.trim())}`)
+        addToSearchHistory(searchQuery);
+        router.push(
+          `/searchpage?search=${encodeURIComponent(searchQuery.trim())}`
+        );
       }
     }
-  }
+  };
 
   useEffect(() => {
     const getcount = async () => {
       try {
         const res = await fetch("http://localhost:8000/searchllm/count", {
           method: "GET",
-        })
+        });
 
-        const data = await res.json()
-        setCount(data.count)
-        // console.log(userCount);
+        const data = await res.json();
+        setCount(data.count);
+        // console.log(data);
       } catch (error) {
-        console.error("실패:", error)
+        console.error("실패:", error);
       }
-    }
+    };
 
-    getcount()
-  }, [])
+    getcount();
+  }, []);
 
   return (
     <>
@@ -140,7 +142,11 @@ export default function HomePage() {
               className="absolute top-20 left-10 text-blue-200 opacity-35 animate-bounce"
               style={{ animationDuration: "3s", animationDelay: "0s" }}
             >
-              <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-12 h-12"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
               </svg>
             </div>
@@ -150,7 +156,11 @@ export default function HomePage() {
               className="absolute top-32 right-20 text-indigo-200 opacity-30 animate-bounce"
               style={{ animationDuration: "4s", animationDelay: "1s" }}
             >
-              <svg className="w-14 h-14" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-14 h-14"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M16,9H8V7H16M16,13H8V11H16M16,17H8V15H16M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V4A2,2 0 0,0 18,2H6Z" />
               </svg>
             </div>
@@ -160,7 +170,11 @@ export default function HomePage() {
               className="absolute bottom-32 left-20 text-slate-300 opacity-40 animate-bounce"
               style={{ animationDuration: "5s", animationDelay: "2s" }}
             >
-              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-10 h-10"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M9,4V6H15V4H17V6H19A2,2 0 0,1 21,8V18A2,2 0 0,1 19,20H5A2,2 0 0,1 3,18V8A2,2 0 0,1 5,6H7V4H9M5,10V18H19V10H5M7,12H9V14H7V12M11,12H13V14H11V12M15,12H17V14H15V12Z" />
               </svg>
             </div>
@@ -231,9 +245,7 @@ export default function HomePage() {
                 animation: "textPulse 9s ease-in-out infinite",
                 animationDelay: "3s",
               }}
-            >
-             
-            </div>
+            ></div>
             <div
               className="absolute bottom-1/3 right-1/3 text-lg text-blue-600 opacity-60 font-bold"
               style={{
@@ -281,17 +293,38 @@ export default function HomePage() {
             ></div>
 
             {/* 연결선들 - 🌊 진하기 증가 (opacity-5 → opacity-10) */}
-            <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              className="absolute inset-0 w-full h-full opacity-10"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <defs>
-                <pattern id="dots" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                <pattern
+                  id="dots"
+                  x="0"
+                  y="0"
+                  width="100"
+                  height="100"
+                  patternUnits="userSpaceOnUse"
+                >
                   <circle cx="50" cy="50" r="2" fill="#3b82f6" opacity="0.5">
-                    <animate attributeName="r" values="1;4;1" dur="4s" repeatCount="indefinite" />
+                    <animate
+                      attributeName="r"
+                      values="1;4;1"
+                      dur="4s"
+                      repeatCount="indefinite"
+                    />
                   </circle>
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#dots)" />
 
-              <path d="M100,200 Q300,100 500,300 T900,200" stroke="#6366f1" strokeWidth="2" fill="none" opacity="0.2">
+              <path
+                d="M100,200 Q300,100 500,300 T900,200"
+                stroke="#6366f1"
+                strokeWidth="2"
+                fill="none"
+                opacity="0.2"
+              >
                 <animate
                   attributeName="stroke-dasharray"
                   values="0,1000;1000,0;0,1000"
@@ -299,7 +332,13 @@ export default function HomePage() {
                   repeatCount="indefinite"
                 />
               </path>
-              <path d="M200,400 Q400,300 600,500 T1000,400" stroke="#3b82f6" strokeWidth="2" fill="none" opacity="0.2">
+              <path
+                d="M200,400 Q400,300 600,500 T1000,400"
+                stroke="#3b82f6"
+                strokeWidth="2"
+                fill="none"
+                opacity="0.2"
+              >
                 <animate
                   attributeName="stroke-dasharray"
                   values="1000,0;0,1000;1000,0"
@@ -336,7 +375,12 @@ export default function HomePage() {
               <div className="w-full max-w-6xl flex items-center gap-4 mb-4">
                 <div className="flex-1 flex items-center rounded-full shadow-lg overflow-hidden bg-white/95 backdrop-blur-sm border border-white/70">
                   <div className="px-4">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className="w-5 h-5 text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -358,7 +402,11 @@ export default function HomePage() {
                   href="/map"
                   className="h-[56px] px-5 py-3 bg-blue-600 text-white text-sm rounded-full shadow-lg hover:bg-blue-700 whitespace-nowrap flex items-center justify-center"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
                 </Link>
@@ -368,13 +416,22 @@ export default function HomePage() {
                   href="/popular"
                   className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-red-200 rounded-full text-red-700 text-sm font-medium shadow hover:bg-white transition"
                 >
-                  <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4 text-red-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" />
                   </svg>
                   지금 인기있는 법률 검색어
                 </Link>
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-green-200 rounded-full text-green-700 text-sm font-medium shadow">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -383,7 +440,9 @@ export default function HomePage() {
                     />
                   </svg>
                   총 검색수:
-                  <span className="font-semibold">{(count + 9900).toLocaleString()}</span>
+                  <span className="font-semibold">
+                    {(count + 9900).toLocaleString()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -409,5 +468,5 @@ export default function HomePage() {
         }
       `}</style>
     </>
-  )
+  );
 }

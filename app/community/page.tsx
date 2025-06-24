@@ -78,6 +78,7 @@ export default function CommunityPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
 
   const user = useSelector((state: RootState) => state.user);
+  const isLogin = useSelector((state: RootState) => state.user.isLogin);
 
   const [postCount, setPostCount] = useState(0);
 
@@ -321,24 +322,11 @@ export default function CommunityPage() {
   };
 
   useEffect(() => {
-    const token =
-      localStorage.getItem("token") ||
-      localStorage.getItem("jwtToken") ||
-      sessionStorage.getItem("token") ||
-      sessionStorage.getItem("jwtToken");
-
-    console.log("유저 token 찍어보기", token);
     const fetchCategoryCounts = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts/category-counts", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetch("http://localhost:8000/posts/category-counts");
         const data = await res.json();
-        console.log("카테고리 수", data);
+        // console.log("카테고리 수", data);
         setCategoryCounts(data);
       } catch (err) {
         console.error("❌ 카테고리 수 불러오기 실패:", err);
@@ -387,112 +375,42 @@ export default function CommunityPage() {
   };
 
   const fetchPostCount = async () => {
-    try {
-      const token =
-        localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+    if (isLogin) {
+      try {
+        const token =
+          localStorage.getItem("jwtToken") ||
+          sessionStorage.getItem("jwtToken");
 
-      if (!token) {
-        console.warn("❌ 토큰 없음: 로그인 필요");
-        return;
-      }
-
-      const res = await fetch(
-        `http://localhost:8000/posts/count/${encodeURIComponent(
-          user.currentUser.userid
-        )}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        if (!token) {
+          console.warn("❌ 토큰 없음: 로그인 필요");
+          return;
         }
-      );
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("❌ 작성글 수 조회 실패:", res.status, errorText);
-        return;
+        const res = await fetch(
+          `http://localhost:8000/posts/count/${encodeURIComponent(
+            user.currentUser.userid
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("❌ 작성글 수 조회 실패:", res.status, errorText);
+          return;
+        }
+
+        const data = await res.json();
+        console.log("✅ 작성글 수 불러오기 성공:", data.count);
+        setPostCount(data.count);
+      } catch (err) {
+        console.error("❌ 작성글 수 조회 중 오류:", err);
       }
-
-      const data = await res.json();
-      console.log("✅ 작성글 수 불러오기 성공:", data.count);
-      setPostCount(data.count);
-    } catch (err) {
-      console.error("❌ 작성글 수 조회 중 오류:", err);
     }
   };
-
-  // const samplePosts: Post[] = [
-  //   {
-  //     id: 1,
-  //     title: "음식점 영업허가 신청 시 주의사항",
-  //     preview:
-  //       "음식점을 개업하려고 하는데 영업허가 신청할 때 놓치기 쉬운 부분들을 정리해봤습니다. 특히 위생 관련 서류와 소방 안전 검사는 미리 준비하시는 것이 좋습니다.",
-  //     userid: "김사장님",
-  //     date: "2023-06-01",
-  //     category: "info",
-  //     views: 1245,
-  //     likes: 89,
-  //     comments: 32,
-  //     isHot: true,
-  //     isNotice: false,
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "건축허가 관련 질문드립니다",
-  //     preview:
-  //       "단독주택 신축 시 건축허가 절차가 어떻게 되는지 궁금합니다. 경험 있으신 분들의 조언 부탁드려요. 특히 도시계획 조례에 관한 부분이 헷갈립니다.",
-  //     userid: "집짓는사람",
-  //     date: "2023-06-02",
-  //     category: "qna",
-  //     views: 876,
-  //     likes: 45,
-  //     comments: 28,
-  //     isHot: false,
-  //     isNotice: false,
-  //   },
-  //   {
-  //     id: 3,
-  //     title: "오늘 드디어 사업자등록증을 받았습니다!",
-  //     preview:
-  //       "1년간 준비한 카페 창업, 드디어 사업자등록증을 받았습니다. 기쁜 마음에 인증샷 올려봅니다. 앞으로 잘 부탁드려요!",
-  //     userid: "카페주인",
-  //     date: "2023-06-03",
-  //     category: "daily",
-  //     views: 654,
-  //     likes: 102,
-  //     comments: 45,
-  //     isHot: true,
-  //     isNotice: false,
-  //   },
-  //   {
-  //     id: 4,
-  //     title: "[공지] 커뮤니티 이용 규칙 안내",
-  //     preview:
-  //       "허가요 커뮤니티를 이용해주셔서 감사합니다. 모두가 편안하게 이용할 수 있도록 커뮤니티 이용 규칙을 안내드립니다.",
-  //     userid: "관리자",
-  //     date: "2023-05-20",
-  //     category: "all",
-  //     views: 2345,
-  //     likes: 156,
-  //     comments: 12,
-  //     isHot: false,
-  //     isNotice: true,
-  //   },
-  //   {
-  //     id: 5,
-  //     title: "창업 초기 세무 관리 팁 공유합니다",
-  //     preview:
-  //       "창업 3년차 소상공인입니다. 초기에 세무 관리를 어떻게 하면 좋을지 제 경험을 공유합니다. 특히 세금계산서 관리와 경비 처리에 대한 팁입니다.",
-  //     userid: "세무달인",
-  //     date: "2023-05-28",
-  //     category: "info",
-  //     views: 1567,
-  //     likes: 134,
-  //     comments: 56,
-  //     isHot: true,
-  //     isNotice: false,
-  //   },
-  // ];
 
   // 1. 게시글 불러오기
   useEffect(() => {
@@ -536,7 +454,7 @@ export default function CommunityPage() {
 
   // 2. 작성글 수 불러오기 (user가 있을 경우에만)
   useEffect(() => {
-    console.log("📌 현재 user id:", user?.currentUser?.userid);
+    // console.log("📌 현재 user id:", user?.currentUser?.userid);
     if (!user?.currentUser?.userid) return;
     const jwtToken = localStorage.getItem("jwtToken");
     const fetchPostCount = async () => {
@@ -584,8 +502,6 @@ export default function CommunityPage() {
           return 0;
       }
     });
-  // 디버깅용
-  useEffect(() => {}, [selectedPost, user.currentUser]);
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
