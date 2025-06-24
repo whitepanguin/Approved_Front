@@ -41,8 +41,8 @@ import {
 const API_BASE_URL = "http://localhost:8000";
 
 interface Post {
-  _id?: string;
-  id?: string;
+  _id: string;
+  id: string;
   title: string;
   preview: string;
   userid: string;
@@ -57,7 +57,8 @@ interface Post {
 }
 
 interface Comment {
-  _id?: string;
+  _id: string;
+  id: String;
   userid: string;
   createdAt: string | Date;
   content?: string;
@@ -1227,7 +1228,7 @@ export default function CommunityPage() {
                 ) : (
                   postComments.map((comment) => (
                     <div
-                      key={comment._id || comment.id} // ✅ 고유 key
+                      key={(comment._id || comment.id)?.toString()} // ✅ 고유 key
                       className="p-3 bg-gray-50 rounded text-sm"
                     >
                       <div className="flex justify-between items-center mb-2">
@@ -1284,7 +1285,9 @@ export default function CommunityPage() {
                   {/* ✅ 자기 글이 아닐 때만 신고 버튼 */}
                   {selectedPost.userid !== user.currentUser.userid && (
                     <button
-                      onClick={handleReport}
+                      onClick={() =>
+                        selectedPost._id && handleDelete(selectedPost._id)
+                      }
                       className="text-orange-500 hover:underline"
                     >
                       신고

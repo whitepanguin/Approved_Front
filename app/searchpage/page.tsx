@@ -1,129 +1,280 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { setUser, setUserStatus } from "@/modules/user";
+import ReactMarkdown from "react-markdown";
 
-interface SearchResult {
-  id: string;
-  title: string;
-  summary: string;
-  updatedAt: string;
-  // 필요시 다른 필드도 추가
+// 타입 정의
+export type SearchResultType = {
+  answer: string;
+  referenced_laws: string[];
+  reference_documents: {
+    title: string;
+    url: string;
+  }[];
+};
+
+function getStorageKey(email: string, query: string) {
+  return `search_result_${encodeURIComponent(email)}_${encodeURIComponent(
+    query
+  )}`;
+}
+
+// 결과 파싱 함수
+function parseLLMTextToResult(raw: string): SearchResultType {
+  const sections = raw.split(/\n(?=\d\. \*\*.+?\*\*)/);
+  const map: Record<string, string> = {};
+
+  for (const section of sections) {
+    const match = section.match(/^(\d+)\. \*\*(.+?)\*\*/);
+    if (match) {
+      const rawKey = match[2].trim().toLowerCase().replace(/\s+/g, "_");
+      const content = section.replace(match[0], "").trim();
+      map[rawKey] = content;
+    }
+  }
+
+  const answer = map["answer"] ?? "";
+
+  const referenced_laws = (map["referenced_laws"] ?? "")
+    .split("\n")
+    .map((line) => line.replace(/^\* /, "").trim())
+    .filter(Boolean);
+
+  const reference_documents = (map["reference_documents"] ?? "")
+    .split("\n")
+    .map((line) => {
+      // 시작 문자가 *, - 둘 다 허용됨
+      const cleanLine = line.replace(/^[-*]\s*/, "").trim();
+
+      // "관련 문서 보기:" 접두사 제거
+      const cleaned = cleanLine.replace(/^관련 문서 보기[:：]?\s*/i, "");
+
+      // 괄호 안에 제목이 있는 경우 (정상 케이스)
+      const match = cleaned.match(/^(.+?)\s*\((.+?)\)$/);
+
+      if (match) {
+        const rawUrl = match[1].trim();
+        const rawTitle = match[2].trim();
+        const fullUrl = rawUrl.startsWith("http")
+          ? rawUrl
+          : `https://www.law.go.kr${
+              rawUrl.startsWith("/") ? "" : "/"
+            }${rawUrl}`;
+
+        return {
+          url: fullUrl,
+          title: rawTitle,
+        };
+      }
+
+      // 괄호가 없는 경우 fallback 처리
+      const urlOnly = cleaned.trim();
+      if (urlOnly.startsWith("/")) {
+        return {
+          url: `https://www.law.go.kr${urlOnly}`,
+          title: "문서 보기",
+        };
+      }
+
+      console.warn("❗ 파싱되지 않은 관련 문서 라인:", line);
+      return null;
+    })
+    .filter(Boolean) as SearchResultType["reference_documents"];
+
+  return {
+    answer,
+    referenced_laws,
+    reference_documents,
+  };
 }
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get("search") || "";
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<SearchResultType | null>(null);
   const [loading, setLoading] = useState(false);
-  const { currentUser, isLogin } = useSelector(
-    (state: RootState) => state.user || {}
-  );
+  const [showDocsModal, setShowDocsModal] = useState(false);
+  const [showLawsModal, setShowLawsModal] = useState(false);
+  const [showDictModal, setShowDictModal] = useState(false);
+
+  const { currentUser } = useSelector((state: RootState) => state.user || {});
+  const email = currentUser?.email ?? "";
 
   useEffect(() => {
     if (!query.trim()) return;
 
+    const storageKey = getStorageKey(email, query);
+    const cached = localStorage.getItem(storageKey);
+
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        console.log("📦 캐시에서 검색 결과 로드됨:", storageKey);
+        setResults(parsed);
+        return;
+      } catch (e) {
+        console.warn("⚠️ 캐시 파싱 실패, 요청 강행:", e);
+      }
+    }
+
+    // ❗ 캐시 없을 때만 요청
     const fetchResults = async () => {
       try {
         setLoading(true);
         const res = await fetch(
           `http://localhost:8000/searchllm?search=${encodeURIComponent(
             query
-          )}&email=${currentUser.email}`
+          )}&email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            cache: "force-cache",
+          }
         );
         if (!res.ok) throw new Error("검색 실패");
+
         const data = await res.json();
-        console.log(data);
-        setResults([data]);
+        const rawText = data.result;
+        const normalized = parseLLMTextToResult(rawText);
+        localStorage.setItem(storageKey, JSON.stringify(normalized));
+        setResults(normalized);
       } catch (error) {
         console.error("에러 발생:", error);
-        setResults([]);
+        setResults(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchResults();
-  }, [query]);
+    fetchResults(); // ✅ 호출 필요
+  }, [query, email]);
 
   return (
     <MainLayout>
-      <div id="sidemain" className="max-w-4xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold mb-6">
-          🔍 <span className="text-blue-600">"{query}"</span> 검색 결과
-        </h1>
+      <div className="w-full overflow-hidden h-full mt-5">
+        <div className="mx-auto w-[650px] overflow-auto flex flex-col h-full gap-5">
+          <SpeachBubble text={query} />
 
-        {/* :펭귄: 수정된 부분: 허가요 로고가 점들을 징검다리 건너는 로딩 애니메이션 */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="relative w-80 h-20 mb-4">
-              {/* 징검다리 점들 */}
-              <div className="absolute top-1/2 left-0 w-full flex justify-between items-center">
-                <div
-                  className="w-3 h-3 bg-blue-400 rounded-full"
-                  style={{ animation: "dotPulse 2s ease-in-out infinite" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-blue-400 rounded-full"
-                  style={{ animation: "dotPulse 2s ease-in-out infinite 0.3s" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-blue-400 rounded-full"
-                  style={{ animation: "dotPulse 2s ease-in-out infinite 0.6s" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-blue-400 rounded-full"
-                  style={{ animation: "dotPulse 2s ease-in-out infinite 0.9s" }}
-                ></div>
-                <div
-                  className="w-3 h-3 bg-blue-400 rounded-full"
-                  style={{ animation: "dotPulse 2s ease-in-out infinite 1.2s" }}
-                ></div>
+          {loading && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative w-80 h-20 mb-4">
+                <div className="absolute top-1/2 left-0 w-full flex justify-between items-center">
+                  {[0, 0.3, 0.6, 0.9, 1.2].map((delay, idx) => (
+                    <div
+                      key={idx}
+                      className="w-3 h-3 bg-blue-400 rounded-full"
+                      style={{
+                        animation: `dotPulse 2s ease-in-out infinite ${delay}s`,
+                      }}
+                    ></div>
+                  ))}
+                </div>
+                <img
+                  src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                  alt="허가요 로고"
+                  className="absolute w-12 h-12 object-contain"
+                  style={{
+                    animation: "logoJump 2s ease-in-out infinite",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  }}
+                />
               </div>
-              {/* 허가요 로고 */}
-              <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
-                alt="허가요 로고"
-                className="absolute w-12 h-12 object-contain"
-                style={{
-                  animation: "logoJump 2s ease-in-out infinite",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                }}
-              />
-            </div>
-            <p className="text-blue-600 font-medium text-lg animate-pulse">
-              허가요가 열심히 검색하고 있어요...
-            </p>
-          </div>
-        )}
-
-        {!loading && results.length === 0 && (
-          <p className="text-gray-500">검색 결과가 없습니다.</p>
-        )}
-
-        <ul className="space-y-4">
-          {results.map((item) => (
-            <li
-              key={item.id}
-              className="p-4 border border-gray-200 rounded-lg shadow hover:bg-gray-50 transition"
-            >
-              <h2 className="text-lg font-semibold text-gray-800">
-                질문: {item.question}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">답변: {item.result}</p>
-              <p className="text-xs text-gray-400 mt-2">
-                생성일: {item.createdAt}
+              <p className="text-blue-600 font-medium text-lg animate-pulse">
+                허가요가 열심히 검색하고 있어요...
               </p>
-            </li>
-          ))}
-        </ul>
+            </div>
+          )}
+
+          {!loading && results?.answer && (
+            <SpeachBubble isAnswer text={results.answer} />
+          )}
+
+          {!loading && results && (
+            <div className="ml-5 flex flex-wrap gap-2">
+              <button
+                onClick={() => setShowDocsModal(true)}
+                className="px-3 py-1 rounded bg-blue-50 text-blue-800 hover:bg-blue-100 transition"
+              >
+                📄 관련 문서 보기
+              </button>
+              <button
+                onClick={() => setShowLawsModal(true)}
+                className="px-3 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100 transition"
+              >
+                📘 관련 법률 보기
+              </button>
+              <button
+                onClick={() => setShowDictModal(true)}
+                className="px-3 py-1 rounded bg-orange-50 text-orange-700 hover:bg-orange-100 transition"
+              >
+                📚 단어 사전
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-      {/* :펭귄: 수정된 부분: 징검다리 애니메이션을 위한 CSS 추가 */}
+
+      {showDocsModal && results && (
+        <Modal
+          title="📄 관련 문서 보기"
+          onClose={() => setShowDocsModal(false)}
+        >
+          <ul className="list-disc list-inside text-sm text-gray-700">
+            {results.reference_documents.map((doc, idx) => {
+              console.log("📄 관련 문서 확인:", doc); // ✅ 추가
+
+              return (
+                <li key={idx}>
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-blue-500 hover:text-blue-700"
+                  >
+                    {doc.title}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </Modal>
+      )}
+
+      {showLawsModal && results && (
+        <Modal
+          title="📘 관련 법률 보기"
+          onClose={() => setShowLawsModal(false)}
+        >
+          <ul className="list-disc list-inside text-sm text-gray-700">
+            {results.referenced_laws.map((law, idx) => (
+              <li key={idx}>{law}</li>
+            ))}
+          </ul>
+        </Modal>
+      )}
+
+      {showDictModal && (
+        <Modal
+          title="📚 법률 용어 사전"
+          onClose={() => setShowDictModal(false)}
+        >
+          <p className="text-sm text-gray-700">
+            <a
+              href="https://www.law.go.kr/LSW/lsDefinitionList.do"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-blue-500 hover:text-blue-700"
+            >
+              👉 대한민국 법제처 법령용어사전 바로가기
+            </a>
+          </p>
+        </Modal>
+      )}
+
       <style jsx>{`
         @keyframes dotPulse {
           0% {
@@ -179,5 +330,49 @@ export default function SearchPage() {
         }
       `}</style>
     </MainLayout>
+  );
+}
+
+function SpeachBubble({
+  text,
+  isAnswer,
+}: {
+  text: string;
+  isAnswer?: boolean;
+}) {
+  const className = [
+    "rounded-xl shadow-lg break-words whitespace-normal mx-5 transition-all duration-200 mb-5 hover:shadow-xl p-5 w-fit max-w-[400px]",
+    isAnswer ? "bg-cyan-50" : "bg-slate-50 self-end",
+  ].join(" ");
+
+  return (
+    <div className={className}>
+      {isAnswer ? <ReactMarkdown>{text}</ReactMarkdown> : text}
+    </div>
+  );
+}
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+      <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-md relative">
+        <h2 className="text-lg font-bold mb-4">{title}</h2>
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-4 text-gray-500 text-2xl hover:text-black"
+        >
+          &times;
+        </button>
+        <div>{children}</div>
+      </div>
+    </div>
   );
 }

@@ -60,6 +60,7 @@
     "react-dom": "^19.1.0",
     "react-fullpage": "^0.1.19",
     "react-hook-form": "^7.54.1",
+    "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^7.6.2",
