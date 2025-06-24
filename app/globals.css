@@ -119,12 +119,12 @@ body {
 
 #sidemain {
   transition: margin-left 0.5s;
-  padding: 0 0;
+  padding: 50px 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 
-  background-color: #dbeafe;
+  background: linear-gradient(to right, #f0f4f9, #dbeafe);
   z-index: 10;
 }
 
