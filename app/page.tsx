@@ -140,7 +140,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <MainLayout>
+      <MainLayout introPassed={introPassed}>
         {/* 🎨 배경 래퍼 추가 - 여기가 새로 추가된 부분입니다! */}
         <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-100 to-indigo-200 relative overflow-hidden ">
           {/* 동적 배경 요소들 */}

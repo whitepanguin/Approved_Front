@@ -9,16 +9,17 @@ import FloatingDictButton from "../FloatingDictButton/FloatingDictButton";
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  introPassed: boolean;
 }
 
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout({ children, introPassed }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div id="sidemain" className={sidebarOpen ? "shifted" : ""}>
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        {introPassed && <Header onMenuClick={() => setSidebarOpen(true)} />}
         {children}
         <FloatingDictButton />
       </div>
