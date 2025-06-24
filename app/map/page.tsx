@@ -15,10 +15,33 @@ export default function SearchableBusinessMap() {
   const [filteredData, setFilteredData] = useState<any[]>([]);
 
   const complementaryMap: Record<string, string[]> = {
-    맥주집: ["노래방"],
-    노래방: ["맥주집"],
+    생맥주: ["노래방"],
+    호프: ["노래방"],
+    노래방: ["생맥주", "호프"],
     서점: ["문구"],
     문구: ["서점"],
+    노래: ["생맥주", "노래방"],
+    맥주집: ["생맥주", "노래방"],
+  };
+
+  const keywordAlias: Record<string, string> = {
+    맥주집: "생맥주",
+    맥주: "생맥주",
+    생맥주: "생맥주",
+    호프: "호프",
+    노래방: "노래방",
+    서점: "서점",
+    문구: "문구",
+  };
+
+  const normalizeKeyword = (keyword: string): string => {
+    return keywordAlias[keyword.trim()] || keyword.trim();
+  };
+
+  const getTargetList = (keyword: string): string[] => {
+    const norm = normalizeKeyword(keyword);
+    const comp = complementaryMap[norm] || [];
+    return Array.from(new Set([norm, ...comp]));
   };
 
   const haversineDistance = (
@@ -41,22 +64,20 @@ export default function SearchableBusinessMap() {
   const handleSearch = () => {
     if (!searchKeyword || !address) return;
 
-    // 초기화
     markersRef.current.forEach((m) => m.setMap(null));
     circlesRef.current.forEach((c) => c.setMap(null));
     if (infoWindowRef.current) infoWindowRef.current.close();
     markersRef.current = [];
     circlesRef.current = [];
 
-    const complementaryList = complementaryMap[searchKeyword] || [];
-    const targetList = [searchKeyword, ...complementaryList];
+    const targetList = getTargetList(searchKeyword);
 
     const kakao = (window as any).kakao;
     const geocoder = new kakao.maps.services.Geocoder();
     geocoder.addressSearch(address, (result: any, status: any) => {
       if (status === kakao.maps.services.Status.OK) {
-        const lat = parseFloat(result[0].y);
-        const lng = parseFloat(result[0].x);
+        const lat = Number.parseFloat(result[0].y);
+        const lng = Number.parseFloat(result[0].x);
         const center = new kakao.maps.LatLng(lat, lng);
 
         if (mapRef.current) {
@@ -68,8 +89,8 @@ export default function SearchableBusinessMap() {
           const type = item["상권업종소분류명"];
           const itemLat = Number(item["위도"]);
           const itemLng = Number(item["경도"]);
-
           if (!type || !itemLat || !itemLng) return false;
+
           const isWithinRadius =
             haversineDistance(lat, lng, itemLat, itemLng) <= 300;
           const isRelevant = targetList.some((t) => type.includes(t));
@@ -79,8 +100,9 @@ export default function SearchableBusinessMap() {
         setFilteredData(resultFiltered);
 
         const count = resultFiltered.filter((item) =>
-          item["상권업종소분류명"].includes(searchKeyword)
+          item["상권업종소분류명"].includes(normalizeKeyword(searchKeyword))
         ).length;
+
         let fillColor = "#00AA00";
         if (count >= 5) fillColor = "#FF0000";
         else if (count >= 3) fillColor = "#FFD700";
@@ -110,7 +132,6 @@ export default function SearchableBusinessMap() {
       const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
       setBusinessData(jsonData);
     };
-
     fetchData();
   }, []);
 
@@ -133,11 +154,12 @@ export default function SearchableBusinessMap() {
 
       kakao.maps.event.addListener(map, "zoom_changed", () => {
         const level = map.getLevel();
-
         markersRef.current.forEach((m) => m.setMap(null));
         markersRef.current = [];
 
         if (level <= 3) {
+          const targetList = getTargetList(searchKeyword);
+
           filteredData.forEach((item) => {
             const lat = Number(item["위도"]);
             const lng = Number(item["경도"]);
@@ -147,10 +169,9 @@ export default function SearchableBusinessMap() {
             const name = item["상호명"] || "업소";
             const type = item["상권업종소분류명"];
 
-            const isMain = type?.includes(searchKeyword);
-            const isComp = complementaryMap[searchKeyword]?.some((v) =>
-              type.includes(v)
-            );
+            const isMain = type?.includes(normalizeKeyword(searchKeyword));
+            const isComp = !isMain && targetList.some((t) => type.includes(t));
+
             if (!isMain && !isComp) return;
 
             const marker = new kakao.maps.Marker({
@@ -181,65 +202,90 @@ export default function SearchableBusinessMap() {
 
   return (
     <MainLayout>
-      <div id="sidemain">
-        <Script
-          src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
-          strategy="beforeInteractive"
-        />
+      <Script
+        src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
+        strategy="beforeInteractive"
+      />
 
-        <div className="max-w-4xl mx-auto p-5">
-          <h1 className="text-2xl font-bold mb-4 text-blue-700">
-            유사업종 / 보완업종 지도
-          </h1>
+      <div className="max-w-7xl mx-auto px-0">
+        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          유사업종 / 보완업종 지도
+        </h1>
+      </div>
 
-          <div className="bg-gray-100 text-sm p-3 rounded-lg mb-4 shadow">
-            <p className="mb-1">
-              📍 <strong>사용 방법 안내</strong>
-            </p>
-            <ul className="list-disc list-inside">
-              <li>주소와 업종 키워드를 함께 입력하고 검색하세요.</li>
-              <li>
-                반경 <strong>300m 이내</strong> 유사업종 개수에 따라 색상 반경
-                표시:
-              </li>
-              <ul className="list-disc list-inside ml-4">
-                <li>1~2개: 녹색</li>
-                <li>3~4개: 노란색</li>
-                <li>5개 이상: 빨간색</li>
+      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-sm p-6 rounded-xl shadow-lg">
+          <p className="mb-3 text-blue-800 font-semibold text-base">
+            📍 <strong>사용 방법 안내</strong>
+          </p>
+          <ul className="list-disc list-inside text-gray-700 space-y-1">
+            <li>주소와 업종 키워드를 함께 입력하고 검색하세요.</li>
+            <li>
+              반경 <strong className="text-blue-600">300m</strong> 내 업종 수에
+              따라 원 색상 표시:
+              <ul className="ml-6 list-disc mt-1 space-y-1">
+                <li>
+                  <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                  1~2개: 초록색
+                </li>
+                <li>
+                  <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                  3~4개: 노란색
+                </li>
+                <li>
+                  <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                  5개 이상: 빨간색
+                </li>
               </ul>
-              <li>
-                지도 확대(레벨 3 이하) 시, 유사업종(🔴), 보완업종(🔵) 각각 마커
-                표시
-              </li>
-              <li>마커 클릭 시 업소 이름 및 업종 정보 표시</li>
-              <li>다른 검색을 진행할 경우 지도는 자동 초기화됩니다.</li>
-            </ul>
-          </div>
+            </li>
+            <li>지도 확대 시, 유사업종(🔴), 보완업종(🔵) 마커 표시</li>
+          </ul>
+        </div>
+      </div>
 
-          <div className="flex gap-2 mb-4">
+      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8">
+        <div className="flex gap-4 w-full">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              업종 키워드
+            </label>
             <input
               type="text"
-              placeholder="예: 맥주집, 노래방, 서점, 문구"
+              placeholder="예: 맥주집, 노래방, 서점"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              className="flex-1 p-3 border rounded-lg"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm"
             />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              주소
+            </label>
             <input
               type="text"
               placeholder="예: 서울 강남구"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="flex-1 p-3 border rounded-lg"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm"
             />
+          </div>
+          <div className="flex items-end">
             <button
               onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow"
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-semibold"
             >
-              검색
+              🔍 검색
             </button>
           </div>
+        </div>
+      </div>
 
-          <div id="map" className="w-full h-[600px] rounded-xl shadow-md"></div>
+      <div className="w-full px-4 mt-6">
+        <div className="max-w-7xl mx-auto">
+          <div
+            id="map"
+            className="w-full h-[600px] rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+          ></div>
         </div>
       </div>
     </MainLayout>
