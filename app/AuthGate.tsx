@@ -2,22 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser, setUserStatus } from "../modules/user";
+import { RootState } from "@/store";
 
 const AuthGate = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const [checked, setChecked] = useState(false);
+  const { currentUser, isLogin } = useSelector(
+    (state: RootState) => state.user || {}
+  );
 
   useEffect(() => {
     const jwtToken =
       localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
+    if (jwtToken != null) {
+      return;
+    }
 
-    if (jwtToken) {
+    if (jwtToken || isLogin) {
       localStorage.setItem("jwtToken", jwtToken);
-
       const authenticate = async () => {
         try {
           const res = await fetch("http://localhost:8000/auth/jwt", {
@@ -27,14 +33,18 @@ const AuthGate = () => {
             },
           });
 
-          if (!res.ok) throw new Error("Invalid token");
-
           const data = await res.json();
-          dispatch(setUser(data.user));
+          if (searchParams.get("jwtToken")) {
+            router.push("/");
+          }
+          console.log("응답 데이터:", data);
+          if (!data.user || !data.user.name)
+            throw new Error("유저 데이터 없음");
+          dispatch(setUser(data));
           dispatch(setUserStatus(true));
         } catch (error) {
           console.error("JWT 인증 실패:", error);
-          localStorage.removeItem("jwtToken");
+          // localStorage.removeItem("jwtToken");
           dispatch(setUser({}));
           dispatch(setUserStatus(false));
         } finally {

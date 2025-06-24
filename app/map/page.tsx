@@ -1,185 +1,293 @@
-"use client"
-import { useState } from "react"
-import MainLayout from "@/components/layout/main-layout"
+"use client";
+import { useEffect, useRef, useState } from "react";
+import Script from "next/script";
+import * as XLSX from "xlsx";
+import MainLayout from "@/components/layout/main-layout";
 
-export default function MapPage() {
-  const [selectedRegion, setSelectedRegion] = useState("서울특별시")
-  const [selectedCategory, setSelectedCategory] = useState("all")
+export default function SearchableBusinessMap() {
+  const mapRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const circlesRef = useRef<any[]>([]);
+  const infoWindowRef = useRef<any>(null);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [address, setAddress] = useState("");
+  const [businessData, setBusinessData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
 
-  const regions = [
-    "서울특별시",
-    "부산광역시",
-    "대구광역시",
-    "인천광역시",
-    "광주광역시",
-    "대전광역시",
-    "울산광역시",
-    "세종특별자치시",
-    "경기도",
-    "강원도",
-    "충청북도",
-    "충청남도",
-    "전라북도",
-    "전라남도",
-    "경상북도",
-    "경상남도",
-    "제주특별자치도",
-  ]
+  const complementaryMap: Record<string, string[]> = {
+    생맥주: ["노래방"],
+    호프: ["노래방"],
+    노래방: ["생맥주", "호프"],
+    서점: ["문구"],
+    문구: ["서점"],
+    노래: ["생맥주", "노래방"],
+    맥주집: ["생맥주", "노래방"],
+  };
 
-  const categories = [
-    { id: "all", name: "전체", icon: "fas fa-list" },
-    { id: "business", name: "사업자등록", icon: "fas fa-building" },
-    { id: "food", name: "음식점", icon: "fas fa-utensils" },
-    { id: "construction", name: "건축", icon: "fas fa-hammer" },
-    { id: "environment", name: "환경", icon: "fas fa-leaf" },
-    { id: "transport", name: "교통", icon: "fas fa-car" },
-  ]
+  const keywordAlias: Record<string, string> = {
+    맥주집: "생맥주",
+    맥주: "생맥주",
+    생맥주: "생맥주",
+    호프: "호프",
+    노래방: "노래방",
+    서점: "서점",
+    문구: "문구",
+  };
 
-  const sampleData = [
-    {
-      id: 1,
-      name: "강남구청",
-      address: "서울특별시 강남구 학동로 426",
-      phone: "02-3423-5000",
-      category: "business",
-      services: ["사업자등록", "법인설립", "각종 인허가"],
-    },
-    {
-      id: 2,
-      name: "서초구청",
-      address: "서울특별시 서초구 남부순환로 2584",
-      phone: "02-2155-8114",
-      category: "business",
-      services: ["사업자등록", "건축허가", "환경신고"],
-    },
-    {
-      id: 3,
-      name: "송파구청",
-      address: "서울특별시 송파구 올림픽로 326",
-      phone: "02-2147-2114",
-      category: "construction",
-      services: ["건축허가", "도시계획", "주택관련"],
-    },
-  ]
+  const normalizeKeyword = (keyword: string): string => {
+    return keywordAlias[keyword.trim()] || keyword.trim();
+  };
 
-  const filteredData =
-    selectedCategory === "all" ? sampleData : sampleData.filter((item) => item.category === selectedCategory)
+  const getTargetList = (keyword: string): string[] => {
+    const norm = normalizeKeyword(keyword);
+    const comp = complementaryMap[norm] || [];
+    return Array.from(new Set([norm, ...comp]));
+  };
+
+  const haversineDistance = (
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number => {
+    const R = 6371000;
+    const toRad = (x: number) => (x * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const handleSearch = () => {
+    if (!searchKeyword || !address) return;
+
+    markersRef.current.forEach((m) => m.setMap(null));
+    circlesRef.current.forEach((c) => c.setMap(null));
+    if (infoWindowRef.current) infoWindowRef.current.close();
+    markersRef.current = [];
+    circlesRef.current = [];
+
+    const targetList = getTargetList(searchKeyword);
+
+    const kakao = (window as any).kakao;
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(address, (result: any, status: any) => {
+      if (status === kakao.maps.services.Status.OK) {
+        const lat = Number.parseFloat(result[0].y);
+        const lng = Number.parseFloat(result[0].x);
+        const center = new kakao.maps.LatLng(lat, lng);
+
+        if (mapRef.current) {
+          mapRef.current.setCenter(center);
+          mapRef.current.setLevel(4);
+        }
+
+        const resultFiltered = businessData.filter((item) => {
+          const type = item["상권업종소분류명"];
+          const itemLat = Number(item["위도"]);
+          const itemLng = Number(item["경도"]);
+          if (!type || !itemLat || !itemLng) return false;
+
+          const isWithinRadius =
+            haversineDistance(lat, lng, itemLat, itemLng) <= 300;
+          const isRelevant = targetList.some((t) => type.includes(t));
+          return isWithinRadius && isRelevant;
+        });
+
+        setFilteredData(resultFiltered);
+
+        const count = resultFiltered.filter((item) =>
+          item["상권업종소분류명"].includes(normalizeKeyword(searchKeyword))
+        ).length;
+
+        let fillColor = "#00AA00";
+        if (count >= 5) fillColor = "#FF0000";
+        else if (count >= 3) fillColor = "#FFD700";
+
+        const circle = new kakao.maps.Circle({
+          map: mapRef.current,
+          center,
+          radius: 300,
+          strokeWeight: 2,
+          strokeColor: "#333",
+          strokeOpacity: 0.8,
+          fillColor,
+          fillOpacity: 0.4,
+        });
+
+        circlesRef.current.push(circle);
+      }
+    });
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetch("/map-data.xlsx");
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      setBusinessData(jsonData);
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const kakao = (window as any).kakao;
+    if (!kakao || !kakao.maps || !kakao.maps.load) return;
+
+    kakao.maps.load(() => {
+      const container = document.getElementById("map");
+      if (!container) return;
+
+      if (!mapRef.current) {
+        mapRef.current = new kakao.maps.Map(container, {
+          center: new kakao.maps.LatLng(37.4979, 127.0276),
+          level: 5,
+        });
+      }
+
+      const map = mapRef.current;
+
+      kakao.maps.event.addListener(map, "zoom_changed", () => {
+        const level = map.getLevel();
+        markersRef.current.forEach((m) => m.setMap(null));
+        markersRef.current = [];
+
+        if (level <= 3) {
+          const targetList = getTargetList(searchKeyword);
+
+          filteredData.forEach((item) => {
+            const lat = Number(item["위도"]);
+            const lng = Number(item["경도"]);
+            if (!lat || !lng) return;
+
+            const position = new kakao.maps.LatLng(lat, lng);
+            const name = item["상호명"] || "업소";
+            const type = item["상권업종소분류명"];
+
+            const isMain = type?.includes(normalizeKeyword(searchKeyword));
+            const isComp = !isMain && targetList.some((t) => type.includes(t));
+
+            if (!isMain && !isComp) return;
+
+            const marker = new kakao.maps.Marker({
+              position,
+              map,
+              image: new kakao.maps.MarkerImage(
+                isMain ? "/images/red.png" : "/images/blue.png",
+                new kakao.maps.Size(40, 40)
+              ),
+            });
+
+            const infowindow = new kakao.maps.InfoWindow({
+              content: `<div style="padding:6px;font-size:12px;"><b>${name}</b><br/>(${type})</div>`,
+            });
+
+            kakao.maps.event.addListener(marker, "click", () => {
+              if (infoWindowRef.current) infoWindowRef.current.close();
+              infowindow.open(map, marker);
+              infoWindowRef.current = infowindow;
+            });
+
+            markersRef.current.push(marker);
+          });
+        }
+      });
+    });
+  }, [filteredData]);
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto p-5">
-        <div className="mb-8">
-          <h1 className="text-3xl text-blue-600 mb-2 flex items-center gap-2">
-            <i className="fas fa-map-marked-alt"></i> 지도
-          </h1>
-          <p className="text-gray-600">지역별 인허가 관련 기관 정보를 확인하세요</p>
+      <Script
+        src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
+        strategy="beforeInteractive"
+      />
+
+      <div className="max-w-7xl mx-auto px-0 mt-[24px]">
+        <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          유사업종 / 보완업종 지도
+        </h1>
+      </div>
+
+      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8 mt-[24px]">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-sm p-6 rounded-xl shadow-lg">
+          <p className="mb-3 text-blue-800 font-semibold text-base">
+            📍 <strong>사용 방법 안내</strong>
+          </p>
+          <ul className="list-disc list-inside text-gray-700 space-y-1">
+            <li>주소와 업종 키워드를 함께 입력하고 검색하세요.</li>
+            <li>
+              반경 <strong className="text-blue-600">300m</strong> 내 업종 수에
+              따라 원 색상 표시:
+              <ul className="ml-6 list-disc mt-1 space-y-1">
+                <li>
+                  <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                  1~2개: 초록색
+                </li>
+                <li>
+                  <span className="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                  3~4개: 노란색
+                </li>
+                <li>
+                  <span className="inline-block w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                  5개 이상: 빨간색
+                </li>
+              </ul>
+            </li>
+            <li>지도 확대 시, 유사업종(🔴), 보완업종(🔵) 마커 표시</li>
+          </ul>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 지역 선택 */}
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <i className="fas fa-map-marker-alt text-blue-600"></i>
-              지역 선택
-            </h3>
-            <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
-              {regions.map((region) => (
-                <button
-                  key={region}
-                  onClick={() => setSelectedRegion(region)}
-                  className={`p-3 text-left rounded-lg transition-all ${
-                    selectedRegion === region ? "bg-blue-600 text-white" : "bg-gray-50 text-gray-700 hover:bg-blue-50"
-                  }`}
-                >
-                  {region}
-                </button>
-              ))}
-            </div>
+      <div className="w-full px-4 md:px-6 lg:px-8 max-w-[100rem] mx-auto mb-8 mt-[24px]">
+        <div className="flex gap-4 w-full">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              업종 키워드
+            </label>
+            <input
+              type="text"
+              placeholder="예: 맥주집, 노래방, 서점"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm"
+            />
           </div>
-
-          {/* 카테고리 선택 */}
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <i className="fas fa-filter text-blue-600"></i>
-              카테고리
-            </h3>
-            <div className="grid grid-cols-1 gap-2">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`p-3 text-left rounded-lg transition-all flex items-center gap-3 ${
-                    selectedCategory === category.id
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-50 text-gray-700 hover:bg-blue-50"
-                  }`}
-                >
-                  <i className={category.icon}></i>
-                  {category.name}
-                </button>
-              ))}
-            </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              주소
+            </label>
+            <input
+              type="text"
+              placeholder="예: 서울 강남구"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 shadow-sm"
+            />
           </div>
-
-          {/* 검색 결과 */}
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <i className="fas fa-building text-blue-600"></i>
-              {selectedRegion} 관련 기관
-            </h3>
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {filteredData.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <i className="fas fa-search text-3xl mb-3 opacity-50"></i>
-                  <p>해당 조건의 기관이 없습니다.</p>
-                </div>
-              ) : (
-                filteredData.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-600 transition-colors"
-                  >
-                    <h4 className="font-semibold text-gray-800 mb-2">{item.name}</h4>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <i className="fas fa-map-marker-alt text-blue-600"></i>
-                        <span>{item.address}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <i className="fas fa-phone text-blue-600"></i>
-                        <span>{item.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <i className="fas fa-clipboard-list text-blue-600"></i>
-                        <span>{item.services.join(", ")}</span>
-                      </div>
-                    </div>
-                    <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">
-                      상세 정보 보기
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 지도 영역 (실제 지도 API 연동 시 사용) */}
-        <div className="mt-8 bg-white rounded-xl p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <i className="fas fa-map text-blue-600"></i>
-            지도 보기
-          </h3>
-          <div className="w-full h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-500">
-              <i className="fas fa-map text-4xl mb-3"></i>
-              <p className="text-lg">지도 API 연동 예정</p>
-              <p className="text-sm">카카오맵 또는 네이버맵 API를 연동하여</p>
-              <p className="text-sm">실제 지도 서비스를 제공할 예정입니다.</p>
-            </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleSearch}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-semibold"
+            >
+              🔍 검색
+            </button>
           </div>
         </div>
       </div>
+
+      <div className="w-full px-4 mt-6 mb-[24px]">
+        <div className="max-w-7xl mx-auto">
+          <div
+            id="map"
+            className="w-full h-[600px] rounded-2xl shadow-2xl border border-gray-200 overflow-hidden"
+          ></div>
+        </div>
+      </div>
     </MainLayout>
-  )
+  );
 }

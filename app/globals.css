@@ -11,7 +11,7 @@
 }
 
 body {
-  background-color: #f0f5ff;
+  background-color: #f6f6f6;
   color: #333;
 }
 
@@ -20,7 +20,7 @@ body {
   height: 100%;
   width: 0;
   position: fixed;
-  z-index: 1000;
+  z-index: 97;
   top: 0;
   left: 0;
   background-color: white;
@@ -108,10 +108,29 @@ body {
 /* 메인 콘텐츠 스타일 */
 #main {
   transition: margin-left 0.5s;
-  padding: 16px;
-  height: 100vh;
+  padding: 0 0;
+  /* height: 100vh; */
   display: flex;
   flex-direction: column;
+
+  /* background-color: #dbeafe; */
+  z-index: 10;
+}
+
+#sidemain {
+  transition: margin-left 0.5s;
+  padding: 50px 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  background: linear-gradient(to right, #f0f4f9, #dbeafe);
+  z-index: 10;
+}
+
+Header {
+  z-index: 5;
+  background: linear-gradient(to right, #f0f4f9, #dbeafe);
 }
 
 #main.shifted {
@@ -122,7 +141,7 @@ body {
 .modal {
   display: none;
   position: fixed;
-  z-index: 1000;
+  z-index: 98;
   left: 0;
   top: 0;
   width: 100%;
@@ -186,4 +205,14 @@ body {
   .sidenav.open {
     width: 100%;
   }
+}
+
+/* 모든 요소에서 스크롤바 숨기기 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE, Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
 }
