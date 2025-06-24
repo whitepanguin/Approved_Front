@@ -18,11 +18,12 @@ const AuthGate = () => {
   useEffect(() => {
     const jwtToken =
       localStorage.getItem("jwtToken") || searchParams.get("jwtToken");
-    if (jwtToken != null) {
+
+    if (!jwtToken) {
       return;
     }
 
-    if (jwtToken || isLogin) {
+    if (jwtToken) {
       localStorage.setItem("jwtToken", jwtToken);
       const authenticate = async () => {
         try {

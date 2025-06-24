@@ -53,6 +53,10 @@ export default function AdminPage() {
   const [editValue, setEditValue] = useState<string>("");
 
   useEffect(() => {
+    if (currentUser.name !== "Admin") router.push("/");
+  }, []);
+
+  useEffect(() => {
     const fetchAllPosts = async () => {
       const response = await fetch("http://localhost:8000/posts");
       const data = await response.json();
@@ -615,9 +619,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <span className="text-2xl">🧑‍💼</span> {/* 회원가입 */}
-        <span className="text-gray-700">
-          새 회원 가입: {newestUserName}
-        </span>
+                      <span className="text-gray-700">
+                        새 회원 가입: {newestUserName}
+                      </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestUserJoinedAgo}
@@ -626,9 +630,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <span className="text-2xl">📝</span> {/* 게시글 */}
-        <span className="text-gray-700">
-          새 게시글: {newestPostName}
-        </span>
+                      <span className="text-gray-700">
+                        새 게시글: {newestPostName}
+                      </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestPostAgo}
@@ -637,10 +641,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <span className="text-2xl">❓</span> {/* 질문 */}
-        <span className="text-gray-700">
-          새 질문: {newestQnaName}
-        </span>
-
+                      <span className="text-gray-700">
+                        새 질문: {newestQnaName}
+                      </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestQnaAgo}
