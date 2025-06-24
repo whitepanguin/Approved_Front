@@ -28,11 +28,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-<<<<<<< Updated upstream
     <header className="flex justify-between items-center px-6 ">
-=======
-    <header className="flex justify-between items-center  px-[55px] ">
->>>>>>> Stashed changes
       {/* 왼쪽: 메뉴 + 로고 */}
       <div className="flex items-center">
         <span
