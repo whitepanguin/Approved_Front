@@ -979,10 +979,7 @@ export default function CommunityPage() {
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <div className="flex items-center gap-4 mb-5">
                 <div className="relative">
-                  <FontAwesomeIcon
-                    icon={faUser}
-                    className="text-blue-600 text-5xl"
-                  />
+                  <img src={user.currentUser.profile} alt="sdsd" />
                 </div>
                 <div>
                   {user?.currentUser ? (

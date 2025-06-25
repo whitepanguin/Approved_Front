@@ -96,7 +96,7 @@ export default function AdminPage() {
       const response = await fetch("http://localhost:8000/posts");
       const data = await response.json();
 
-      const reportedNums = data.filter((post: Post) => post.category === "dev");
+      const reportedNums = data.filter((post: Post) => post.reported === true);
       setReportedNum(reportedNums.length);
     };
     fetchReportedNum();
