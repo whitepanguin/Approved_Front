@@ -1527,7 +1527,7 @@ export default function AdminPage() {
               <div className="flex flex-col items-center">
                 <img
                   className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mb-3"
-                  src="/images/bear_profile.png"
+                  src="/images/응원.gif"
                   alt=""
                 />
 
