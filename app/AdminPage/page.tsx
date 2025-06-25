@@ -262,7 +262,7 @@ export default function AdminPage() {
         (a, b) =>
           new Date(b.createdAt as string).getTime() -
           new Date(a.createdAt as string).getTime()
-      )[0]?.name || "알 수 없음";
+      )[0]?.userid || "알 수 없음";
 
   const newestPostName =
     [...allPosts]
