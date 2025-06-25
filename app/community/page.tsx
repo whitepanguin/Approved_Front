@@ -54,16 +54,16 @@ interface Post {
   isHot: boolean;
   isNotice: boolean;
   content: string;
+  email: string;
 }
 
 interface Comment {
   _id: string;
-  id: String;
   userid: string;
   createdAt: string | Date;
   content?: string;
   text?: string;
-  // id?: string;
+  id?: string;
 }
 
 export default function CommunityPage() {
@@ -83,14 +83,84 @@ export default function CommunityPage() {
 
   const [postCount, setPostCount] = useState(0);
 
+  const [commentCount, setCommentCount] = useState(0);
+
+  const [likeSum, setLikeSum] = useState(0);
+
   const [title, setTitle] = useState("");
 
   const [category, setCategory] = useState("");
+
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  const [totalPosts, setTotalPosts] = useState(0);
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
 
   const router = useRouter();
 
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    setFilteredPosts(posts); // posts 변경 시 필터 초기화
+  }, [posts]);
+
+  // ✅ fetchStats 함수는 최상단에 선언해도 무방합니다 (return 없음)
+  const fetchStats = async () => {
+    const token =
+      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+    if (!user?.currentUser?.email || !token) return;
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/posts/stats/email/${encodeURIComponent(
+          user.currentUser.email
+        )}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error("통계 불러오기 실패: " + errorText);
+      }
+
+      const data = await res.json();
+      console.log("✅ 통계 데이터:", data);
+
+      setPostCount(data.postCount);
+      setCommentCount(data.commentCount);
+      setLikeSum(data.likeCount ?? 0);
+    } catch (err) {
+      console.error("📊 통계 불러오기 중 오류:", err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchCommunityStats = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/posts/stats/community");
+        const data = await res.json();
+        setTotalUsers(data.totalUsers);
+        setTotalPosts(data.totalPosts);
+      } catch (err) {
+        console.error("❌ 커뮤니티 통계 로딩 실패:", err);
+      }
+    };
+
+    fetchCommunityStats();
+  }, []);
+
+  // 📊 게시글 수, 댓글 수, 좋아요 수 통합 통계 API 호출
+  useEffect(() => {
+    fetchStats(); // 조건은 fetchStats 내부에서 체크함
+  }, [user?.currentUser?.email]);
 
   useEffect(() => {
     if (editingPost) {
@@ -153,7 +223,7 @@ export default function CommunityPage() {
       );
       setPosts(updatedPosts);
 
-      await fetchPostCount();
+      await fetchStats();
 
       alert("✅ 삭제 완료");
       setShowPostModal(false); // 모달 닫기
@@ -239,14 +309,16 @@ export default function CommunityPage() {
     }
 
     try {
-      const userid = user.currentUser.userid;
       const email = user.currentUser.email;
+      const userid = user.currentUser.userid;
 
-      // ✅ 정확한 URL로 수정
+      // 게시글 좋아요 처리
       const res = await fetch(
-        `${API_BASE_URL}/likes/${selectedPost._id}?userid=${encodeURIComponent(
+        `http://localhost:8000/likes/${
+          selectedPost._id
+        }?email=${encodeURIComponent(email)}&userid=${encodeURIComponent(
           userid
-        )}&email=${encodeURIComponent(email)}`,
+        )}`,
         {
           method: "PATCH",
           headers: {
@@ -271,12 +343,21 @@ export default function CommunityPage() {
     }
   };
 
+  // 커뮤니티 페이지 검색박스 핸들
+  const handleSearch = () => {
+    const filtered = posts.filter((post) =>
+      post.content.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredPosts(filtered);
+    setCurrentPage(1); // 페이지 초기화
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
     try {
       const payload = {
         postId: selectedPost._id,
-        userid: user.currentUser.userid,
+        userid: user.currentUser.userid, // ← 백엔드에서 무시해도 되므로 그대로 둠
         content: newComment,
         email: user.currentUser.email,
       };
@@ -375,44 +456,6 @@ export default function CommunityPage() {
     },
   };
 
-  const fetchPostCount = async () => {
-    if (isLogin) {
-      try {
-        const token =
-          localStorage.getItem("jwtToken") ||
-          sessionStorage.getItem("jwtToken");
-
-        if (!token) {
-          console.warn("❌ 토큰 없음: 로그인 필요");
-          return;
-        }
-
-        const res = await fetch(
-          `http://localhost:8000/posts/count/${encodeURIComponent(
-            user.currentUser.userid
-          )}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error("❌ 작성글 수 조회 실패:", res.status, errorText);
-          return;
-        }
-
-        const data = await res.json();
-        console.log("✅ 작성글 수 불러오기 성공:", data.count);
-        setPostCount(data.count);
-      } catch (err) {
-        console.error("❌ 작성글 수 조회 중 오류:", err);
-      }
-    }
-  };
-
   // 1. 게시글 불러오기
   useEffect(() => {
     const fetchPosts = async () => {
@@ -453,38 +496,10 @@ export default function CommunityPage() {
     fetchPosts();
   }, []);
 
-  // 2. 작성글 수 불러오기 (user가 있을 경우에만)
-  useEffect(() => {
-    // console.log("📌 현재 user id:", user?.currentUser?.userid);
-    if (!user?.currentUser?.userid) return;
-    const jwtToken = localStorage.getItem("jwtToken");
-    const fetchPostCount = async () => {
-      try {
-        const res = await fetch(
-          `http://localhost:8000/posts/count/${user.currentUser.userid}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          }
-        );
-        const data = await res.json();
-        console.log("ㅇㅇㅇㅇ", data);
-        setPostCount(data);
-        console.log("✅ 작성글 수 불러오기 성공:", data.count);
-      } catch (err) {
-        console.error("❌ 작성글 수 조회 실패:", err);
-      }
-    };
-
-    fetchPostCount();
-  }, [user?.currentUser?.userid]);
-
-  const filteredPosts = posts
+  const displayedPosts = (searchTerm ? filteredPosts : posts)
     .filter(
       (post) =>
-        post.category !== "dev" && // ← dev 카테고리 제외
+        post.category !== "dev" &&
         (currentCategory === "all" || post.category === currentCategory)
     )
     .sort((a, b) => {
@@ -506,8 +521,8 @@ export default function CommunityPage() {
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
-  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+  const currentPosts = displayedPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(displayedPosts.length / postsPerPage);
 
   const formatDate = (input: string | Date) => {
     const date = new Date(input);
@@ -605,7 +620,7 @@ export default function CommunityPage() {
       );
       console.log("📌 최신 글 목록:", updatedPosts);
       setPosts(updatedPosts);
-      await fetchPostCount();
+      await fetchStats();
       setShowWriteModal(false);
       setEditingPost(null);
       alert(
@@ -618,7 +633,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout introPassed={true}>
       <div className="max-w-7xl mx-auto p-3 md:p-5">
         <div className="mb-4 md:mb-8">
           <h1 className="text-2xl md:text-3xl text-blue-600 mb-1 md:mb-2 flex items-center gap-2">
@@ -712,9 +727,6 @@ export default function CommunityPage() {
                   <span className="flex items-center gap-1">
                     <FontAwesomeIcon icon={faFileAlt} /> {data.posts}개 게시글
                   </span>
-                  <span className="flex items-center gap-1">
-                    <FontAwesomeIcon icon={faComments} /> {data.comments}개 댓글
-                  </span>
                 </div>
               </div>
             ))}
@@ -740,6 +752,7 @@ export default function CommunityPage() {
                         .title
                     }
                   </h2>
+                  {/* 🔽 정렬 드롭다운 */}
                   <select
                     value={currentSort}
                     onChange={(e) => setCurrentSort(e.target.value)}
@@ -750,6 +763,23 @@ export default function CommunityPage() {
                     <option value="comments">댓글순</option>
                     <option value="views">조회순</option>
                   </select>
+
+                  {/* 커뮤니티 검색창 */}
+                  <div className="flex items-center gap-2 ml-8">
+                    <input
+                      type="text"
+                      placeholder="내용 검색"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="px-4 py-2 border border-gray-300 rounded-xl text-sm w-80 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+                    />
+                    <button
+                      onClick={handleSearch}
+                      className="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full text-sm hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowWriteModal(true)}
@@ -826,28 +856,29 @@ export default function CommunityPage() {
                             </button>
 
                             {/* 수정/삭제 버튼 (본인 글만 표시) */}
-                            {post.email === user.currentUser.email && (
-                              <div className="flex gap-2 ml-3">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEdit(post);
-                                  }}
-                                  className="text-blue-600 hover:underline"
-                                >
-                                  수정
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(post.id);
-                                  }}
-                                  className="text-red-600 hover:underline"
-                                >
-                                  삭제
-                                </button>
-                              </div>
-                            )}
+                            {user?.currentUser?.email &&
+                              post.email === user.currentUser.email && (
+                                <div className="flex gap-2 ml-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEdit(post);
+                                    }}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    수정
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (post._id) handleDelete(post._id);
+                                    }}
+                                    className="text-red-600 hover:underline"
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -961,13 +992,13 @@ export default function CommunityPage() {
                 </div>
                 <div className="text-center">
                   <span className="block text-xl font-bold text-blue-600">
-                    42
+                    {commentCount}
                   </span>
                   <span className="text-xs text-gray-600">댓글</span>
                 </div>
                 <div className="text-center">
                   <span className="block text-xl font-bold text-blue-600">
-                    128
+                    {likeSum}
                   </span>
                   <span className="text-xs text-gray-600">받은 좋아요</span>
                 </div>
@@ -980,30 +1011,6 @@ export default function CommunityPage() {
               </button>
             </div>
 
-            {/* 인기 태그 */}
-            <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
-              <h3 className="text-base text-gray-800 mb-4 flex items-center gap-2">
-                <FontAwesomeIcon icon={faTags} /> 인기 태그
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  "#영업허가",
-                  "#건축허가",
-                  "#창업",
-                  "#법인설립",
-                  "#세무",
-                  "#노무",
-                ].map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-medium cursor-pointer transition-all hover:bg-blue-600 hover:text-white"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
             {/* 커뮤니티 현황 */}
             <div className="bg-white rounded-xl p-5 shadow-lg">
               <h3 className="text-base text-gray-800 mb-4 flex items-center gap-2">
@@ -1013,19 +1020,14 @@ export default function CommunityPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">전체 회원</span>
                   <span className="text-blue-600 font-semibold text-sm">
-                    김
+                    {totalUsers}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">오늘 방문자</span>
-                  <span className="text-blue-600 font-semibold text-sm">
-                    사
-                  </span>
-                </div>
+
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600 text-sm">전체 게시글</span>
                   <span className="text-blue-600 font-semibold text-sm">
-                    과
+                    {totalPosts}
                   </span>
                 </div>
               </div>
@@ -1275,7 +1277,7 @@ export default function CommunityPage() {
                   {/* ✅ 자기 글일 때만 삭제 버튼 */}
                   {selectedPost.userid === user.currentUser.userid && (
                     <button
-                      onClick={() => handleDelete(selectedPost._id)}
+                      onClick={() => handleDelete(selectedPost._id!)}
                       className="text-red-500 hover:underline"
                     >
                       삭제
@@ -1285,9 +1287,7 @@ export default function CommunityPage() {
                   {/* ✅ 자기 글이 아닐 때만 신고 버튼 */}
                   {selectedPost.userid !== user.currentUser.userid && (
                     <button
-                      onClick={() =>
-                        selectedPost._id && handleDelete(selectedPost._id)
-                      }
+                      onClick={() => handleReport(selectedPost._id!)}
                       className="text-orange-500 hover:underline"
                     >
                       신고
