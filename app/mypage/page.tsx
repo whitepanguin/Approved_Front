@@ -50,6 +50,7 @@ export default function MyPage() {
     posts: 1,
     comments: 1,
     likes: 1,
+    result: 1,
   });
   // 🔹 Redux 및 로그인 관련
   const dispatch = useDispatch();
@@ -1206,8 +1207,6 @@ export default function MyPage() {
           </div>
         );
       case "result": {
-        // const pagedResults = getPaged(searchResults, "result"); ← 제거
-
         return (
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-800">검색 결과</h3>
@@ -1219,18 +1218,47 @@ export default function MyPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {searchResults.map((item, index) => (
-                  <div
-                    key={item._id || index}
-                    className="cursor-pointer p-4 bg-white rounded shadow hover:bg-gray-50"
-                    onClick={() => setActiveResult(item)}
-                  >
-                    <div className="text-sm text-gray-500 mb-1">질문</div>
-                    <div className="font-medium text-gray-800 line-clamp-2">
-                      {item.question}
+                {searchResults
+                  .slice((page.result - 1) * PER_PAGE, page.result * PER_PAGE)
+                  .map((item, index) => (
+                    <div
+                      key={item._id || index}
+                      className="cursor-pointer p-4 bg-white rounded shadow hover:bg-gray-50"
+                      onClick={() => setActiveResult(item)}
+                    >
+                      <div className="text-sm text-gray-500 mb-1">질문</div>
+                      <div className="font-medium text-gray-800 line-clamp-2">
+                        {item.question}
+                      </div>
+                    </div>
+                  ))}
+
+                {/* ✅ 페이지네이션 */}
+                {searchResults.length > PER_PAGE && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex gap-1">
+                      {Array.from(
+                        { length: Math.ceil(searchResults.length / PER_PAGE) },
+                        (_, i) => i + 1
+                      ).map((num) => (
+                        <button
+                          key={num}
+                          onClick={() =>
+                            setPage((prev) => ({ ...prev, result: num }))
+                          }
+                          className={`w-9 h-9 flex items-center justify-center border
+                                        border-gray-300 rounded text-sm ${
+                                          num === page.result
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "hover:bg-gray-100"
+                                        }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             )}
 
