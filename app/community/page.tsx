@@ -979,7 +979,12 @@ export default function CommunityPage() {
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <div className="flex items-center gap-4 mb-5">
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
-                  <img src={user.currentUser.profile} alt="sdsd" />
+                  <img src={user.currentUser.profile || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"}alt="프로필 이미지"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src =
+                    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+                  }} />
                 </div>
                 <div>
                   {user?.currentUser ? (
