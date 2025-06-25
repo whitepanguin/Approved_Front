@@ -28,6 +28,10 @@ export default function AdminPage() {
   const [qnaComments, setQnaComments] = useState([]); // 댓글 저장용
 
   const [selectedFilter, setSelectedFilter] = useState("전체");
+  const [filterReported, setFilterReported] = useState<"전체" | "신고" | "정상">("전체");
+
+
+
 
   const filteredQnaList = qnaList
     .filter((qna) => {
@@ -41,6 +45,7 @@ export default function AdminPage() {
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
   );
+  
   const router = useRouter();
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -96,21 +101,6 @@ export default function AdminPage() {
     };
     fetchReportedNum();
   });
-
-  // 샘플 데이터
-  // const qnaList = [
-  //   {
-  //     id: 1,
-  //     title: "건축허가 관련 질문드립니다",
-  //     content:
-  //       "단독주택 신축 시 건축허가 절차가 어떻게 되나요? 건축과에 직접 방문해야 하는지 궁금합니다.",
-  //     author: "건축초보",
-  //     createdAt: "2023.06.03 14:30",
-  //     status: "답변대기",
-  //     views: 45,
-  //     isUrgent: true,
-  //   },
-  // ];
 
   useEffect(() => {
     const getUsercount = async () => {
@@ -336,13 +326,29 @@ export default function AdminPage() {
   const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
   const newestQnaAgo = getTimeAgo(newestQna?.createdAt || null);
 
+  // const [reportsFilter, setReportsFilter] = useState("전체");
+
+  // const reportsFilter = filterReported ? "신고" : "정상";
+
+
   const sortedPosts = [...allPosts]
-    .filter((post) => post.createdAt !== null && post.category !== "dev")
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt as string).getTime() -
-        new Date(a.createdAt as string).getTime()
-    );
+  .filter((post) => {
+    // 1. 필수 조건: createdAt이 null이 아니고, 카테고리가 dev가 아닌 글만
+    if (post.createdAt === null || post.category === "dev") return false;
+
+    // 2. 필터 조건: 전체, 신고, 정상
+    if (filterReported === "전체") return true;
+    if (filterReported === "신고") return post.reported === true;
+    if (filterReported === "정상") return post.reported === false;
+
+    return true; // 혹시 모를 예외 대비
+  })
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  );
+
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -910,6 +916,7 @@ export default function AdminPage() {
         );
 
       case "posts":
+        
         const indexOfLastPost = currentPage * postsPerPage;
         const indexOfFirstPost = indexOfLastPost - postsPerPage;
         const currentPosts = sortedPosts.slice(
@@ -930,11 +937,12 @@ export default function AdminPage() {
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">전체 게시글</h4>
                   <div className="flex gap-2">
-                    <select className="p-2 border border-gray-300 rounded-xl text-sm">
-                      <option>전체</option>
-                      <option>정상</option>
-                      <option>신고</option>
-                      <option>숨김</option>
+                    <select value={filterReported} 
+                    onChange={(e) => setFilterReported(e.target.value)} 
+                    className="p-2 border border-gray-300 rounded-xl text-sm">
+                      <option value={"전체"}>전체</option>
+                      <option value={"정상"}>정상</option>
+                      <option value={"신고"}>신고</option>
                     </select>
                     {selectedPosts.length > 0 && (
                       <div className="flex gap-2">
@@ -1159,66 +1167,54 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
-                    {(() => {
-                      const nonDevPosts = allPosts.filter(
-                        (post) => post.category !== "dev"
-                      );
-                      const totalPages = Math.ceil(
-                        nonDevPosts.length / postsPerPage
-                      );
-                      const pageGroupSize = 5;
-                      const currentGroup = Math.floor(
-                        (currentPage - 1) / pageGroupSize
-                      );
-                      const startPage = currentGroup * pageGroupSize + 1;
-                      const endPage = Math.min(
-                        startPage + pageGroupSize - 1,
-                        totalPages
-                      );
+  {(() => {
+    const totalPages = Math.ceil(sortedPosts.length / postsPerPage); // 🔥 핵심: sortedPosts 기준
+    const pageGroupSize = 5;
+    const currentGroup = Math.floor((currentPage - 1) / pageGroupSize);
+    const startPage = currentGroup * pageGroupSize + 1;
+    const endPage = Math.min(startPage + pageGroupSize - 1, totalPages);
 
-                      return (
-                        <>
-                          {/* 이전 그룹 버튼 */}
-                          {startPage > 1 && (
-                            <button
-                              onClick={() => setCurrentPage(startPage - 1)}
-                              className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            >
-                              &lt;
-                            </button>
-                          )}
+    return (
+      <>
+        {/* 이전 그룹 버튼 */}
+        {startPage > 1 && (
+          <button
+            onClick={() => setCurrentPage(startPage - 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &lt;
+          </button>
+        )}
 
-                          {/* 현재 그룹의 페이지 버튼들 */}
-                          {Array.from(
-                            { length: endPage - startPage + 1 },
-                            (_, i) => startPage + i
-                          ).map((page) => (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`mx-1 px-3 py-1 rounded ${
-                                currentPage === page
-                                  ? "bg-red-600 text-white"
-                                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          ))}
+        {/* 현재 그룹 페이지 버튼들 */}
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`mx-1 px-3 py-1 rounded ${
+              currentPage === page
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
 
-                          {/* 다음 그룹 버튼 */}
-                          {endPage < totalPages && (
-                            <button
-                              onClick={() => setCurrentPage(endPage + 1)}
-                              className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            >
-                              &gt;
-                            </button>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
+        {/* 다음 그룹 버튼 */}
+        {endPage < totalPages && (
+          <button
+            onClick={() => setCurrentPage(endPage + 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &gt;
+          </button>
+        )}
+      </>
+    );
+  })()}
+</div>
+
                 </div>
               </div>
             </div>
