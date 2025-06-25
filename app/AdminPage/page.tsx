@@ -201,7 +201,7 @@ export default function AdminPage() {
   const postsPerPage = 4; // 한 페이지당 게시글 수
 
   const [currentUserPage, setCurrentUserPage] = useState(1);
-  const usersPerPage = 3;
+  const usersPerPage = 4;
 
   useEffect(() => {
     const fetchAllPosts = async () => {
@@ -555,7 +555,7 @@ export default function AdminPage() {
     switch (activeTab) {
       case "dashboard":
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px] md:h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 관리자 대시보드
@@ -663,7 +663,7 @@ export default function AdminPage() {
 
       case "chart":
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4 w-[900px]">
                 차트
@@ -671,25 +671,22 @@ export default function AdminPage() {
               <p className="text-sm text-gray-500 mb-6">
                 커뮤니티 현황을 차트로 확인하세요
               </p>
-              <div className="flex flex-wrap gap-6 mt-8">
-                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl flex-1 min-w-[400px]">
-                  <h4 className="font-medium text-gray-800 mb-4">
-                    가입 플랫폼
-                  </h4>
-                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
-                    <PieChart />
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-4 justify-center">
+  <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
+    <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
+    <div className="w-full max-w-[400px] h-[400px] mx-auto">
+      <PieChart />
+    </div>
+  </div>
 
-                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl flex-1 min-w-[400px]">
-                  <h4 className="font-medium text-gray-800 mb-4">
-                    카테고리 주제
-                  </h4>
-                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
-                    <CategoryChart />
-                  </div>
-                </div>
-              </div>
+  <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
+    <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
+    <div className="w-full max-w-[400px] h-[400px] mx-auto">
+      <CategoryChart />
+    </div>
+  </div>
+</div>
+
             </div>
           </div>
         );
@@ -703,7 +700,7 @@ export default function AdminPage() {
         );
 
         return (
-          <div className="space-y-8 w-[850px]">
+          <div className="space-y-8 w-full md:w-[850px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Q&A 관리
@@ -924,7 +921,7 @@ export default function AdminPage() {
           indexOfLastPost
         );
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px] md:h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 게시글 관리
@@ -1258,7 +1255,7 @@ export default function AdminPage() {
         const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
 
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px] md:h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 유저 관리
