@@ -114,13 +114,6 @@ export default function MyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
   const router = useRouter();
 
-  useEffect(() => {
-    if (!user.currentUser) {
-      alert("로그인 후 이용해주세요!");
-      router.push("/");
-    }
-  }, []);
-
   // ✅ 최초 통계 한방에 불러오기
   useEffect(() => {
     if (!user?.email || !token) return;
@@ -838,6 +831,13 @@ export default function MyPage() {
       [name]: value,
     }));
   };
+  useEffect(() => {
+    const Token = localStorage.getItem("jwtToken");
+    if (!Token) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/");
+    }
+  }, []);
 
   // 배열을 잘라서 현재 탭에 보여줄 목록만 반환
   const getPaged = <T,>(list: T[], tab: keyof typeof page) => {
