@@ -256,7 +256,7 @@ export default function SearchableBusinessMap() {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-16">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-4">
         <Script
           src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
           strategy="beforeInteractive"
