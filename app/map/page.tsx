@@ -14,6 +14,7 @@ export default function SearchableBusinessMap() {
   const [businessData, setBusinessData] = useState<any[]>([]);
   const [filteredData, setFilteredData] = useState<any[]>([]);
 
+  // 유사/보완 업종 매핑
   const complementaryMap: Record<string, string[]> = {
     생맥주: ["노래방"],
     호프: ["노래방"],
@@ -22,14 +23,23 @@ export default function SearchableBusinessMap() {
     문구: ["서점"],
     노래: ["생맥주", "노래방"],
     맥주집: ["생맥주", "노래방"],
+    술집: ["생맥주 전문", "노래방"],
+    호프집: ["생맥주 전문", "노래방"],
+    생맥주전문: ["노래방"],
+    "생맥주 전문": ["노래방"],
   };
 
   const keywordAlias: Record<string, string> = {
     맥주집: "생맥주",
     맥주: "생맥주",
     생맥주: "생맥주",
+    생맥주전문: "생맥주 전문",
+    "생맥주 전문": "생맥주 전문",
     호프: "호프",
+    호프집: "생맥주 전문",
+    술집: "생맥주 전문",
     노래방: "노래방",
+    노래: "노래방",
     서점: "서점",
     문구: "문구",
   };
