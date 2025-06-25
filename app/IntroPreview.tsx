@@ -34,7 +34,7 @@ export default function IntroPreview({
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % steps.length);
-    }, 3000);
+    }, 500);
     return () => clearInterval(interval);
   }, [steps.length]);
 

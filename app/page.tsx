@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "./providers";
@@ -19,6 +19,42 @@ export default function HomePage() {
   const { addToSearchHistory } = useApp();
   const router = useRouter();
   const isLogin = useSelector((state: RootState) => state.user.isLogin);
+
+  const [open, setOpen] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const items = [
+    {
+      title: "건축법",
+      href: "https://www.law.go.kr/DRF/lawService.do?OC=kom6381&target=law&MST=261475&type=HTML&mobileYn=&efYd=20240627",
+    },
+    {
+      title: "식품위생법",
+      href: "https://www.law.go.kr/DRF/lawService.do?OC=kom6381&target=law&MST=270311&type=HTML&mobileYn=&efYd=20250401",
+    },
+    {
+      title: "공중위생관리법",
+      href: "https://www.law.go.kr/DRF/lawService.do?OC=kom6381&target=law&MST=265873&type=HTML&mobileYn=&efYd=20250423",
+    },
+    {
+      title: "약사법",
+      href: "https://www.law.go.kr/DRF/lawService.do?OC=kom6381&target=law&MST=217283&type=HTML&mobileYn=&efYd=20250408",
+    },
+    {
+      title: "도로교통법",
+      href: "https://www.law.go.kr/DRF/lawService.do?OC=kom6381&target=law&MST=266639&type=HTML&mobileYn=&efYd=20250604",
+    },
+  ];
 
   useEffect(() => {
     const stored = sessionStorage.getItem("introPassed");
@@ -41,7 +77,7 @@ export default function HomePage() {
     if (!introPassed) {
       const interval = setInterval(() => {
         setCurrentStep((prev) => (prev + 1) % 3); // steps.length = 3
-      }, 3000);
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [introPassed]);
@@ -110,10 +146,7 @@ export default function HomePage() {
   return (
     <>
       {!introPassed && (
-        <IntroPreview
-          onStart={handleStart}
-          currentStep={currentStep}
-        />
+        <IntroPreview onStart={handleStart} currentStep={currentStep} />
       )}
 
       <MainLayout introPassed={introPassed}>
@@ -401,9 +434,10 @@ export default function HomePage() {
                 </button>
               </div>
               <div className="w-full max-w-6xl flex justify-start items-center gap-4">
-                <Link
-                  href="/popular"
+                <button
+                  type="button"
                   className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-red-200 rounded-full text-red-700 text-sm font-medium shadow hover:bg-white transition"
+                  onClick={() => setOpen((prev) => !prev)}
                 >
                   <svg
                     className="w-4 h-4 text-red-500"
@@ -413,7 +447,31 @@ export default function HomePage() {
                     <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" />
                   </svg>
                   지금 인기있는 법률 검색어
-                </Link>
+                </button>
+
+                {open && (
+                  <div
+                    ref={popupRef}
+                    className="absolute left-8 bottom-[170px] mt-2 w-44 bg-white shadow-lg rounded-lg border border-gray-200 z-10"
+                  >
+                    <ul className="py-2">
+                      {items.map((item) => (
+                        <li key={item.href}>
+                          <a
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                            onClick={() => setOpen(false)} // 또는 onMouseDown 가능
+                          >
+                            {item.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-green-200 rounded-full text-green-700 text-sm font-medium shadow">
                   <svg
                     className="w-4 h-4 text-green-500"
