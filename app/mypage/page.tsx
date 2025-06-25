@@ -114,6 +114,58 @@ export default function MyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
   const router = useRouter();
 
+  // 검색결과 관련
+  const [searchResults, setSearchResults] = useState<Result[]>([]);
+  const [activeResult, setActiveResult] = useState<Result | null>(null);
+  interface Result {
+    _id?: string;
+    email: string;
+    question: string;
+    result: string;
+    createdAt: string;
+  }
+
+  // 검색결과 불러오기
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!user || !user.email || !token) {
+        console.warn("❗ user.email 또는 token이 없습니다. 요청 중단");
+        return;
+      }
+
+      console.log("📤 검색 요청 시작:", user.email);
+
+      try {
+        const res = await fetch(
+          `http://localhost:8000/searchllm/email/${encodeURIComponent(
+            user.email
+          )}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // 필요 없으면 이 줄 제거 가능
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("검색 결과 요청 실패");
+
+        const data = await res.json();
+        console.log("📥 검색결과 수신:", data);
+        setSearchResults(data);
+      } catch (err) {
+        console.error("❌ 검색 결과 에러:", err);
+        setSearchResults([]);
+      }
+    };
+
+    fetchResults();
+  }, [user, token]);
+
+  useEffect(() => {
+    console.log("📦 검색결과 상태:", searchResults);
+  }, [searchResults]);
+
   // ✅ 최초 통계 한방에 불러오기
   useEffect(() => {
     if (!user?.email || !token) return;
@@ -1153,6 +1205,65 @@ export default function MyPage() {
             </div>
           </div>
         );
+      case "result": {
+        // const pagedResults = getPaged(searchResults, "result"); ← 제거
+
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-800">검색 결과</h3>
+
+            {searchResults.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <i className="fas fa-search text-4xl mb-4 opacity-50" />
+                <p>검색 결과가 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {searchResults.map((item, index) => (
+                  <div
+                    key={item._id || index}
+                    className="cursor-pointer p-4 bg-white rounded shadow hover:bg-gray-50"
+                    onClick={() => setActiveResult(item)}
+                  >
+                    <div className="text-sm text-gray-500 mb-1">질문</div>
+                    <div className="font-medium text-gray-800 line-clamp-2">
+                      {item.question}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 모달 */}
+            {activeResult && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
+                <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg relative">
+                  <button
+                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
+                    onClick={() => setActiveResult(null)}
+                  >
+                    ✕
+                  </button>
+
+                  <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                    질문
+                  </h4>
+                  <p className="text-gray-700 mb-4 whitespace-pre-wrap">
+                    {activeResult.question}
+                  </p>
+
+                  <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                    답변
+                  </h4>
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {activeResult.result}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
 
       case "posts": {
         /* 1) 정렬 옵션 – JSX 밖 변수 */
@@ -1566,6 +1677,24 @@ export default function MyPage() {
                     }`}
                   ></i>
                   <span>프로필 수정</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("result")}
+                  className={`flex items-center gap-3 w-full p-4 text-left border-l-4 ${
+                    activeTab === "result"
+                      ? "border-blue-600 bg-blue-50 text-blue-600"
+                      : "border-transparent hover:bg-gray-50"
+                  }`}
+                >
+                  <i
+                    className={`fas fa-user ${
+                      activeTab === "profile"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  ></i>
+                  <span>검색 결과</span>
                 </button>
 
                 <button
