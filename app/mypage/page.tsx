@@ -1698,7 +1698,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-user ${
+                    className={`${
                       activeTab === "profile"
                         ? "text-blue-600"
                         : "text-gray-500"
@@ -1716,7 +1716,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-user ${
+                    className={` ${
                       activeTab === "profile"
                         ? "text-blue-600"
                         : "text-gray-500"
@@ -1734,7 +1734,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-file-alt ${
+                    className={`${
                       activeTab === "posts" ? "text-blue-600" : "text-gray-500"
                     }`}
                   ></i>
@@ -1750,7 +1750,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-comment ${
+                    className={`${
                       activeTab === "comments"
                         ? "text-blue-600"
                         : "text-gray-500"
@@ -1768,7 +1768,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-heart ${
+                    className={`${
                       activeTab === "likes" ? "text-blue-600" : "text-gray-500"
                     }`}
                   ></i>
@@ -1784,7 +1784,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-cog ${
+                    className={`${
                       activeTab === "settings"
                         ? "text-blue-600"
                         : "text-gray-500"
