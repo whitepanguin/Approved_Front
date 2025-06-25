@@ -3,7 +3,7 @@
 import type React from "react";
 import { useRouter } from "next/navigation";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
 import { useSelector } from "react-redux";
@@ -354,6 +354,12 @@ export default function CommunityPage() {
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
+    const Token = localStorage.getItem("jwtToken");
+    if (!Token) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/login");
+      return;
+    }
     try {
       const payload = {
         postId: selectedPost._id,
@@ -448,7 +454,7 @@ export default function CommunityPage() {
       desc: "자유롭게 일상을 공유하고 소통해요",
     },
     startup: {
-      title: "창업 관련 정보",
+      title: "창업 정보",
       icon: "fas fa-rocket",
       posts: categoryCounts["startup"] || 0,
       comments: 0,
@@ -738,8 +744,8 @@ export default function CommunityPage() {
             <div className="bg-white rounded-xl p-4 md:p-6 shadow-lg">
               {/* 데스크톱 헤더 - 모바일에서는 숨김 */}
               <div className="hidden md:flex justify-between items-center mb-5 pb-2 border-b border-gray-200 sticky top-0 bg-white z-10">
-                <div className="flex items-center gap-5">
-                  <h2 className="text-xl md:text-2xl text-gray-800 m-0 flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl md:text-2xl text-gray-800 m-0 flex items-center gap-2 min-w-[120px]">
                     <i
                       className={
                         categoryInfo[
@@ -752,7 +758,10 @@ export default function CommunityPage() {
                         .title
                     }
                   </h2>
-                  {/* 🔽 정렬 드롭다운 */}
+                </div>
+                {/* 🔽 정렬 드롭다운 */}
+                <div className="flex items-center gap-4 ml-auto">
+                  {/* 정렬 드롭다운 */}
                   <select
                     value={currentSort}
                     onChange={(e) => setCurrentSort(e.target.value)}
@@ -765,7 +774,7 @@ export default function CommunityPage() {
                   </select>
 
                   {/* 커뮤니티 검색창 */}
-                  <div className="flex items-center gap-2 ml-8">
+                  <div className="flex items-center gap-2">
                     <input
                       type="text"
                       placeholder="내용 검색"
@@ -780,15 +789,15 @@ export default function CommunityPage() {
                       <FontAwesomeIcon icon={faSearch} />
                     </button>
                   </div>
-                </div>
-                <button
-                  onClick={() => setShowWriteModal(true)}
-                  className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-blue-700 transition-colors"
-                >
-                  <FontAwesomeIcon icon={faPen} /> 글쓰기
-                </button>
-              </div>
 
+                  <button
+                    onClick={() => setShowWriteModal(true)}
+                    className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-blue-700 transition-colors ml-auto"
+                  >
+                    <FontAwesomeIcon icon={faPen} /> 글쓰기
+                  </button>
+                </div>
+              </div>
               <div className="flex flex-col gap-4">
                 {filteredPosts.length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
@@ -1091,7 +1100,7 @@ export default function CommunityPage() {
                     <option value="info">정보공유</option>
                     <option value="qna">Q&A</option>
                     <option value="daily">일상 이야기</option>
-                    <option value="startup">창업 관련 정보</option>
+                    <option value="startup">창업 정보</option>
                   </select>
                 </div>
 
