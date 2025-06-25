@@ -978,7 +978,7 @@ export default function CommunityPage() {
           <div className="hidden md:block w-1/4">
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <div className="flex items-center gap-4 mb-5">
-                <div className="relative">
+                <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
                   <img src={user.currentUser.profile} alt="sdsd" />
                 </div>
                 <div>
