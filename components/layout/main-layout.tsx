@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import Header from "./header";
 import Sidebar from "./sidebar";
 import FloatingDictButton from "../FloatingDictButton/FloatingDictButton";
+import Footer from "./Footer";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export default function MainLayout({
         {introPassed && <Header onMenuClick={() => setSidebarOpen(true)} />}
         {children}
         <FloatingDictButton />
+        <Footer />
       </div>
     </>
   );
