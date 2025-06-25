@@ -104,10 +104,6 @@ export default function CommunityPage() {
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  useEffect(() => {
-    setFilteredPosts(posts); // posts 변경 시 필터 초기화
-  }, [posts]);
-
   // ✅ fetchStats 함수는 최상단에 선언해도 무방합니다 (return 없음)
   const fetchStats = async () => {
     const token =
@@ -343,14 +339,28 @@ export default function CommunityPage() {
     }
   };
 
+  useEffect(() => {
+    setFilteredPosts(posts);
+  }, [posts]);
+
   // 커뮤니티 페이지 검색박스 핸들
   const handleSearch = () => {
     const filtered = posts.filter((post) =>
       post.content.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredPosts(filtered);
-    setCurrentPage(1); // 페이지 초기화
+    setCurrentPage(1); // 검색 시 페이지도 1로 초기화
   };
+
+  // ✅ 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
+  useEffect(() => {
+    const filtered =
+      currentCategory === "all"
+        ? posts
+        : posts.filter((post) => post.category === currentCategory);
+    setFilteredPosts(filtered);
+    setCurrentPage(1); // 카테고리 바꿀 때도 페이지 초기화
+  }, [currentCategory, posts]);
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
@@ -426,7 +436,7 @@ export default function CommunityPage() {
 
   const categoryInfo = {
     all: {
-      title: "전체 게시글",
+      title: "전체 글",
       icon: "fas fa-list",
       posts: posts.length,
       comments: 0,
@@ -642,7 +652,10 @@ export default function CommunityPage() {
     <MainLayout introPassed={true}>
       <div className="max-w-7xl mx-auto p-3 md:p-5">
         <div className="mb-4 md:mb-8">
-          <h1 className="text-2xl md:text-3xl text-blue-600 mb-1 md:mb-2 flex items-center gap-2">
+          <h1
+            className="text-2xl md:text-3xl text-blue-600 mb-1 md:mb-2 flex items-center gap-2 cursor-pointer"
+            onClick={() => setCurrentCategory("all")}
+          >
             <FontAwesomeIcon icon={faUsers} /> 커뮤니티
           </h1>
           <p className="text-sm md:text-base text-gray-600">
@@ -809,7 +822,7 @@ export default function CommunityPage() {
                   </div>
                 ) : (
                   <>
-                    {currentPosts.map((post, index) => (
+                    {filteredPosts.map((post, index) => (
                       <div
                         key={post._id || index}
                         onClick={() => openPostModal(post)}
@@ -851,7 +864,7 @@ export default function CommunityPage() {
                             </span>
                           </div>
 
-                          {/* 조회/좋아요/댓글 + 수정삭제 */}
+                          {/* 조회/좋아요/댓글 */}
                           <div className="flex gap-3 mt-2 md:mt-0 items-center">
                             <span className="flex items-center gap-1">
                               <FontAwesomeIcon icon={faEye} /> {post.views}
@@ -892,7 +905,6 @@ export default function CommunityPage() {
                         </div>
                       </div>
                     ))}
-
                     <div className="flex justify-center items-center mt-6 gap-2">
                       {/* << 처음 */}
                       <button
@@ -1034,7 +1046,7 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 text-sm">전체 게시글</span>
+                  <span className="text-gray-600 text-sm">전체 글</span>
                   <span className="text-blue-600 font-semibold text-sm">
                     {totalPosts}
                   </span>
