@@ -2,13 +2,13 @@
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-
 import { useState, useEffect, use } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store"; // store 타입 import 필요
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 import {
   /* 사용하는 solid 아이콘 */
   faUsers,
@@ -537,8 +537,8 @@ export default function CommunityPage() {
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = displayedPosts.slice(indexOfFirstPost, indexOfLastPost);
-  const totalPages = Math.ceil(displayedPosts.length / postsPerPage);
+  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
 
   const formatDate = (input: string | Date) => {
     const date = new Date(input);
@@ -758,7 +758,7 @@ export default function CommunityPage() {
               {/* 데스크톱 헤더 - 모바일에서는 숨김 */}
               <div className="hidden md:flex justify-between items-center mb-5 pb-2 border-b border-gray-200 sticky top-0 bg-white z-10">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl md:text-2xl text-gray-800 m-0 flex items-center gap-2 min-w-[120px]">
+                  <h2 className="text-base md:text-lg text-gray-800 flex items-center gap-2 whitespace-nowrap">
                     <i
                       className={
                         categoryInfo[
@@ -822,7 +822,7 @@ export default function CommunityPage() {
                   </div>
                 ) : (
                   <>
-                    {filteredPosts.map((post, index) => (
+                    {currentPosts.map((post, index) => (
                       <div
                         key={post._id || index}
                         onClick={() => openPostModal(post)}
@@ -979,13 +979,20 @@ export default function CommunityPage() {
             <div className="bg-white rounded-xl p-5 shadow-lg mb-4">
               <div className="flex items-center gap-4 mb-5">
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
-                  <img src={user.currentUser.profile || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"}alt="프로필 이미지"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
-                  }} />
+                  <img
+                    src={
+                      user.currentUser.profile ||
+                      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                    }
+                    alt="프로필 이미지"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+                    }}
+                  />
                 </div>
+
                 <div>
                   {user?.currentUser ? (
                     <>
