@@ -262,7 +262,7 @@ export default function CommunityPage() {
       const res = await fetch(`${API_BASE_URL}/comments/${postId}`);
       if (!res.ok) throw new Error("댓글 가져오기 실패");
       const comments: Comment[] = await res.json();
-      setPostComments(comments);
+      setPostComments([...comments]);
 
       // ✅ 3) 좋아요 상태 초기화
       setLiked(false);
@@ -386,9 +386,20 @@ export default function CommunityPage() {
 
       if (!res.ok) throw new Error("댓글 등록 실패");
 
-      await fetchComments(); // ✅ 댓글 등록 후 최신 목록 재조회
       setNewComment("");
 
+      // ✅ 댓글 재조회 강제 갱신
+      const refreshed = await fetch(
+        `${API_BASE_URL}/comments/${selectedPost._id}`
+      );
+      if (!refreshed.ok) throw new Error("댓글 재조회 실패");
+
+      const refreshedData = await refreshed.json();
+      console.log("🔄 최신 댓글 목록:", refreshedData);
+
+      setPostComments([...refreshedData]); // 💡 새로운 배열로 강제 반영
+
+      // 🔄 댓글 수 반영
       setPosts((prev) =>
         prev.map((p) =>
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
@@ -408,7 +419,7 @@ export default function CommunityPage() {
       if (!res.ok) throw new Error("댓글 불러오기 실패");
 
       const data: Comment[] = await res.json();
-      setPostComments(data); // 💡 최신 댓글 목록으로 교체
+      setPostComments([...data]); // 💡 최신 댓글 목록으로 교체
     } catch (err) {
       console.error("❌ 댓글 재조회 실패:", err);
     }
