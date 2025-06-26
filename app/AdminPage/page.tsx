@@ -349,6 +349,16 @@ const toggleReported = async (postId: string, current: boolean) => {
         new Date(a.createdAt as string).getTime()
     )[0];
 
+const getUserProfile = (userid: string): string => {
+  const user = userList.find((u) => u.userid === userid);
+  return user?.profile
+    ? user.profile.startsWith("http")
+      ? user.profile
+      : `http://localhost:8000${user.profile}?v=${Date.now()}`
+    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+};
+
+
   const newestUserJoinedAgo = getTimeAgo(newestUser?.createdAt || null);
   const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
   const newestQnaAgo = getTimeAgo(newestQna?.createdAt || null);
@@ -796,8 +806,17 @@ const toggleReported = async (postId: string, current: boolean) => {
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                            <i className="fas fa-user text-white text-xs"></i>
+                          <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center rounded-full overflow-hidden">
+                            <img
+  src={getUserProfile(qna.userid)}
+  alt="프로필 이미지"
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    e.currentTarget.src =
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+  }}
+/>
+
                           </div>
                           <span className="text-sm font-medium text-gray-700">
                             {qna.userid}
@@ -1374,8 +1393,11 @@ const toggleReported = async (postId: string, current: boolean) => {
                               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
                                 <img
                                   src={
-                                    user.profile ||
-                                    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                                    user.profile
+                                    ? user.profile.startsWith("http")
+                                    ? user.profile
+                                    : `http://localhost:8000${user.profile}?v=${Date.now()}`
+                                    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
                                   }
                                   alt="프로필 이미지"
                                   className="w-full h-full object-cover"
