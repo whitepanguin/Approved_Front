@@ -121,12 +121,37 @@ export default function MyPage() {
   const [searchResults, setSearchResults] = useState<Result[]>([]);
   const [activeResult, setActiveResult] = useState<Result | null>(null);
   interface Result {
-    _id?: string;
-    email: string;
-    question: string;
-    result: string;
-    createdAt: string;
-  }
+  _id?: string;
+  email: string;
+  question: string;
+  result: {
+    answer: string;
+    referenced_laws: string[];
+    reference_documents: { title: string; url: string }[];
+  };
+  createdAt: string;
+}
+
+  const Accordion = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-left w-full font-semibold text-gray-800 hover:text-blue-600 transition"
+      >
+        {isOpen ? "▼ " : "▶ "} {title}
+      </button>
+      {isOpen && <div className="mt-2">{children}</div>}
+    </div>
+  );
+};
 
   // 검색결과 불러오기
   useEffect(() => {
@@ -1265,32 +1290,62 @@ export default function MyPage() {
             )}
 
             {/* 모달 */}
-            {activeResult && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
-                <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg relative">
-                  <button
-                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
-                    onClick={() => setActiveResult(null)}
-                  >
-                    ✕
-                  </button>
+      {activeResult && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
+    <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg relative">
+      <button
+        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
+        onClick={() => setActiveResult(null)}
+      >
+        ✕
+      </button>
 
-                  <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                    질문
-                  </h4>
-                  <p className="text-gray-700 mb-4 whitespace-pre-wrap">
-                    {activeResult.question}
-                  </p>
+      <h4 className="text-lg font-semibold text-gray-800 mb-2">질문</h4>
+      <p className="text-gray-700 mb-4 whitespace-pre-wrap">
+        {activeResult.question}
+      </p>
 
-                  <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                    답변
-                  </h4>
-                  <p className="text-gray-700 whitespace-pre-wrap">
-                    {activeResult.result}
-                  </p>
-                </div>
-              </div>
-            )}
+      <h4 className="text-lg font-semibold text-gray-800 mb-2">답변</h4>
+      <div
+        className="text-gray-700 mb-4"
+        dangerouslySetInnerHTML={{ __html: activeResult.result.answer }}
+      />
+
+      {/* ✅ 관련 법령: 아코디언 형식으로 대체 */}
+      {activeResult.result.referenced_laws?.length > 0 && (
+        <Accordion title="관련 법령">
+          <ul className="list-disc list-inside text-gray-700 mb-4">
+            {activeResult.result.referenced_laws.map((law, index) => (
+              <li key={index}>{law}</li>
+            ))}
+          </ul>
+        </Accordion>
+      )}
+
+      {/* 참고 문서는 그대로 유지 */}
+      {activeResult.result.reference_documents?.length > 0 && (
+        <>
+          <h4 className="text-lg font-semibold text-gray-800 mb-2">참고 문서</h4>
+          <ul className="list-disc list-inside text-gray-700">
+            {activeResult.result.reference_documents.map((doc, index) => (
+              <li key={index}>
+                <a
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {doc.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  </div>
+)}
+
           </div>
         );
       }
