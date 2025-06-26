@@ -1,13 +1,12 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import ReactMarkdown from "react-markdown";
+import DOMPurify from "dompurify";
+import { useRouter } from "next/navigation";
 
-// 타입 정의
 export type SearchResultType = {
   answer: string;
   referenced_laws: string[];
@@ -16,93 +15,37 @@ export type SearchResultType = {
     url: string;
   }[];
 };
-
 function getStorageKey(email: string, query: string) {
   return `search_result_${encodeURIComponent(email)}_${encodeURIComponent(
     query
   )}`;
 }
 
-// 결과 파싱 함수
-function parseLLMTextToResult(raw: string): SearchResultType {
-  const sections = raw.split(/\n(?=\d\. \*\*.+?\*\*)/);
-  const map: Record<string, string> = {};
-
-  for (const section of sections) {
-    const match = section.match(/^(\d+)\. \*\*(.+?)\*\*/);
-    if (match) {
-      const rawKey = match[2].trim().toLowerCase().replace(/\s+/g, "_");
-      const content = section.replace(match[0], "").trim();
-      map[rawKey] = content;
-    }
-  }
-
-  const answer = map["answer"] ?? "";
-
-  const referenced_laws = (map["referenced_laws"] ?? "")
-    .split("\n")
-    .map((line) => line.replace(/^\* /, "").trim())
-    .filter(Boolean);
-
-  const reference_documents = (map["reference_documents"] ?? "")
-    .split("\n")
-    .map((line) => {
-      // 시작 문자가 *, - 둘 다 허용됨
-      const cleanLine = line.replace(/^[-*]\s*/, "").trim();
-
-      // "관련 문서 보기:" 접두사 제거
-      const cleaned = cleanLine.replace(/^관련 문서 보기[:：]?\s*/i, "");
-
-      // 괄호 안에 제목이 있는 경우 (정상 케이스)
-      const match = cleaned.match(/^(.+?)\s*\((.+?)\)$/);
-
-      if (match) {
-        const rawUrl = match[1].trim();
-        const rawTitle = match[2].trim();
-        const fullUrl = rawUrl.startsWith("http")
-          ? rawUrl
-          : `https://www.law.go.kr${
-              rawUrl.startsWith("/") ? "" : "/"
-            }${rawUrl}`;
-
-        return {
-          url: fullUrl,
-          title: rawTitle,
-        };
-      }
-
-      // 괄호가 없는 경우 fallback 처리
-      const urlOnly = cleaned.trim();
-      if (urlOnly.startsWith("/")) {
-        return {
-          url: `https://www.law.go.kr${urlOnly}`,
-          title: "문서 보기",
-        };
-      }
-
-      console.warn("❗ 파싱되지 않은 관련 문서 라인:", line);
-      return null;
-    })
-    .filter(Boolean) as SearchResultType["reference_documents"];
-
-  return {
-    answer,
-    referenced_laws,
-    reference_documents,
-  };
-}
-
 export default function SearchPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("search") || "";
   const [results, setResults] = useState<SearchResultType | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [history, setHistory] = useState<
+    { query: string; result: SearchResultType }[]
+  >([]);
+
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [showLawsModal, setShowLawsModal] = useState(false);
   const [showDictModal, setShowDictModal] = useState(false);
 
   const { currentUser } = useSelector((state: RootState) => state.user || {});
   const email = currentUser?.email ?? "";
+
+  useEffect(() => {
+    const Token = localStorage.getItem("jwtToken");
+    if (!Token) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/");
+    }
+  }, []);
 
   useEffect(() => {
     if (!query.trim()) return;
@@ -113,34 +56,35 @@ export default function SearchPage() {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        console.log("📦 캐시에서 검색 결과 로드됨:", storageKey);
         setResults(parsed);
+        setHistory((prev) => [...prev, { query, result: parsed }]);
         return;
       } catch (e) {
         console.warn("⚠️ 캐시 파싱 실패, 요청 강행:", e);
       }
     }
 
-    // ❗ 캐시 없을 때만 요청
     const fetchResults = async () => {
       try {
         setLoading(true);
+
         const res = await fetch(
           `http://localhost:8000/searchllm?search=${encodeURIComponent(
             query
-          )}&email=${encodeURIComponent(email)}`,
-          {
-            method: "GET",
-            cache: "force-cache",
-          }
+          )}&email=${encodeURIComponent(email)}`
         );
+
         if (!res.ok) throw new Error("검색 실패");
 
         const data = await res.json();
-        const rawText = data.result;
-        const normalized = parseLLMTextToResult(rawText);
+        console.log("📥 [응답 수신] raw:", data);
+
+        const normalized: SearchResultType = data.result;
+        if (!normalized) throw new Error("result 필드가 응답에 없습니다");
+
         localStorage.setItem(storageKey, JSON.stringify(normalized));
         setResults(normalized);
+        setHistory((prev) => [...prev, { query, result: normalized }]);
       } catch (error) {
         console.error("에러 발생:", error);
         setResults(null);
@@ -149,15 +93,43 @@ export default function SearchPage() {
       }
     };
 
-    fetchResults(); // ✅ 호출 필요
+    fetchResults();
   }, [query, email]);
 
   return (
-    <MainLayout>
-      <div className="w-full overflow-hidden h-full mt-5">
-        <div className="mx-auto w-[650px] overflow-auto flex flex-col h-full gap-5">
-          <SpeachBubble text={query} />
-
+    <MainLayout hideFooter>
+      <div className="w-full mt-12 pb-[100px]">
+        <div className="mx-auto w-[800px] flex flex-col h-full gap-5">
+          {history.map(({ query, result }, index) => (
+            <div key={index}>
+              <div className="flex justify-end">
+                <SpeachBubble text={query} className="mb-4 mt-4" />
+              </div>
+              <div className="flex justify-start">
+                <SpeachBubble isAnswer text={result.answer} className="mb-3" />
+              </div>
+              <div className="ml-5 w-[63%] text-sm flex flex-row gap-2">
+                <button
+                  onClick={() => setShowDocsModal(true)}
+                  className="w-full px-3 py-2 rounded shadow-md bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100 transition"
+                >
+                  📑 관련 문서 다운로드
+                </button>
+                <button
+                  onClick={() => setShowLawsModal(true)}
+                  className="w-full px-3 py-2 rounded shadow-md bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200 transition"
+                >
+                  📘 관련 법률 보기
+                </button>
+                <button
+                  onClick={() => setShowDictModal(true)}
+                  className="w-full px-3 py-2 rounded shadow-md bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 transition"
+                >
+                  💻 법률 검색하러 가기
+                </button>
+              </div>
+            </div>
+          ))}
           {loading && (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="relative w-80 h-20 mb-4">
@@ -188,92 +160,48 @@ export default function SearchPage() {
               </p>
             </div>
           )}
-
-          {!loading && results?.answer && (
-            <SpeachBubble isAnswer text={results.answer} />
-          )}
-
-          {!loading && results && (
-            <div className="ml-5 flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowDocsModal(true)}
-                className="px-3 py-1 rounded bg-blue-50 text-blue-800 hover:bg-blue-100 transition"
-              >
-                📄 관련 문서 보기
-              </button>
-              <button
-                onClick={() => setShowLawsModal(true)}
-                className="px-3 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100 transition"
-              >
-                📘 관련 법률 보기
-              </button>
-              <button
-                onClick={() => setShowDictModal(true)}
-                className="px-3 py-1 rounded bg-orange-50 text-orange-700 hover:bg-orange-100 transition"
-              >
-                📚 단어 사전
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
-      {showDocsModal && results && (
-        <Modal
-          title="📄 관련 문서 보기"
-          onClose={() => setShowDocsModal(false)}
-        >
-          <ul className="list-disc list-inside text-sm text-gray-700">
-            {results.reference_documents.map((doc, idx) => {
-              console.log("📄 관련 문서 확인:", doc); // ✅ 추가
-
-              return (
-                <li key={idx}>
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline text-blue-500 hover:text-blue-700"
-                  >
-                    {doc.title}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </Modal>
-      )}
-
-      {showLawsModal && results && (
-        <Modal
-          title="📘 관련 법률 보기"
-          onClose={() => setShowLawsModal(false)}
-        >
-          <ul className="list-disc list-inside text-sm text-gray-700">
-            {results.referenced_laws.map((law, idx) => (
-              <li key={idx}>{law}</li>
-            ))}
-          </ul>
-        </Modal>
-      )}
-
-      {showDictModal && (
-        <Modal
-          title="📚 법률 용어 사전"
-          onClose={() => setShowDictModal(false)}
-        >
-          <p className="text-sm text-gray-700">
-            <a
-              href="https://www.law.go.kr/LSW/lsDefinitionList.do"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline text-blue-500 hover:text-blue-700"
+      <div className="fixed bottom-0 left-0 w-full bg-transparent px-4 py-3 z-50">
+        <div className="max-w-3xl mx-auto w-full flex items-center rounded-full border border-gray-300 px-4 bg-white shadow-md">
+          <input
+            type="text"
+            placeholder="궁금한 것을 검색해보세요..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                router.push(
+                  `/searchpage?search=${encodeURIComponent(searchInput)}`
+                );
+              }
+            }}
+            className="flex-1 py-4 pr-4 outline-none border-none text-base bg-transparent "
+          />
+          <button
+            onClick={() =>
+              router.push(
+                `/searchpage?search=${encodeURIComponent(searchInput)}`
+              )
+            }
+            className="w-10 h-10 flex items-center justify-center bg-transparent rounded-full hover:bg-gray-300 transition"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              👉 대한민국 법제처 법령용어사전 바로가기
-            </a>
-          </p>
-        </Modal>
-      )}
+              <path
+                fillRule="evenodd"
+                d="M10 2a8 8 0 105.293 14.293l4.707 4.707a1 1 0 001.414-1.414l-4.707-4.707A8 8 0 0010 2zm-6 8a6 6 0 1112 0 6 6 0 01-12 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
 
       <style jsx>{`
         @keyframes dotPulse {
@@ -329,6 +257,75 @@ export default function SearchPage() {
           }
         }
       `}</style>
+      {showDocsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-md relative">
+            <h2 className="text-lg font-bold mb-4">📄 관련 문서 다운로드</h2>
+            <button
+              onClick={() => setShowDocsModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            >
+              ✖
+            </button>
+            <ul className="mt-4 list-disc pl-5 text-sm text-gray-700">
+              {results?.reference_documents.map((doc, i) => (
+                <li key={i}>
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {doc.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {showLawsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-md relative">
+            <h2 className="text-lg font-bold mb-4">📘 관련 법률 보기</h2>
+            <button
+              onClick={() => setShowLawsModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            >
+              ✖
+            </button>
+            <ul className="mt-4 list-disc pl-5 text-sm text-gray-700">
+              {results?.referenced_laws.map((law, i) => (
+                <li key={i}>{law}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {showDictModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-md relative">
+            <h2 className="text-lg font-bold mb-4">💻 법률 검색하러 가기</h2>
+            <button
+              onClick={() => setShowDictModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            >
+              ✖
+            </button>
+            <p className="text-sm text-gray-600"></p>
+            ➡️
+            <a
+              href="https://law.go.kr/lsTrmScListP.do"
+              target="_blank"
+              className="underline text-blue-500 hover:text-blue-700"
+            >
+              대한민국 법령용어사전 바로가기
+            </a>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }
@@ -336,43 +333,29 @@ export default function SearchPage() {
 function SpeachBubble({
   text,
   isAnswer,
+  className = "",
 }: {
   text: string;
   isAnswer?: boolean;
+  className?: string;
 }) {
-  const className = [
-    "rounded-xl shadow-lg break-words whitespace-normal mx-5 transition-all duration-200 mb-5 hover:shadow-xl p-5 w-fit max-w-[400px]",
-    isAnswer ? "bg-cyan-50" : "bg-slate-50 self-end",
+  const baseClass = [
+    "rounded-xl shadow-lg border border-gray-300",
+    "break-words whitespace-normal mx-5 transition-all duration-200 p-5 w-fit max-w-[500px]",
+    isAnswer ? "bg-[#f2fdf5]" : "bg-[#fef7ee]",
+    className,
   ].join(" ");
 
   return (
-    <div className={className}>
-      {isAnswer ? <ReactMarkdown>{text}</ReactMarkdown> : text}
-    </div>
-  );
-}
-
-function Modal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-md relative">
-        <h2 className="text-lg font-bold mb-4">{title}</h2>
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-4 text-gray-500 text-2xl hover:text-black"
-        >
-          &times;
-        </button>
-        <div>{children}</div>
-      </div>
+    <div className={baseClass}>
+      {isAnswer ? (
+        <div
+          className="prose prose-base max-w-none text-gray-800 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text) }}
+        />
+      ) : (
+        text
+      )}
     </div>
   );
 }

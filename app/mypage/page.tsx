@@ -18,6 +18,7 @@ import {
 
 import PostCard from "@/components/postCard/postCard"; // 꼭 경로 맞게
 import PostModal from "@/components/postModal/postModal";
+import { useRouter } from "next/navigation";
 type Post = {
   _id: string;
   title: string;
@@ -44,11 +45,12 @@ type Comment = {
 };
 
 export default function MyPage() {
-  const PER_PAGE = 10; // 탭 공통 개수
+  const PER_PAGE = 5; // 탭 공통 개수
   const [page, setPage] = useState({
     posts: 1,
     comments: 1,
     likes: 1,
+    result: 1,
   });
   // 🔹 Redux 및 로그인 관련
   const dispatch = useDispatch();
@@ -60,8 +62,10 @@ export default function MyPage() {
 
   // 🔹 프로필 이미지 경로 처리
   const profileSrc = user?.profile
-    ? `http://localhost:8000${user.profile}?v=${Date.now()}`
-    : "/default-profile.jpg";
+  ? user.profile.startsWith("http")
+    ? user.profile
+    : `http://localhost:8000${user.profile}?v=${Date.now()}`
+  : "/default-profile.jpg";
   // 🔹 프로필 수정 상태
   const [profileData, setProfileData] = useState({
     userid: "",
@@ -111,6 +115,84 @@ export default function MyPage() {
   const [showPostModal, setShowPostModal] = useState(false);
   const getPostKey = (p: Partial<Post>) => p._id || (p as any).id;
   const [isModalOpen, setIsModalOpen] = useState(false); // 불필요하면 제거 가능
+  const router = useRouter();
+
+  // 검색결과 관련
+  const [searchResults, setSearchResults] = useState<Result[]>([]);
+  const [activeResult, setActiveResult] = useState<Result | null>(null);
+  interface Result {
+  _id?: string;
+  email: string;
+  question: string;
+  result: {
+    answer: string;
+    referenced_laws: string[];
+    reference_documents: { title: string; url: string }[];
+  };
+  createdAt: string;
+}
+
+  const Accordion = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="text-left w-full font-semibold text-gray-800 hover:text-blue-600 transition"
+      >
+        {isOpen ? "▼ " : "▶ "} {title}
+      </button>
+      {isOpen && <div className="mt-2">{children}</div>}
+    </div>
+  );
+};
+
+  // 검색결과 불러오기
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!user || !user.email || !token) {
+        console.warn("❗ user.email 또는 token이 없습니다. 요청 중단");
+        return;
+      }
+
+      console.log("📤 검색 요청 시작:", user.email);
+
+      try {
+        const res = await fetch(
+          `http://localhost:8000/searchllm/email/${encodeURIComponent(
+            user.email
+          )}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // 필요 없으면 이 줄 제거 가능
+            },
+          }
+        );
+
+        if (!res.ok) throw new Error("검색 결과 요청 실패");
+
+        const data = await res.json();
+        console.log("📥 검색결과 수신:", data);
+        setSearchResults(data);
+      } catch (err) {
+        console.error("❌ 검색 결과 에러:", err);
+        setSearchResults([]);
+      }
+    };
+
+    fetchResults();
+  }, [user, token]);
+
+  useEffect(() => {
+    console.log("📦 검색결과 상태:", searchResults);
+  }, [searchResults]);
 
   // ✅ 최초 통계 한방에 불러오기
   useEffect(() => {
@@ -829,6 +911,13 @@ export default function MyPage() {
       [name]: value,
     }));
   };
+  useEffect(() => {
+    const Token = localStorage.getItem("jwtToken");
+    if (!Token) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/");
+    }
+  }, []);
 
   // 배열을 잘라서 현재 탭에 보여줄 목록만 반환
   const getPaged = <T,>(list: T[], tab: keyof typeof page) => {
@@ -1144,6 +1233,122 @@ export default function MyPage() {
             </div>
           </div>
         );
+      case "result": {
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-800">검색 결과</h3>
+
+            {searchResults.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <i className="fas fa-search text-4xl mb-4 opacity-50" />
+                <p>검색 결과가 없습니다.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {searchResults
+                  .slice((page.result - 1) * PER_PAGE, page.result * PER_PAGE)
+                  .map((item, index) => (
+                    <div
+                      key={item._id || index}
+                      className="cursor-pointer p-4 bg-white rounded shadow hover:bg-gray-50"
+                      onClick={() => setActiveResult(item)}
+                    >
+                      <div className="text-sm text-gray-500 mb-1">질문</div>
+                      <div className="font-medium text-gray-800 line-clamp-2">
+                        {item.question}
+                      </div>
+                    </div>
+                  ))}
+
+                {/* ✅ 페이지네이션 */}
+                {searchResults.length > PER_PAGE && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex gap-1">
+                      {Array.from(
+                        { length: Math.ceil(searchResults.length / PER_PAGE) },
+                        (_, i) => i + 1
+                      ).map((num) => (
+                        <button
+                          key={num}
+                          onClick={() =>
+                            setPage((prev) => ({ ...prev, result: num }))
+                          }
+                          className={`w-9 h-9 flex items-center justify-center border
+                                        border-gray-300 rounded text-sm ${
+                                          num === page.result
+                                            ? "bg-blue-600 text-white border-blue-600"
+                                            : "hover:bg-gray-100"
+                                        }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 모달 */}
+      {activeResult && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
+    <div className="bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-lg relative">
+      <button
+        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
+        onClick={() => setActiveResult(null)}
+      >
+        ✕
+      </button>
+
+      <h4 className="text-lg font-semibold text-gray-800 mb-2">질문</h4>
+      <p className="text-gray-700 mb-4 whitespace-pre-wrap">
+        {activeResult.question}
+      </p>
+
+      <h4 className="text-lg font-semibold text-gray-800 mb-2">답변</h4>
+      <div
+        className="text-gray-700 mb-4"
+        dangerouslySetInnerHTML={{ __html: activeResult.result.answer }}
+      />
+
+      {/* ✅ 관련 법령: 아코디언 형식으로 대체 */}
+      {activeResult.result.referenced_laws?.length > 0 && (
+        <Accordion title="관련 법령">
+          <ul className="list-disc list-inside text-gray-700 mb-4">
+            {activeResult.result.referenced_laws.map((law, index) => (
+              <li key={index}>{law}</li>
+            ))}
+          </ul>
+        </Accordion>
+      )}
+
+      {/* 참고 문서는 그대로 유지 */}
+      {activeResult.result.reference_documents?.length > 0 && (
+        <>
+          <h4 className="text-lg font-semibold text-gray-800 mb-2">참고 문서</h4>
+          <ul className="list-disc list-inside text-gray-700">
+            {activeResult.result.reference_documents.map((doc, index) => (
+              <li key={index}>
+                <a
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {doc.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  </div>
+)}
+
+          </div>
+        );
+      }
 
       case "posts": {
         /* 1) 정렬 옵션 – JSX 밖 변수 */
@@ -1489,7 +1694,7 @@ export default function MyPage() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout introPassed={true}>
       <div id="sidemain" className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* 왼쪽 사이드바 */}
@@ -1550,13 +1755,31 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-user ${
+                    className={`${
                       activeTab === "profile"
                         ? "text-blue-600"
                         : "text-gray-500"
                     }`}
                   ></i>
                   <span>프로필 수정</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("result")}
+                  className={`flex items-center gap-3 w-full p-4 text-left border-l-4 ${
+                    activeTab === "result"
+                      ? "border-blue-600 bg-blue-50 text-blue-600"
+                      : "border-transparent hover:bg-gray-50"
+                  }`}
+                >
+                  <i
+                    className={` ${
+                      activeTab === "profile"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  ></i>
+                  <span>검색 결과</span>
                 </button>
 
                 <button
@@ -1568,7 +1791,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-file-alt ${
+                    className={`${
                       activeTab === "posts" ? "text-blue-600" : "text-gray-500"
                     }`}
                   ></i>
@@ -1584,7 +1807,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-comment ${
+                    className={`${
                       activeTab === "comments"
                         ? "text-blue-600"
                         : "text-gray-500"
@@ -1602,7 +1825,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-heart ${
+                    className={`${
                       activeTab === "likes" ? "text-blue-600" : "text-gray-500"
                     }`}
                   ></i>
@@ -1618,7 +1841,7 @@ export default function MyPage() {
                   }`}
                 >
                   <i
-                    className={`fas fa-cog ${
+                    className={`${
                       activeTab === "settings"
                         ? "text-blue-600"
                         : "text-gray-500"

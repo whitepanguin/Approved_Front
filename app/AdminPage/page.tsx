@@ -28,6 +28,37 @@ export default function AdminPage() {
   const [qnaComments, setQnaComments] = useState([]); // 댓글 저장용
 
   const [selectedFilter, setSelectedFilter] = useState("전체");
+  const [filterReported, setFilterReported] = useState<"전체" | "신고" | "정상">("전체");
+
+const toggleReported = async (postId: string, current: boolean) => {
+  try {
+    const updatedReported = !current;
+
+    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reported: updatedReported,
+      }),
+    });
+
+    if (response.ok) {
+      setAllPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, reported: updatedReported } : p
+        )
+      );
+    } else {
+      console.error("신고 상태 변경 실패");
+    }
+  } catch (err) {
+    console.error("오류:", err);
+  }
+};
+
+
 
   const filteredQnaList = qnaList
     .filter((qna) => {
@@ -41,6 +72,7 @@ export default function AdminPage() {
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
   );
+  
   const router = useRouter();
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -53,10 +85,14 @@ export default function AdminPage() {
   const [editValue, setEditValue] = useState<string>("");
 
   useEffect(() => {
+    if (currentUser.name !== "Admin") router.push("/");
+  }, []);
+
+  useEffect(() => {
     const fetchAllPosts = async () => {
       const response = await fetch("http://localhost:8000/posts");
       const data = await response.json();
-
+      console.log("불만 게시글: ", data)
       const devOnly = data.filter((post: Post) => post.category === "dev");
       setQnaList(devOnly);
     };
@@ -87,26 +123,11 @@ export default function AdminPage() {
       const response = await fetch("http://localhost:8000/posts");
       const data = await response.json();
 
-      const reportedNums = data.filter((post: Post) => post.category === "dev");
+      const reportedNums = data.filter((post: Post) => post.reported === true);
       setReportedNum(reportedNums.length);
     };
     fetchReportedNum();
   });
-
-  // 샘플 데이터
-  // const qnaList = [
-  //   {
-  //     id: 1,
-  //     title: "건축허가 관련 질문드립니다",
-  //     content:
-  //       "단독주택 신축 시 건축허가 절차가 어떻게 되나요? 건축과에 직접 방문해야 하는지 궁금합니다.",
-  //     author: "건축초보",
-  //     createdAt: "2023.06.03 14:30",
-  //     status: "답변대기",
-  //     views: 45,
-  //     isUrgent: true,
-  //   },
-  // ];
 
   useEffect(() => {
     const getUsercount = async () => {
@@ -127,22 +148,21 @@ export default function AdminPage() {
   }, [userCount]);
 
   useEffect(() => {
-    const getPostcount = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/posts/PostCount", {
-          method: "GET",
-        });
+  const getPostcount = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/posts");
+      const data = await res.json();
 
-        const Postcountdata = await res.json();
-        setpostCount(Postcountdata.count);
-        // console.log(postCount);
-      } catch (error) {
-        console.error("실패:", error);
-      }
-    };
+      const filtered = data.filter((post) => post.category !== "dev");
+      setpostCount(filtered.length);
+    } catch (error) {
+      console.error("실패:", error);
+    }
+  };
 
-    getPostcount();
-  }, [postCount]);
+  getPostcount();
+}, []);
+
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -207,7 +227,7 @@ export default function AdminPage() {
   const postsPerPage = 4; // 한 페이지당 게시글 수
 
   const [currentUserPage, setCurrentUserPage] = useState(1);
-  const usersPerPage = 3;
+  const usersPerPage = 4;
 
   useEffect(() => {
     const fetchAllPosts = async () => {
@@ -258,7 +278,7 @@ export default function AdminPage() {
         (a, b) =>
           new Date(b.createdAt as string).getTime() -
           new Date(a.createdAt as string).getTime()
-      )[0]?.name || "알 수 없음";
+      )[0]?.userid || "알 수 없음";
 
   const newestPostName =
     [...allPosts]
@@ -328,17 +348,43 @@ export default function AdminPage() {
         new Date(a.createdAt as string).getTime()
     )[0];
 
+const getUserProfile = (userid: string): string => {
+  const user = userList.find((u) => u.userid === userid);
+  return user?.profile
+    ? user.profile.startsWith("http")
+      ? user.profile
+      : `http://localhost:8000${user.profile}?v=${Date.now()}`
+    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+};
+
+
   const newestUserJoinedAgo = getTimeAgo(newestUser?.createdAt || null);
   const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
   const newestQnaAgo = getTimeAgo(newestQna?.createdAt || null);
 
+  // const [reportsFilter, setReportsFilter] = useState("전체");
+
+  // const reportsFilter = filterReported ? "신고" : "정상";
+
+
   const sortedPosts = [...allPosts]
-    .filter((post) => post.createdAt !== null && post.category !== "dev")
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt as string).getTime() -
-        new Date(a.createdAt as string).getTime()
-    );
+  .filter((post) => {
+    // 1. 필수 조건: createdAt이 null이 아니고, 카테고리가 dev가 아닌 글만
+    if (post.createdAt === null || post.category === "dev") return false;
+
+    // 2. 필터 조건: 전체, 신고, 정상
+    if (filterReported === "전체") return true;
+    if (filterReported === "신고") return post.reported === true;
+    if (filterReported === "정상") return post.reported === false;
+
+    return true; // 혹시 모를 예외 대비
+  })
+  .sort(
+    (a, b) =>
+      new Date(b.createdAt as string).getTime() -
+      new Date(a.createdAt as string).getTime()
+  );
+
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -545,7 +591,7 @@ export default function AdminPage() {
     switch (activeTab) {
       case "dashboard":
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px] md:h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 관리자 대시보드
@@ -615,9 +661,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <span className="text-2xl">🧑‍💼</span> {/* 회원가입 */}
-        <span className="text-gray-700">
-          새 회원 가입: {newestUserName}
-        </span>
+                      <span className="text-gray-700">
+                        새 회원 가입: {newestUserName}
+                      </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestUserJoinedAgo}
@@ -626,9 +672,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <span className="text-2xl">📝</span> {/* 게시글 */}
-        <span className="text-gray-700">
-          새 게시글: {newestPostName}
-        </span>
+                      <span className="text-gray-700">
+                        새 게시글: {newestPostName}
+                      </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestPostAgo}
@@ -637,10 +683,9 @@ export default function AdminPage() {
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3 h-[70px]">
                       <span className="text-2xl">❓</span> {/* 질문 */}
-        <span className="text-gray-700">
-          새 질문: {newestQnaName}
-        </span>
-
+                      <span className="text-gray-700">
+                        새 질문: {newestQnaName}
+                      </span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {newestQnaAgo}
@@ -654,7 +699,7 @@ export default function AdminPage() {
 
       case "chart":
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4 w-[900px]">
                 차트
@@ -662,25 +707,22 @@ export default function AdminPage() {
               <p className="text-sm text-gray-500 mb-6">
                 커뮤니티 현황을 차트로 확인하세요
               </p>
-              <div className="flex flex-wrap gap-6 mt-8">
-                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl flex-1 min-w-[400px]">
-                  <h4 className="font-medium text-gray-800 mb-4">
-                    가입 플랫폼
-                  </h4>
-                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
-                    <PieChart />
-                  </div>
-                </div>
+              <div className="flex flex-wrap gap-4 justify-center">
+  <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
+    <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
+    <div className="w-full max-w-[400px] h-[400px] mx-auto">
+      <PieChart />
+    </div>
+  </div>
 
-                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl flex-1 min-w-[400px]">
-                  <h4 className="font-medium text-gray-800 mb-4">
-                    카테고리 주제
-                  </h4>
-                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
-                    <CategoryChart />
-                  </div>
-                </div>
-              </div>
+  <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
+    <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
+    <div className="w-full max-w-[400px] h-[400px] mx-auto">
+      <CategoryChart />
+    </div>
+  </div>
+</div>
+
             </div>
           </div>
         );
@@ -694,7 +736,7 @@ export default function AdminPage() {
         );
 
         return (
-          <div className="space-y-8 w-[850px]">
+          <div className="space-y-8 w-full md:w-[850px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 Q&A 관리
@@ -738,7 +780,6 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-500">
-                          <span>조회 {qna.views}</span>
                           <span>{qna.createdAt}</span>
                         </div>
                       </div>
@@ -764,8 +805,17 @@ export default function AdminPage() {
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
-                            <i className="fas fa-user text-white text-xs"></i>
+                          <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center rounded-full overflow-hidden">
+                            <img
+  src={getUserProfile(qna.userid)}
+  alt="프로필 이미지"
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    e.currentTarget.src =
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+  }}
+/>
+
                           </div>
                           <span className="text-sm font-medium text-gray-700">
                             {qna.userid}
@@ -907,6 +957,7 @@ export default function AdminPage() {
         );
 
       case "posts":
+        
         const indexOfLastPost = currentPage * postsPerPage;
         const indexOfFirstPost = indexOfLastPost - postsPerPage;
         const currentPosts = sortedPosts.slice(
@@ -914,7 +965,7 @@ export default function AdminPage() {
           indexOfLastPost
         );
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px] md:h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 게시글 관리
@@ -927,11 +978,12 @@ export default function AdminPage() {
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">전체 게시글</h4>
                   <div className="flex gap-2">
-                    <select className="p-2 border border-gray-300 rounded-xl text-sm">
-                      <option>전체</option>
-                      <option>정상</option>
-                      <option>신고</option>
-                      <option>숨김</option>
+                    <select value={filterReported} 
+                    onChange={(e) => setFilterReported(e.target.value)} 
+                    className="p-2 border border-gray-300 rounded-xl text-sm">
+                      <option value={"전체"}>전체</option>
+                      <option value={"정상"}>정상</option>
+                      <option value={"신고"}>신고</option>
                     </select>
                     {selectedPosts.length > 0 && (
                       <div className="flex gap-2">
@@ -1128,16 +1180,18 @@ export default function AdminPage() {
                             )}
                           </td>
                           <td className="p-3">
-                            <span
-                              className={`px-2 py-1 rounded text-sm ${
-                                post.reported
-                                  ? "bg-red-100 text-red-600"
-                                  : "bg-green-100 text-green-600"
-                              }`}
-                            >
-                              {post.reported ? "신고" : "정상"}
-                            </span>
-                          </td>
+  <span
+    onClick={() => toggleReported(post.id, post.reported)}
+    className={`cursor-pointer px-2 py-1 rounded text-sm ${
+      post.reported
+        ? "bg-red-100 text-red-600"
+        : "bg-green-100 text-green-600"
+    }`}
+  >
+    {post.reported ? "신고" : "정상"}
+  </span>
+</td>
+
                           <td className="p-3">
                             <div className="flex gap-1">
                               <button
@@ -1156,66 +1210,54 @@ export default function AdminPage() {
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
-                    {(() => {
-                      const nonDevPosts = allPosts.filter(
-                        (post) => post.category !== "dev"
-                      );
-                      const totalPages = Math.ceil(
-                        nonDevPosts.length / postsPerPage
-                      );
-                      const pageGroupSize = 5;
-                      const currentGroup = Math.floor(
-                        (currentPage - 1) / pageGroupSize
-                      );
-                      const startPage = currentGroup * pageGroupSize + 1;
-                      const endPage = Math.min(
-                        startPage + pageGroupSize - 1,
-                        totalPages
-                      );
+  {(() => {
+    const totalPages = Math.ceil(sortedPosts.length / postsPerPage); // 🔥 핵심: sortedPosts 기준
+    const pageGroupSize = 5;
+    const currentGroup = Math.floor((currentPage - 1) / pageGroupSize);
+    const startPage = currentGroup * pageGroupSize + 1;
+    const endPage = Math.min(startPage + pageGroupSize - 1, totalPages);
 
-                      return (
-                        <>
-                          {/* 이전 그룹 버튼 */}
-                          {startPage > 1 && (
-                            <button
-                              onClick={() => setCurrentPage(startPage - 1)}
-                              className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            >
-                              &lt;
-                            </button>
-                          )}
+    return (
+      <>
+        {/* 이전 그룹 버튼 */}
+        {startPage > 1 && (
+          <button
+            onClick={() => setCurrentPage(startPage - 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &lt;
+          </button>
+        )}
 
-                          {/* 현재 그룹의 페이지 버튼들 */}
-                          {Array.from(
-                            { length: endPage - startPage + 1 },
-                            (_, i) => startPage + i
-                          ).map((page) => (
-                            <button
-                              key={page}
-                              onClick={() => setCurrentPage(page)}
-                              className={`mx-1 px-3 py-1 rounded ${
-                                currentPage === page
-                                  ? "bg-red-600 text-white"
-                                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          ))}
+        {/* 현재 그룹 페이지 버튼들 */}
+        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`mx-1 px-3 py-1 rounded ${
+              currentPage === page
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
 
-                          {/* 다음 그룹 버튼 */}
-                          {endPage < totalPages && (
-                            <button
-                              onClick={() => setCurrentPage(endPage + 1)}
-                              className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            >
-                              &gt;
-                            </button>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
+        {/* 다음 그룹 버튼 */}
+        {endPage < totalPages && (
+          <button
+            onClick={() => setCurrentPage(endPage + 1)}
+            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            &gt;
+          </button>
+        )}
+      </>
+    );
+  })()}
+</div>
+
                 </div>
               </div>
             </div>
@@ -1259,7 +1301,7 @@ export default function AdminPage() {
         const currentUsers = userList.slice(indexOfFirstUser, indexOfLastUser);
 
         return (
-          <div className="space-y-8 w-[850px] h-[800px]">
+          <div className="space-y-8 w-full md:w-[850px] md:h-[800px]">
             <div>
               <h3 className="text-xl font-semibold text-gray-800 mb-4">
                 유저 관리
@@ -1350,8 +1392,11 @@ export default function AdminPage() {
                               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
                                 <img
                                   src={
-                                    user.profile ||
-                                    "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                                    user.profile
+                                    ? user.profile.startsWith("http")
+                                    ? user.profile
+                                    : `http://localhost:8000${user.profile}?v=${Date.now()}`
+                                    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
                                   }
                                   alt="프로필 이미지"
                                   className="w-full h-full object-cover"
@@ -1524,7 +1569,7 @@ export default function AdminPage() {
               <div className="flex flex-col items-center">
                 <img
                   className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mb-3"
-                  src="/images/bear_profile.png"
+                  src="/images/응원.gif"
                   alt=""
                 />
 

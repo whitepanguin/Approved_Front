@@ -8,8 +8,11 @@ interface IntroPreviewProps {
   currentStep: number;
 }
 
-export default function IntroPreview({ onStart }: IntroPreviewProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+export default function IntroPreview({
+  onStart = () => {},
+  currentStep = 0,
+}: IntroPreviewProps) {
+  const [activeStep, setActiveStep] = useState(0);
 
   const steps = [
     {
@@ -28,7 +31,12 @@ export default function IntroPreview({ onStart }: IntroPreviewProps) {
       description: "내 주변 유사 업종을 지도에서 확인하세요",
     },
   ];
-
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length);
+    }, 500);
+    return () => clearInterval(interval);
+  }, [steps.length]);
 
   const handleStartClick = () => {
     setTimeout(() => {
