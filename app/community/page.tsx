@@ -213,10 +213,16 @@ export default function CommunityPage() {
 
       if (!res.ok) throw new Error("삭제 실패");
 
-      const updatedPosts = await fetch("http://localhost:8000/posts").then(
-        (res) => res.json()
+      const updatedPosts: Post[] = await fetch(
+        "http://localhost:8000/posts"
+      ).then((res) => res.json() as Promise<Post[]>);
+      const sortedPosts = updatedPosts.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      setPosts(updatedPosts);
+
+      setPosts(sortedPosts);
+      setFilteredPosts(sortedPosts);
 
       await fetchStats();
 
@@ -486,6 +492,15 @@ export default function CommunityPage() {
 
       await fetchComments(); // ✅ 삭제 후 최신 목록 재조회
 
+      // 댓글 수 감소 반영
+      setPosts((prev) =>
+        prev.map((p) =>
+          p._id === selectedPost?._id
+            ? { ...p, comments: Math.max((p.comments || 1) - 1, 0) }
+            : p
+        )
+      );
+
       setCommentCount((prev) => prev - 1);
       alert("댓글이 삭제되었습니다.");
     } catch (err: any) {
@@ -706,11 +721,21 @@ export default function CommunityPage() {
       if (!res.ok) throw new Error("❌ 글 저장 실패");
 
       // 최신 글 목록 다시 불러오기
-      const updatedPosts = await fetch("http://localhost:8000/posts").then(
-        (res) => res.json()
+      const updatedPosts: Post[] = await fetch(
+        "http://localhost:8000/posts"
+      ).then((res) => res.json());
+
+      // ✅ 최신순 정렬 추가
+      const sortedPosts = updatedPosts.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      console.log("📌 최신 글 목록:", updatedPosts);
+
+      console.log("📌 최신 글 목록:", sortedPosts);
+
       setPosts(updatedPosts);
+      setFilteredPosts(updatedPosts); // ✅ 실시간 반영을 위한 추가 코드
+
       await fetchStats();
       setShowWriteModal(false);
       setEditingPost(null);
@@ -968,7 +993,8 @@ export default function CommunityPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (post._id) handleDelete(post._id);
+                                      const postId = post._id || post.id;
+                                      if (postId) handleDelete(postId);
                                     }}
                                     className="text-red-600 hover:underline"
                                   >
@@ -1405,18 +1431,28 @@ export default function CommunityPage() {
               {/* 상세페이지 신고/삭제  🔽 */}
               {selectedPost && user.currentUser && (
                 <div className="flex justify-end gap-4 px-2 pt-4 text-sm text-gray-600">
-                  {/* ✅ 자기 글일 때만 삭제 버튼 */}
-                  {selectedPost.userid === user.currentUser.userid && (
-                    <button
-                      onClick={() => handleDelete(selectedPost._id!)}
-                      className="text-red-500 hover:underline"
-                    >
-                      삭제
-                    </button>
-                  )}
-
-                  {/* ✅ 자기 글이 아닐 때만 신고 버튼 */}
-                  {selectedPost.userid !== user.currentUser.userid && (
+                  {/* ✅ 자기 글일 때 수정/삭제 */}
+                  {selectedPost.userid === user.currentUser.userid ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingPost(selectedPost);
+                          setShowWriteModal(true);
+                          setShowPostModal(false);
+                        }}
+                        className="text-blue-500 hover:underline"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => handleDelete(selectedPost._id!)}
+                        className="text-red-500 hover:underline"
+                      >
+                        삭제
+                      </button>
+                    </>
+                  ) : (
+                    // ✅ 자기 글이 아니면 신고만
                     <button
                       onClick={() => handleReport(selectedPost._id!)}
                       className="text-orange-500 hover:underline"
