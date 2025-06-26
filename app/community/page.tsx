@@ -345,14 +345,17 @@ export default function CommunityPage() {
 
   // 커뮤니티 페이지 검색박스 핸들
   const handleSearch = () => {
-    const filtered = posts.filter((post) =>
-      post.content.toLowerCase().includes(searchTerm.toLowerCase())
+    const lowerSearch = searchTerm.toLowerCase();
+    const filtered = posts.filter(
+      (post) =>
+        post.title.toLowerCase().includes(lowerSearch) ||
+        post.content.toLowerCase().includes(lowerSearch)
     );
     setFilteredPosts(filtered);
     setCurrentPage(1); // 검색 시 페이지도 1로 초기화
   };
 
-  // ✅ 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
+  // 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
   useEffect(() => {
     const filtered =
       currentCategory === "all"
