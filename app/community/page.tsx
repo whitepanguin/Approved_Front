@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import MainLayout from "@/components/layout/main-layout";
 import { useApp } from "../providers";
 import { useSelector } from "react-redux";
@@ -202,7 +202,6 @@ export default function CommunityPage() {
   };
 
   // 삭제 버튼 핸들러
-
   const handleDelete = async (postId: string) => {
     console.log("🗑️ 삭제 요청 postId:", postId); // 디버깅
     if (!confirm("정말 삭제하시겠습니까?")) return;
@@ -225,7 +224,6 @@ export default function CommunityPage() {
       setShowPostModal(false); // 모달 닫기
       setSelectedPost(null); // 선택 글 초기화
       router.push("/community"); // 커뮤니티 이동
-      router.push("/community"); // ✅ 커뮤니티 페이지로 이동 추가
     } catch (err) {
       console.error("❌ 삭제 오류:", err);
       alert("게시글 삭제 중 오류가 발생했습니다.");
@@ -364,19 +362,22 @@ export default function CommunityPage() {
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
+
     const Token = localStorage.getItem("jwtToken");
     if (!Token) {
       alert("로그인 후 이용해주세요!");
       router.push("/login");
       return;
     }
+
     try {
       const payload = {
         postId: selectedPost._id,
-        userid: user.currentUser.userid, // ← 백엔드에서 무시해도 되므로 그대로 둠
+        userid: user.currentUser.userid,
         content: newComment,
         email: user.currentUser.email,
       };
+
       const res = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -385,20 +386,39 @@ export default function CommunityPage() {
 
       if (!res.ok) throw new Error("댓글 등록 실패");
 
-      const savedComment: Comment = await res.json();
-
-      setPostComments((prev) => [...prev, savedComment]);
+      await fetchComments(); // ✅ 댓글 등록 후 최신 목록 재조회
       setNewComment("");
+
       setPosts((prev) =>
         prev.map((p) =>
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
         )
       );
     } catch (err) {
-      console.error(":x: 댓글 추가 실패:", err);
+      console.error("❌ 댓글 추가 실패:", err);
       alert("댓글 등록 중 오류가 발생했습니다.");
     }
   };
+
+  const fetchComments = async () => {
+    if (!selectedPost?._id) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/comments/${selectedPost._id}`);
+      if (!res.ok) throw new Error("댓글 불러오기 실패");
+
+      const data: Comment[] = await res.json();
+      setPostComments(data); // 💡 최신 댓글 목록으로 교체
+    } catch (err) {
+      console.error("❌ 댓글 재조회 실패:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedPost?._id) {
+      fetchComments(); // ✅ 모달 진입 시 자동 댓글 로딩
+    }
+  }, [selectedPost]);
 
   // 게시글 상세페이지 신고 로직
   const handleReport = async (postId: string) => {
@@ -416,6 +436,50 @@ export default function CommunityPage() {
     } catch (err) {
       console.error("❌ 신고 실패:", err);
       alert("신고 중 오류가 발생했습니다.");
+    }
+  };
+  // 댓글 삭제
+  const isDeleting = useRef(false);
+
+  const handleDeleteComment = async (commentId: string) => {
+    const confirmDelete = window.confirm("댓글을 삭제하시겠습니까?");
+    if (!confirmDelete) return;
+
+    const token =
+      localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
+
+    if (!token) {
+      alert("로그인 후 이용해주세요.");
+      return;
+    }
+
+    try {
+      const email = user.currentUser.email;
+
+      const res = await fetch(
+        `${API_BASE_URL}/comments/${commentId}?email=${encodeURIComponent(
+          email
+        )}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      await fetchComments(); // ✅ 삭제 후 최신 목록 재조회
+
+      setCommentCount((prev) => prev - 1);
+      alert("댓글이 삭제되었습니다.");
+    } catch (err: any) {
+      console.error("❌ 댓글 삭제 실패:", err);
+      alert("❌ 삭제 실패: " + err.message);
     }
   };
 
@@ -981,12 +1045,14 @@ export default function CommunityPage() {
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
                   <img
                     src={
-  user.currentUser?.profile
-    ? user.currentUser.profile.startsWith("http")
-      ? user.currentUser.profile
-      : `http://localhost:8000${user.currentUser.profile}?v=${Date.now()}`
-    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
-}
+                      user.currentUser?.profile
+                        ? user.currentUser.profile.startsWith("http")
+                          ? user.currentUser.profile
+                          : `http://localhost:8000${
+                              user.currentUser.profile
+                            }?v=${Date.now()}`
+                        : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                    }
                     alt="프로필 이미지"
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -1261,28 +1327,49 @@ export default function CommunityPage() {
                     등록된 댓글이 없습니다.
                   </p>
                 ) : (
-                  postComments.map((comment) => (
-                    <div
-                      key={(comment._id || comment.id)?.toString()} // ✅ 고유 key
-                      className="p-3 bg-gray-50 rounded text-sm"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                          <FontAwesomeIcon
-                            icon={faUser}
-                            className="text-blue-600 text-xl"
-                          />
-                          <span className="font-medium">{comment.userid}</span>
+                  postComments.map((comment) => {
+                    const commentId = comment._id || comment.id;
+                    if (!commentId) {
+                      console.warn("❌ 댓글 ID가 없음:", comment);
+                      return null;
+                    }
+
+                    return (
+                      <div
+                        key={commentId.toString()} // ✅ 고유 key
+                        className="p-3 bg-gray-50 rounded text-sm"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-2">
+                            <FontAwesomeIcon
+                              icon={faUser}
+                              className="text-blue-600 text-xl"
+                            />
+                            <span className="font-medium">
+                              {comment.userid}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{formatDate(comment.createdAt)}</span>
+                            {comment.userid === user.currentUser.userid && (
+                              <button
+                                onClick={() =>
+                                  handleDeleteComment(commentId.toString())
+                                }
+                                className="text-red-500 hover:underline ml-2"
+                              >
+                                삭제
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(comment.createdAt)}
-                        </span>
+                        <p className="text-gray-700">
+                          {comment.content ?? comment.text}{" "}
+                          {/* ✅ 필드명 보강 */}
+                        </p>
                       </div>
-                      <p className="text-gray-700">
-                        {comment.content ?? comment.text} {/* ✅ 필드명 보강 */}
-                      </p>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
