@@ -345,17 +345,14 @@ export default function CommunityPage() {
 
   // 커뮤니티 페이지 검색박스 핸들
   const handleSearch = () => {
-    const lowerSearch = searchTerm.toLowerCase();
-    const filtered = posts.filter(
-      (post) =>
-        post.title.toLowerCase().includes(lowerSearch) ||
-        post.content.toLowerCase().includes(lowerSearch)
+    const filtered = posts.filter((post) =>
+      post.content.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredPosts(filtered);
     setCurrentPage(1); // 검색 시 페이지도 1로 초기화
   };
 
-  // 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
+  // ✅ 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
   useEffect(() => {
     const filtered =
       currentCategory === "all"
@@ -984,9 +981,12 @@ export default function CommunityPage() {
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
                   <img
                     src={
-                      user.currentUser.profile ||
-                      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
-                    }
+  user.currentUser?.profile
+    ? user.currentUser.profile.startsWith("http")
+      ? user.currentUser.profile
+      : `http://localhost:8000${user.currentUser.profile}?v=${Date.now()}`
+    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+}
                     alt="프로필 이미지"
                     className="w-full h-full object-cover"
                     onError={(e) => {
