@@ -30,6 +30,33 @@ export default function AdminPage() {
   const [selectedFilter, setSelectedFilter] = useState("전체");
   const [filterReported, setFilterReported] = useState<"전체" | "신고" | "정상">("전체");
 
+const toggleReported = async (postId: string, current: boolean) => {
+  try {
+    const updatedReported = !current;
+
+    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        reported: updatedReported,
+      }),
+    });
+
+    if (response.ok) {
+      setAllPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, reported: updatedReported } : p
+        )
+      );
+    } else {
+      console.error("신고 상태 변경 실패");
+    }
+  } catch (err) {
+    console.error("오류:", err);
+  }
+};
 
 
 
@@ -65,7 +92,7 @@ export default function AdminPage() {
     const fetchAllPosts = async () => {
       const response = await fetch("http://localhost:8000/posts");
       const data = await response.json();
-
+      console.log("불만 게시글: ", data)
       const devOnly = data.filter((post: Post) => post.category === "dev");
       setQnaList(devOnly);
     };
@@ -744,7 +771,6 @@ export default function AdminPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-sm text-gray-500">
-                          <span>조회 {qna.views}</span>
                           <span>{qna.createdAt}</span>
                         </div>
                       </div>
@@ -1136,16 +1162,18 @@ export default function AdminPage() {
                             )}
                           </td>
                           <td className="p-3">
-                            <span
-                              className={`px-2 py-1 rounded text-sm ${
-                                post.reported
-                                  ? "bg-red-100 text-red-600"
-                                  : "bg-green-100 text-green-600"
-                              }`}
-                            >
-                              {post.reported ? "신고" : "정상"}
-                            </span>
-                          </td>
+  <span
+    onClick={() => toggleReported(post.id, post.reported)}
+    className={`cursor-pointer px-2 py-1 rounded text-sm ${
+      post.reported
+        ? "bg-red-100 text-red-600"
+        : "bg-green-100 text-green-600"
+    }`}
+  >
+    {post.reported ? "신고" : "정상"}
+  </span>
+</td>
+
                           <td className="p-3">
                             <div className="flex gap-1">
                               <button
