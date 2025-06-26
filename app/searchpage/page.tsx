@@ -40,6 +40,14 @@ export default function SearchPage() {
   const email = currentUser?.email ?? "";
 
   useEffect(() => {
+    const Token = localStorage.getItem("jwtToken");
+    if (!Token) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/");
+    }
+  }, []);
+
+  useEffect(() => {
     if (!query.trim()) return;
 
     const storageKey = getStorageKey(email, query);
