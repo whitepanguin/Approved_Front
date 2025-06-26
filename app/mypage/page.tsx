@@ -1639,7 +1639,7 @@ export default function MyPage() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout introPassed={true}>
       <div id="sidemain" className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* 왼쪽 사이드바 */}

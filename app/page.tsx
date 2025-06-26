@@ -13,7 +13,8 @@ import IntroPreview from "./IntroPreview";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [introPassed, setIntroPassed] = useState(false);
+  const [introPassed, setIntroPassed] = useState<boolean | null>(null);
+  // const [introPassed, setIntroPassed] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [count, setCount] = useState<number>(0);
   const { addToSearchHistory } = useApp();
@@ -22,6 +23,16 @@ export default function HomePage() {
 
   const [open, setOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  // useEffect(() => {
+  //   window.scrollTo(0, 0); // 페이지 상단으로 강제 이동
+  // }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -142,6 +153,17 @@ export default function HomePage() {
 
     getcount();
   }, []);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("introPassed");
+    if (stored === "true") {
+      setIntroPassed(true);
+    } else {
+      setIntroPassed(false);
+    }
+  }, []);
+
+  if (introPassed === null) return null; // 깜빡임 방지용
 
   return (
     <>
