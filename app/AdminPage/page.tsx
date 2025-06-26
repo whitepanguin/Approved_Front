@@ -148,22 +148,21 @@ const toggleReported = async (postId: string, current: boolean) => {
   }, [userCount]);
 
   useEffect(() => {
-    const getPostcount = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/posts/PostCount", {
-          method: "GET",
-        });
+  const getPostcount = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/posts");
+      const data = await res.json();
 
-        const Postcountdata = await res.json();
-        setpostCount(Postcountdata.count);
-        // console.log(postCount);
-      } catch (error) {
-        console.error("실패:", error);
-      }
-    };
+      const filtered = data.filter((post) => post.category !== "dev");
+      setpostCount(filtered.length);
+    } catch (error) {
+      console.error("실패:", error);
+    }
+  };
 
-    getPostcount();
-  }, [postCount]);
+  getPostcount();
+}, []);
+
 
   useEffect(() => {
     const fetchComments = async () => {
