@@ -45,7 +45,7 @@ type Comment = {
 };
 
 export default function MyPage() {
-  const PER_PAGE = 10; // 탭 공통 개수
+  const PER_PAGE = 5; // 탭 공통 개수
   const [page, setPage] = useState({
     posts: 1,
     comments: 1,
