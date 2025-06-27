@@ -22,7 +22,7 @@ const FloatingDictButton = () => {
 
       setResults(data.channel?.item || []);
     } catch (err) {
-      console.error("사전 검색 실패:", err);
+      // console.error("사전 검색 실패:", err);
       setResults([]);
     } finally {
       setLoading(false);
