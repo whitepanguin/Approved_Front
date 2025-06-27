@@ -35,6 +35,7 @@ const AuthGate = () => {
           });
 
           const data = await res.json();
+          /*
           if (searchParams.get("jwtToken")) {
             router.push("/");
           }
@@ -48,6 +49,26 @@ const AuthGate = () => {
           // localStorage.removeItem("jwtToken");
           dispatch(setUser({}));
           dispatch(setUserStatus(false));
+        } finally {
+          setChecked(true);
+        }
+          */
+          if (!data.user || !data.user.name) {
+            throw new Error("유효하지 않은 유저 데이터");
+          }
+
+          dispatch(setUser(data));
+          dispatch(setUserStatus(true));
+
+          if (searchParams.get("jwtToken")) {
+            router.push("/");
+          }
+        } catch (error) {
+          // 에러 발생 시에도 콘솔만 찍고, 사용자에겐 영향 없게
+          console.warn("JWT 인증 실패 (무시됨):", error);
+          dispatch(setUser({}));
+          dispatch(setUserStatus(false));
+          localStorage.removeItem("jwtToken");
         } finally {
           setChecked(true);
         }

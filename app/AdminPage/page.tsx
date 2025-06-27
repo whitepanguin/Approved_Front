@@ -14,8 +14,8 @@ export default function AdminPage() {
   const [userCount, setuserCount] = useState(0);
   const [postCount, setpostCount] = useState(0);
   const [reportCount, setreportCount] = useState(0);
-  const [selectedPosts, setSelectedPosts] = useState<number[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [qnaList, setQnaList] = useState<Post[]>([]);
   const [currentQnaPage, setCurrentQnaPage] = useState(1);
   const qnasPerPage = 3;
@@ -23,42 +23,42 @@ export default function AdminPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [selectedQna, setSelectedQna] = useState(null);
+  const [selectedQna, setSelectedQna] = useState<Post | null>(null);
   const [isQnaModalOpen, setIsQnaModalOpen] = useState(false);
   const [qnaComments, setQnaComments] = useState([]); // 댓글 저장용
 
   const [selectedFilter, setSelectedFilter] = useState("전체");
-  const [filterReported, setFilterReported] = useState<"전체" | "신고" | "정상">("전체");
+  const [filterReported, setFilterReported] = useState<
+    "전체" | "신고" | "정상"
+  >("전체");
 
-const toggleReported = async (postId: string, current: boolean) => {
-  try {
-    const updatedReported = !current;
+  const toggleReported = async (postId: string, current: boolean) => {
+    try {
+      const updatedReported = !current;
 
-    const response = await fetch(`http://localhost:8000/posts/${postId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        reported: updatedReported,
-      }),
-    });
+      const response = await fetch(`http://localhost:8000/posts/${postId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reported: updatedReported,
+        }),
+      });
 
-    if (response.ok) {
-      setAllPosts((prev) =>
-        prev.map((p) =>
-          p.id === postId ? { ...p, reported: updatedReported } : p
-        )
-      );
-    } else {
-      console.error("신고 상태 변경 실패");
+      if (response.ok) {
+        setAllPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, reported: updatedReported } : p
+          )
+        );
+      } else {
+        console.error("신고 상태 변경 실패");
+      }
+    } catch (err) {
+      console.error("오류:", err);
     }
-  } catch (err) {
-    console.error("오류:", err);
-  }
-};
-
-
+  };
 
   const filteredQnaList = qnaList
     .filter((qna) => {
@@ -72,7 +72,7 @@ const toggleReported = async (postId: string, current: boolean) => {
   const { currentUser, isLogin } = useSelector(
     (state: RootState) => state.user
   );
-  
+
   const router = useRouter();
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -92,7 +92,7 @@ const toggleReported = async (postId: string, current: boolean) => {
     const fetchAllPosts = async () => {
       const response = await fetch("http://localhost:8000/posts");
       const data = await response.json();
-      console.log("불만 게시글: ", data)
+      console.log("불만 게시글: ", data);
       const devOnly = data.filter((post: Post) => post.category === "dev");
       setQnaList(devOnly);
     };
@@ -148,21 +148,20 @@ const toggleReported = async (postId: string, current: boolean) => {
   }, [userCount]);
 
   useEffect(() => {
-  const getPostcount = async () => {
-    try {
-      const res = await fetch("http://localhost:8000/posts");
-      const data = await res.json();
+    const getPostcount = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/posts");
+        const data = await res.json();
 
-      const filtered = data.filter((post) => post.category !== "dev");
-      setpostCount(filtered.length);
-    } catch (error) {
-      console.error("실패:", error);
-    }
-  };
+        const filtered = data.filter((post: Post) => post.category !== "dev");
+        setpostCount(filtered.length);
+      } catch (error) {
+        console.error("실패:", error);
+      }
+    };
 
-  getPostcount();
-}, []);
-
+    getPostcount();
+  }, []);
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -252,7 +251,7 @@ const toggleReported = async (postId: string, current: boolean) => {
   }, []);
 
   interface User {
-    id: number;
+    id: String;
     email: string;
     name: string;
     userid: string;
@@ -348,15 +347,14 @@ const toggleReported = async (postId: string, current: boolean) => {
         new Date(a.createdAt as string).getTime()
     )[0];
 
-const getUserProfile = (userid: string): string => {
-  const user = userList.find((u) => u.userid === userid);
-  return user?.profile
-    ? user.profile.startsWith("http")
-      ? user.profile
-      : `http://localhost:8000${user.profile}?v=${Date.now()}`
-    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
-};
-
+  const getUserProfile = (userid: string): string => {
+    const user = userList.find((u) => u.userid === userid);
+    return user?.profile
+      ? user.profile.startsWith("http")
+        ? user.profile
+        : `http://localhost:8000${user.profile}?v=${Date.now()}`
+      : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+  };
 
   const newestUserJoinedAgo = getTimeAgo(newestUser?.createdAt || null);
   const newestPostAgo = getTimeAgo(newestPost?.createdAt || null);
@@ -366,25 +364,23 @@ const getUserProfile = (userid: string): string => {
 
   // const reportsFilter = filterReported ? "신고" : "정상";
 
-
   const sortedPosts = [...allPosts]
-  .filter((post) => {
-    // 1. 필수 조건: createdAt이 null이 아니고, 카테고리가 dev가 아닌 글만
-    if (post.createdAt === null || post.category === "dev") return false;
+    .filter((post) => {
+      // 1. 필수 조건: createdAt이 null이 아니고, 카테고리가 dev가 아닌 글만
+      if (post.createdAt === null || post.category === "dev") return false;
 
-    // 2. 필터 조건: 전체, 신고, 정상
-    if (filterReported === "전체") return true;
-    if (filterReported === "신고") return post.reported === true;
-    if (filterReported === "정상") return post.reported === false;
+      // 2. 필터 조건: 전체, 신고, 정상
+      if (filterReported === "전체") return true;
+      if (filterReported === "신고") return post.reported === true;
+      if (filterReported === "정상") return post.reported === false;
 
-    return true; // 혹시 모를 예외 대비
-  })
-  .sort(
-    (a, b) =>
-      new Date(b.createdAt as string).getTime() -
-      new Date(a.createdAt as string).getTime()
-  );
-
+      return true; // 혹시 모를 예외 대비
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt as string).getTime() -
+        new Date(a.createdAt as string).getTime()
+    );
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -408,7 +404,7 @@ const getUserProfile = (userid: string): string => {
     fetchAllUsers();
   }, []); // ✅ 최초 한 번만 실행
 
-  const handleDelete = async (postId: number) => {
+  const handleDelete = async (postId: String) => {
     try {
       const response = await fetch(`http://localhost:8000/posts/${postId}`, {
         method: "DELETE",
@@ -428,7 +424,7 @@ const getUserProfile = (userid: string): string => {
     }
   };
 
-  const handleAdminUserDelete = async (email) => {
+  const handleAdminUserDelete = async (email: string) => {
     const confirmed = window.confirm("정말 해당 유저를 탈퇴시키겠습니까?");
     if (!confirmed) return;
 
@@ -506,7 +502,7 @@ const getUserProfile = (userid: string): string => {
     }
   };
 
-  const handleUserAction = (action: string, userIds: number[]) => {
+  const handleUserAction = (action: string, userIds: string[]) => {
     console.log(`${action} 실행:`, userIds);
     alert(`${userIds.length}명 유저 ${action} 완료`);
     setSelectedUsers([]);
@@ -708,21 +704,24 @@ const getUserProfile = (userid: string): string => {
                 커뮤니티 현황을 차트로 확인하세요
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
-  <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
-    <h4 className="font-medium text-gray-800 mb-4">가입 플랫폼</h4>
-    <div className="w-full max-w-[400px] h-[400px] mx-auto">
-      <PieChart />
-    </div>
-  </div>
+                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
+                  <h4 className="font-medium text-gray-800 mb-4">
+                    가입 플랫폼
+                  </h4>
+                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
+                    <PieChart />
+                  </div>
+                </div>
 
-  <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
-    <h4 className="font-medium text-gray-800 mb-4">카테고리 주제</h4>
-    <div className="w-full max-w-[400px] h-[400px] mx-auto">
-      <CategoryChart />
-    </div>
-  </div>
-</div>
-
+                <div className="bg-white rounded-lg p-6 border border-gray-200 rounded-xl w-full sm:w-[400px] flex-1">
+                  <h4 className="font-medium text-gray-800 mb-4">
+                    카테고리 주제
+                  </h4>
+                  <div className="w-full max-w-[400px] h-[400px] mx-auto">
+                    <CategoryChart />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -807,15 +806,14 @@ const getUserProfile = (userid: string): string => {
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center rounded-full overflow-hidden">
                             <img
-  src={getUserProfile(qna.userid)}
-  alt="프로필 이미지"
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    e.currentTarget.src =
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
-  }}
-/>
-
+                              src={getUserProfile(qna.userid)}
+                              alt="프로필 이미지"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+                              }}
+                            />
                           </div>
                           <span className="text-sm font-medium text-gray-700">
                             {qna.userid}
@@ -827,7 +825,8 @@ const getUserProfile = (userid: string): string => {
                             <button
                               onClick={() => {
                                 const reply = prompt("답변을 입력하세요:");
-                                if (reply) handleQuickReply(qna.id, reply);
+                                if (reply)
+                                  handleQuickReply(Number(qna.id), reply);
                               }}
                               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                             >
@@ -855,8 +854,7 @@ const getUserProfile = (userid: string): string => {
                   {/* 메타 정보 */}
                   <div className="mb-3 text-sm text-gray-600 space-y-1">
                     <p>
-                      <strong>작성자:</strong>{" "}
-                      {selectedQna.userid || selectedQna.author}
+                      <strong>작성자:</strong> {selectedQna.userid}
                     </p>
                     <p>
                       <strong>작성일:</strong> {selectedQna.createdAt}
@@ -957,7 +955,6 @@ const getUserProfile = (userid: string): string => {
         );
 
       case "posts":
-        
         const indexOfLastPost = currentPage * postsPerPage;
         const indexOfFirstPost = indexOfLastPost - postsPerPage;
         const currentPosts = sortedPosts.slice(
@@ -978,29 +975,25 @@ const getUserProfile = (userid: string): string => {
                 <div className="flex justify-between items-center mb-6">
                   <h4 className="font-medium text-gray-800">전체 게시글</h4>
                   <div className="flex gap-2">
-                    <select value={filterReported} 
-                    onChange={(e) => setFilterReported(e.target.value)} 
-                    className="p-2 border border-gray-300 rounded-xl text-sm">
+                    <select
+                      value={filterReported}
+                      onChange={(e) =>
+                        setFilterReported(
+                          e.target.value as "전체" | "신고" | "정상"
+                        )
+                      }
+                      className="p-2 border border-gray-300 rounded-xl text-sm"
+                    >
                       <option value={"전체"}>전체</option>
                       <option value={"정상"}>정상</option>
                       <option value={"신고"}>신고</option>
                     </select>
                     {selectedPosts.length > 0 && (
                       <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            handlePostAction("삭제", selectedPosts)
-                          }
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                        >
+                        <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
                           선택 삭제 ({selectedPosts.length})
                         </button>
-                        <button
-                          onClick={() =>
-                            handlePostAction("숨김", selectedPosts)
-                          }
-                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                        >
+                        <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm">
                           선택 숨김
                         </button>
                       </div>
@@ -1180,17 +1173,19 @@ const getUserProfile = (userid: string): string => {
                             )}
                           </td>
                           <td className="p-3">
-  <span
-    onClick={() => toggleReported(post.id, post.reported)}
-    className={`cursor-pointer px-2 py-1 rounded text-sm ${
-      post.reported
-        ? "bg-red-100 text-red-600"
-        : "bg-green-100 text-green-600"
-    }`}
-  >
-    {post.reported ? "신고" : "정상"}
-  </span>
-</td>
+                            <span
+                              onClick={() =>
+                                toggleReported(post.id, post.reported)
+                              }
+                              className={`cursor-pointer px-2 py-1 rounded text-sm ${
+                                post.reported
+                                  ? "bg-red-100 text-red-600"
+                                  : "bg-green-100 text-green-600"
+                              }`}
+                            >
+                              {post.reported ? "신고" : "정상"}
+                            </span>
+                          </td>
 
                           <td className="p-3">
                             <div className="flex gap-1">
@@ -1210,54 +1205,63 @@ const getUserProfile = (userid: string): string => {
                     </tbody>
                   </table>
                   <div className="flex justify-center mt-4">
-  {(() => {
-    const totalPages = Math.ceil(sortedPosts.length / postsPerPage); // 🔥 핵심: sortedPosts 기준
-    const pageGroupSize = 5;
-    const currentGroup = Math.floor((currentPage - 1) / pageGroupSize);
-    const startPage = currentGroup * pageGroupSize + 1;
-    const endPage = Math.min(startPage + pageGroupSize - 1, totalPages);
+                    {(() => {
+                      const totalPages = Math.ceil(
+                        sortedPosts.length / postsPerPage
+                      ); // 🔥 핵심: sortedPosts 기준
+                      const pageGroupSize = 5;
+                      const currentGroup = Math.floor(
+                        (currentPage - 1) / pageGroupSize
+                      );
+                      const startPage = currentGroup * pageGroupSize + 1;
+                      const endPage = Math.min(
+                        startPage + pageGroupSize - 1,
+                        totalPages
+                      );
 
-    return (
-      <>
-        {/* 이전 그룹 버튼 */}
-        {startPage > 1 && (
-          <button
-            onClick={() => setCurrentPage(startPage - 1)}
-            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-          >
-            &lt;
-          </button>
-        )}
+                      return (
+                        <>
+                          {/* 이전 그룹 버튼 */}
+                          {startPage > 1 && (
+                            <button
+                              onClick={() => setCurrentPage(startPage - 1)}
+                              className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            >
+                              &lt;
+                            </button>
+                          )}
 
-        {/* 현재 그룹 페이지 버튼들 */}
-        {Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i).map((page) => (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={`mx-1 px-3 py-1 rounded ${
-              currentPage === page
-                ? "bg-red-600 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+                          {/* 현재 그룹 페이지 버튼들 */}
+                          {Array.from(
+                            { length: endPage - startPage + 1 },
+                            (_, i) => startPage + i
+                          ).map((page) => (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`mx-1 px-3 py-1 rounded ${
+                                currentPage === page
+                                  ? "bg-red-600 text-white"
+                                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
 
-        {/* 다음 그룹 버튼 */}
-        {endPage < totalPages && (
-          <button
-            onClick={() => setCurrentPage(endPage + 1)}
-            className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-          >
-            &gt;
-          </button>
-        )}
-      </>
-    );
-  })()}
-</div>
-
+                          {/* 다음 그룹 버튼 */}
+                          {endPage < totalPages && (
+                            <button
+                              onClick={() => setCurrentPage(endPage + 1)}
+                              className="mx-1 px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            >
+                              &gt;
+                            </button>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1352,7 +1356,9 @@ const getUserProfile = (userid: string): string => {
                             type="checkbox"
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedUsers(userList.map((u) => u.id));
+                                setSelectedUsers(
+                                  userList.map((u) => `${u.id}`)
+                                );
                               } else {
                                 setSelectedUsers([]);
                               }
@@ -1369,16 +1375,21 @@ const getUserProfile = (userid: string): string => {
                     <tbody>
                       {currentUsers.map((user) => (
                         <tr
-                          key={user.id}
+                          key={user.id.toString()}
                           className="border-b border-gray-100 hover:bg-gray-50"
                         >
                           <td className="p-3">
                             <input
                               type="checkbox"
-                              checked={selectedUsers.includes(user.id)}
+                              checked={selectedUsers.includes(
+                                user.id.toString()
+                              )}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedUsers([...selectedUsers, user.id]);
+                                  setSelectedUsers([
+                                    ...selectedUsers,
+                                    user.id.toString(),
+                                  ]);
                                 } else {
                                   setSelectedUsers(
                                     selectedUsers.filter((id) => id !== user.id)
@@ -1393,10 +1404,12 @@ const getUserProfile = (userid: string): string => {
                                 <img
                                   src={
                                     user.profile
-                                    ? user.profile.startsWith("http")
-                                    ? user.profile
-                                    : `http://localhost:8000${user.profile}?v=${Date.now()}`
-                                    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
+                                      ? user.profile.startsWith("http")
+                                        ? user.profile
+                                        : `http://localhost:8000${
+                                            user.profile
+                                          }?v=${Date.now()}`
+                                      : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
                                   }
                                   alt="프로필 이미지"
                                   className="w-full h-full object-cover"
@@ -1467,7 +1480,7 @@ const getUserProfile = (userid: string): string => {
                                   <button
                                     className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs hover:bg-blue-200"
                                     onClick={() => {
-                                      setEditingUserId(user.id);
+                                      setEditingUserId(user.id.toString());
                                       setEditedName(user.userid); // 기존 이름을 입력창에 미리 넣기
                                     }}
                                   >
