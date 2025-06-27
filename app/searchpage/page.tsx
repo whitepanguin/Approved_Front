@@ -184,16 +184,18 @@ export default function SearchPage() {
                 router.push(
                   `/searchpage?search=${encodeURIComponent(searchInput)}`
                 );
+                setSearchInput("");
               }
             }}
             className="flex-1 py-4 pr-4 outline-none border-none text-base bg-transparent "
           />
           <button
-            onClick={() =>
+            onClick={() => {
               router.push(
                 `/searchpage?search=${encodeURIComponent(searchInput)}`
-              )
-            }
+              );
+              setSearchInput("");
+            }}
             className="w-10 h-10 flex items-center justify-center bg-transparent rounded-full hover:bg-gray-300 transition"
           >
             <svg
