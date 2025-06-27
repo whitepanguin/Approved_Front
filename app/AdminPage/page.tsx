@@ -167,11 +167,13 @@ export default function AdminPage() {
     const fetchComments = async () => {
       if (isQnaModalOpen && selectedQna) {
         try {
+          // console.log("여기여기!!", selectedQna.id);
           const res = await fetch(
             `http://localhost:8000/comments/${selectedQna.id}`
           );
           const data = await res.json();
-          console.log(data[0].content);
+          // console.log(data[0].content);
+          // console.log("ㅁㄴㅇㅁㄴㅇ", data);
           setQnaComments(data[0].content); // 댓글 목록 업데이트
         } catch (error) {
           console.error("댓글 불러오기 실패:", error);
@@ -458,9 +460,12 @@ export default function AdminPage() {
   //   alert("답변이 등록되었습니다.");
   // };
 
-  const handleQuickReply = async (qnaId: number, reply: string) => {
+  const handleQuickReply = async (qnaId: string, reply: string) => {
     try {
       // 1. 댓글 등록
+      // console.log("qnaid", qnaId);
+      // console.log("reply", reply);
+      // console.log("userid??", currentUser?.userid);
       const commentRes = await fetch("http://localhost:8000/comments", {
         method: "POST",
         headers: {
@@ -826,7 +831,7 @@ export default function AdminPage() {
                               onClick={() => {
                                 const reply = prompt("답변을 입력하세요:");
                                 if (reply)
-                                  handleQuickReply(Number(qna.id), reply);
+                                  handleQuickReply(qna.id.toString(), reply);
                               }}
                               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                             >
