@@ -16,6 +16,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  output: "standalone",
 
   webpack: (config) => {
     config.resolve.alias["@"] = resolve(__dirname); // ⬅️ 프로젝트 루트 경로
