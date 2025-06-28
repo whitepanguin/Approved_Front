@@ -1388,7 +1388,7 @@ export default function CommunityPage() {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <span>{formatDate(comment.createdAt)}</span>
-                            {comment.userid === user.currentUser.userid && (
+                            {comment.userid === user.currentUser?.userid && (
                               <button
                                 onClick={() =>
                                   handleDeleteComment(commentId.toString())

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { useSelector } from "react-redux";
@@ -31,6 +31,7 @@ export default function SearchPage() {
   const [history, setHistory] = useState<
     { query: string; result: SearchResultType }[]
   >([]);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [showLawsModal, setShowLawsModal] = useState(false);
@@ -38,6 +39,12 @@ export default function SearchPage() {
 
   const { currentUser } = useSelector((state: RootState) => state.user || {});
   const email = currentUser?.email ?? "";
+
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [history]);
 
   useEffect(() => {
     const Token = localStorage.getItem("jwtToken");
@@ -161,6 +168,8 @@ export default function SearchPage() {
             </div>
           )}
         </div>
+        {/* 👇 여기가 추가 위치입니다 */}
+        <div ref={bottomRef} />
       </div>
 
       <div className="fixed bottom-0 left-0 w-full bg-transparent px-4 py-3 z-50">
@@ -175,16 +184,18 @@ export default function SearchPage() {
                 router.push(
                   `/searchpage?search=${encodeURIComponent(searchInput)}`
                 );
+                setSearchInput("");
               }
             }}
             className="flex-1 py-4 pr-4 outline-none border-none text-base bg-transparent "
           />
           <button
-            onClick={() =>
+            onClick={() => {
               router.push(
                 `/searchpage?search=${encodeURIComponent(searchInput)}`
-              )
-            }
+              );
+              setSearchInput("");
+            }}
             className="w-10 h-10 flex items-center justify-center bg-transparent rounded-full hover:bg-gray-300 transition"
           >
             <svg

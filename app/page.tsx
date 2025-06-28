@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import type { RootState } from "@/store";
 import { useSelector } from "react-redux";
 import IntroPreview from "./IntroPreview";
+import TooltipLink from "../components/TooltipLink/TooltipLink";
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -411,7 +412,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="w-full max-w-6xl flex items-center gap-4 mb-4">
+              <div className="w-full max-w-6xl flex items-center gap-4 mb-5">
                 <div className="flex-1 flex items-center rounded-full shadow-lg overflow-hidden bg-white/95 backdrop-blur-sm border border-white/70">
                   <div className="px-4">
                     <svg
@@ -455,106 +456,90 @@ export default function HomePage() {
                   </svg>
                 </button>
               </div>
-              <div className="w-full max-w-6xl flex justify-start items-center gap-4">
-                <button
-                  type="button"
-                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-red-200 rounded-full text-red-700 text-sm font-medium shadow hover:bg-white transition"
-                  onClick={() => setOpen((prev) => !prev)}
-                >
-                  <svg
-                    className="w-4 h-4 text-red-500"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" />
-                  </svg>
-                  지금 인기있는 법률 검색어
-                </button>
 
-                {open && (
-                  <div
-                    ref={popupRef}
-                    className="absolute left-8 bottom-[170px] mt-2 w-44 bg-white shadow-lg rounded-lg border border-gray-200 z-10"
+              <div className="w-full max-w-6xl flex justify-between items-center">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-red-200 rounded-full text-red-700 text-sm font-medium shadow hover:bg-white transition"
+                    onClick={() => setOpen((prev) => !prev)}
                   >
-                    <ul className="py-2">
-                      {items.map((item) => (
-                        <li key={item.href}>
-                          <a
-                            href={item.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-                            onClick={() => setOpen(false)} // 또는 onMouseDown 가능
-                          >
-                            {item.title}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                    <svg
+                      className="w-4 h-4 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z" />
+                    </svg>
+                    지금 인기있는 법률 검색어
+                  </button>
+
+                  {open && (
+                    <div
+                      ref={popupRef}
+                      className="absolute left-8 bottom-[170px] mt-2 w-44 bg-white shadow-lg rounded-lg border border-gray-200 z-10"
+                    >
+                      <ul className="py-2">
+                        {items.map((item) => (
+                          <li key={item.href}>
+                            <a
+                              href={item.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                              onClick={() => setOpen(false)} // 또는 onMouseDown 가능
+                            >
+                              {item.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-green-200 rounded-full text-green-700 text-sm font-medium shadow">
+                    <svg
+                      className="w-4 h-4 text-green-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                    총 검색수:
+                    <span className="font-semibold">
+                      {(count + 9900).toLocaleString()}
+                    </span>
                   </div>
-                )}
-
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-green-200 rounded-full text-green-700 text-sm font-medium shadow">
-                  <svg
-                    className="w-4 h-4 text-green-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                    />
-                  </svg>
-                  총 검색수:
-                  <span className="font-semibold">
-                    {(count + 9900).toLocaleString()}
-                  </span>
                 </div>
-                <Link
-                  href="/community"
-                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
-                >
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                <div className="flex gap-2 pr-[80px]">
+                  <TooltipLink
+                    href="/community"
+                    tooltip="창업과 일상 등 다양한 주제의 대화방"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
                   >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.94 6.06l-2.5 6.14a1 1 0 01-.54.54l-6.14 2.5 2.5-6.14a1 1 0 01.54-.54l6.14-2.5z" />
-                  </svg>
-                  커뮤니티
-                </Link>
-                <Link
-                  href="/map"
-                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
-                >
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                    커뮤니티
+                  </TooltipLink>
+                  <TooltipLink
+                    href="/map"
+                    tooltip="지역과 지도 기반 인허가 정보 확인"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
                   >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.94 6.06l-2.5 6.14a1 1 0 01-.54.54l-6.14 2.5 2.5-6.14a1 1 0 01.54-.54l6.14-2.5z" />
-                  </svg>
-                  지도
-                </Link>
-                <Link
-                  href="/mypage"
-                  className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
-                >
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                    지도
+                  </TooltipLink>
+                  <TooltipLink
+                    href="/mypage"
+                    tooltip="회원정보 수정 및 올린 글 관리"
+                    className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border border-blue-200 rounded-full text-blue-700 text-sm font-medium shadow hover:bg-white transition"
                   >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.94 6.06l-2.5 6.14a1 1 0 01-.54.54l-6.14 2.5 2.5-6.14a1 1 0 01.54-.54l6.14-2.5z" />
-                  </svg>
-                  마이페이지
-                </Link>
+                    마이페이지
+                  </TooltipLink>
+                </div>
               </div>
             </div>
           </div>
