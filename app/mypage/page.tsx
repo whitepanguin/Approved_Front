@@ -62,9 +62,7 @@ export default function MyPage() {
   const [token, setToken] = useState<string | null>(null);
 
   // 🔹 프로필 이미지 경로 처리
-  const profileSrc = user?.profile
-    ? user.profile.startsWith("http") 
-      ? user.profile
+  const profileSrc = user?.profile ? user.profile.startsWith("http") ? user.profile
       : `http://localhost:8000${user.profile}?v=${Date.now()}`
     : "/default-profile.jpg";
   // 🔹 프로필 수정 상태
