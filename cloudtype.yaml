@@ -1,0 +1,10 @@
+name: approved-nextjs-app
+app: node
+
+options:
+  install:
+    - yarn install
+  build:
+    - yarn build
+  start: yarn start
+  ports: 3000

@@ -26,6 +26,7 @@ function getStorageKey(email: string, query: string) {
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const selectedTextRef = useRef("");
   const query = searchParams.get("search") || "";
   const [results, setResults] = useState<SearchResultType | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,8 +40,71 @@ export default function SearchPage() {
   const [showLawsModal, setShowLawsModal] = useState(false);
   const [showDictModal, setShowDictModal] = useState(false);
 
+  const [selectedWord, setSelectedWord] = useState("");
+  const [dictResults, setDictResults] = useState<any[]>([]);
+  const [dictLoading, setDictLoading] = useState(false);
+  const [showWordModal, setShowWordModal] = useState(false); // ✅ 단어 뜻 모달용
+
   const { currentUser } = useSelector((state: RootState) => state.user || {});
   const email = currentUser?.email ?? "";
+
+  useEffect(() => {
+    const menu = document.getElementById("custom-context-menu");
+    // let selectedText = "";
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const selected = window.getSelection()?.toString().trim() || "";
+      selectedTextRef.current = selected;
+
+      if (selected) {
+        e.preventDefault();
+        if (menu) {
+          menu.style.display = "block";
+          menu.style.left = `${e.pageX}px`;
+          menu.style.top = `${e.pageY}px`;
+        }
+      } else {
+        if (menu) menu.style.display = "none";
+      }
+    };
+
+    const handleMenuClick = async () => {
+      const selectedText = selectedTextRef.current;
+      if (!selectedText) return;
+
+      setSelectedWord(selectedText);
+      setDictLoading(true);
+      setShowWordModal(true);
+
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/dict?q=${encodeURIComponent(selectedText)}`
+        );
+        const data = await res.json();
+        setDictResults(data.channel?.item || []);
+      } catch (e) {
+        setDictResults([]);
+      } finally {
+        setDictLoading(false);
+      }
+
+      if (menu) menu.style.display = "none";
+    };
+
+    const handleClick = () => {
+      if (menu) menu.style.display = "none";
+    };
+
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("click", handleClick);
+    if (menu) menu.addEventListener("click", handleMenuClick);
+
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("click", handleClick);
+      if (menu) menu.removeEventListener("click", handleMenuClick);
+    };
+  }, []);
 
   useEffect(() => {
     if (bottomRef.current) {
@@ -339,6 +403,45 @@ export default function SearchPage() {
           </div>
         </div>
       )}
+
+      {showWordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-[90%] max-w-md relative max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg font-bold mb-4">🔍 "{selectedWord}"의 뜻</h2>
+            <button
+              onClick={() => setShowWordModal(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+            >
+              ✖
+            </button>
+
+            {dictLoading ? (
+              <p className="text-center text-gray-500">로딩 중...</p>
+            ) : dictResults.length > 0 ? (
+              <ul className="space-y-2">
+                {dictResults.map((item, index) => (
+                  <li key={index} className="text-sm border-b pb-2">
+                    <p className="font-semibold text-blue-700">{item.word}</p>
+                    <p className="mt-1 text-gray-800">
+                      {item.sense.definition}
+                    </p>
+                    <p className="text-xs text-gray-500">{item.pos}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-center text-gray-400">정의된 뜻이 없습니다.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div
+        id="custom-context-menu"
+        className="fixed bg-white border border-gray-300 rounded shadow px-4 py-2 text-sm z-[9999] hidden cursor-pointer hover:bg-gray-100"
+      >
+        🔍 단어 검색하기
+      </div>
     </MainLayout>
   );
 }

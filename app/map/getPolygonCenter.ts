@@ -1,37 +1,67 @@
-// getPolygonCenter.ts
-
-// 이미 생성된 라벨 키 저장 (중복 방지용 Set)
 const displayedZoneKeys = new Set<string>();
 
 export function getPolygonCenter(
   path: any[],
   useZone?: string
-): kakao.maps.LatLng | null {
-  if (!path || path.length === 0) return new kakao.maps.LatLng(0, 0);
+): {
+  getLat(): number;
+  getLng(): number;
+} | null {
+  if (!path || path.length === 0) return null;
 
-  let sumLat = 0;
-  let sumLng = 0;
+  // 폴리곤의 무게중심(centroid) 계산
+  let area = 0;
+  let centroidLat = 0;
+  let centroidLng = 0;
 
-  path.forEach((point) => {
-    const lat = typeof point.getLat === "function" ? point.getLat() : point.Ma;
-    const lng = typeof point.getLng === "function" ? point.getLng() : point.La;
-    sumLat += lat;
-    sumLng += lng;
-  });
+  for (let i = 0; i < path.length; i++) {
+    const j = (i + 1) % path.length;
 
-  const centerLat = sumLat / path.length;
-  const centerLng = sumLng / path.length;
+    const lat1 =
+      typeof path[i].getLat === "function" ? path[i].getLat() : path[i].Ma;
+    const lng1 =
+      typeof path[i].getLng === "function" ? path[i].getLng() : path[i].La;
+    const lat2 =
+      typeof path[j].getLat === "function" ? path[j].getLat() : path[j].Ma;
+    const lng2 =
+      typeof path[j].getLng === "function" ? path[j].getLng() : path[j].La;
 
-  const roundedLat = centerLat.toFixed(4);
-  const roundedLng = centerLng.toFixed(4);
+    const a = lat1 * lng2 - lat2 * lng1;
+    area += a;
+    centroidLat += (lat1 + lat2) * a;
+    centroidLng += (lng1 + lng2) * a;
+  }
 
-  // 중복 방지를 위한 고유 키
+  area *= 0.5;
+  if (Math.abs(area) < 1e-10) {
+    // 면적이 너무 작으면 기존 방식 사용
+    let sumLat = 0;
+    let sumLng = 0;
+    path.forEach((point: any) => {
+      const lat =
+        typeof point.getLat === "function" ? point.getLat() : point.Ma;
+      const lng =
+        typeof point.getLng === "function" ? point.getLng() : point.La;
+      sumLat += lat;
+      sumLng += lng;
+    });
+    centroidLat = sumLat / path.length;
+    centroidLng = sumLng / path.length;
+  } else {
+    centroidLat = centroidLat / (6 * area);
+    centroidLng = centroidLng / (6 * area);
+  }
+
+  const roundedLat = centroidLat.toFixed(4);
+  const roundedLng = centroidLng.toFixed(4);
   const key = `${useZone}_${roundedLat}_${roundedLng}`;
 
-  if (displayedZoneKeys.has(key)) {
-    return null; // 이미 표시한 위치이므로 null 반환
-  } else {
-    displayedZoneKeys.add(key);
-    return new kakao.maps.LatLng(centerLat, centerLng);
-  }
+  if (displayedZoneKeys.has(key)) return null;
+  displayedZoneKeys.add(key);
+
+  // 타입 단언으로 반환
+  return new kakao.maps.LatLng(centroidLat, centroidLng) as {
+    getLat(): number;
+    getLng(): number;
+  };
 }
