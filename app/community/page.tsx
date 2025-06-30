@@ -204,7 +204,6 @@ export default function CommunityPage() {
   // 삭제 버튼 핸들러
   const handleDelete = async (postId: string) => {
     console.log("🗑️ 삭제 요청 postId:", postId); // 디버깅
-    if (!confirm("정말 삭제하시겠습니까?")) return;
 
     try {
       const res = await fetch(`http://localhost:8000/posts/${postId}`, {
@@ -241,17 +240,17 @@ export default function CommunityPage() {
   );
 
   /* 상세 모달 OPEN ─ 조회수·댓글·좋아요 갱신 */
-  // ✅ 안전하게 ID 추출하는 함수
+  // 안전하게 ID 추출하는 함수
   const openPostModal = async (post: Post) => {
     const postId = post._id || post.id;
     if (!postId) {
-      console.error("❌ post._id도 없고 post.id도 없음:", post);
+      console.error("post._id도 없고 post.id도 없음:", post);
       alert("유효하지 않은 게시글입니다.");
       return;
     }
 
     try {
-      // ✅ 1) 조회수 PATCH (하루 1회)
+      // 1) 조회수 PATCH (하루 1회)
       if (!hasViewedToday(postId)) {
         await fetch(`${API_BASE_URL}/posts/${postId}/view`, {
           method: "PATCH",
@@ -264,17 +263,17 @@ export default function CommunityPage() {
         );
       }
       console.log("ddddd", postId);
-      // ✅ 2) 댓글 불러오기
+      // 2) 댓글 불러오기
       const res = await fetch(`${API_BASE_URL}/comments/${postId}`);
       if (!res.ok) throw new Error("댓글 가져오기 실패");
       const comments: Comment[] = await res.json();
       setPostComments([...comments]);
 
-      // ✅ 3) 좋아요 상태 초기화
+      // 3) 좋아요 상태 초기화
       setLiked(false);
       setLikeCount(post.likes);
 
-      // ✅ 4) 게시글 모달 띄우기
+      // 4) 게시글 모달 띄우기
       setSelectedPost({
         ...post,
         _id: post._id ?? post.id ?? "", // ← 이후 기능을 위해 _id 세팅
@@ -349,14 +348,16 @@ export default function CommunityPage() {
 
   // 커뮤니티 페이지 검색박스 핸들
   const handleSearch = () => {
-    const filtered = posts.filter((post) =>
-      post.content.toLowerCase().includes(searchTerm.toLowerCase())
+    const filtered = posts.filter(
+      (post) =>
+        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredPosts(filtered);
     setCurrentPage(1); // 검색 시 페이지도 1로 초기화
   };
 
-  // ✅ 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
+  // 4단계: 카테고리 변경 시 해당 카테고리에 맞는 게시글만 필터링해서 상태 저장
   useEffect(() => {
     const filtered =
       currentCategory === "all"
@@ -394,25 +395,25 @@ export default function CommunityPage() {
 
       setNewComment("");
 
-      // ✅ 댓글 재조회 강제 갱신
+      // 댓글 재조회 강제 갱신
       const refreshed = await fetch(
         `${API_BASE_URL}/comments/${selectedPost._id}`
       );
       if (!refreshed.ok) throw new Error("댓글 재조회 실패");
 
       const refreshedData = await refreshed.json();
-      console.log("🔄 최신 댓글 목록:", refreshedData);
+      console.log("최신 댓글 목록:", refreshedData);
 
       setPostComments([...refreshedData]); // 💡 새로운 배열로 강제 반영
 
-      // 🔄 댓글 수 반영
+      // 댓글 수 반영
       setPosts((prev) =>
         prev.map((p) =>
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
         )
       );
     } catch (err) {
-      console.error("❌ 댓글 추가 실패:", err);
+      console.error("댓글 추가 실패:", err);
       alert("댓글 등록 중 오류가 발생했습니다.");
     }
   };
@@ -427,13 +428,13 @@ export default function CommunityPage() {
       const data: Comment[] = await res.json();
       setPostComments([...data]); // 💡 최신 댓글 목록으로 교체
     } catch (err) {
-      console.error("❌ 댓글 재조회 실패:", err);
+      console.error("댓글 재조회 실패:", err);
     }
   };
 
   useEffect(() => {
     if (selectedPost?._id) {
-      fetchComments(); // ✅ 모달 진입 시 자동 댓글 로딩
+      fetchComments(); // 모달 진입 시 자동 댓글 로딩
     }
   }, [selectedPost]);
 
@@ -449,15 +450,13 @@ export default function CommunityPage() {
       );
       const data = await res.json();
       console.log(data);
-      alert(data.message); // ✅ 알림 추가
+      alert(data.message); // 알림 추가
     } catch (err) {
-      console.error("❌ 신고 실패:", err);
+      console.error("신고 실패:", err);
       alert("신고 중 오류가 발생했습니다.");
     }
   };
   // 댓글 삭제
-  const isDeleting = useRef(false);
-
   const handleDeleteComment = async (commentId: string) => {
     const confirmDelete = window.confirm("댓글을 삭제하시겠습니까?");
     if (!confirmDelete) return;
@@ -490,22 +489,43 @@ export default function CommunityPage() {
         throw new Error(errorText);
       }
 
-      await fetchComments(); // ✅ 삭제 후 최신 목록 재조회
-
-      // 댓글 수 감소 반영
-      setPosts((prev) =>
-        prev.map((p) =>
-          p._id === selectedPost?._id
-            ? { ...p, comments: Math.max((p.comments || 1) - 1, 0) }
-            : p
-        )
+      //댓글 목록에서 해당 댓글 제거 (프론트에서 즉시 반영)
+      setPostComments((prev) =>
+        prev.filter((comment) => (comment._id ?? comment.id) !== commentId)
       );
 
-      setCommentCount((prev) => prev - 1);
+      // 모달 상단 댓글 수 갱신 (안전하게 감소)
+      setSelectedPost((prev) => {
+        if (!prev) return prev;
+        const current = typeof prev.comments === "number" ? prev.comments : 0;
+        return {
+          ...prev,
+          comments: Math.max(current - 1, 0),
+        };
+      });
+
+      // 전체 게시글 목록의 댓글 수 갱신
+      const targetPostId = selectedPost?._id || selectedPost?.id;
+
+      setPosts((prev) =>
+        prev.map((p) => {
+          if ((p._id || p.id) === targetPostId) {
+            const current = typeof p.comments === "number" ? p.comments : 0;
+            return {
+              ...p,
+              comments: Math.max(current - 1, 0),
+            };
+          }
+          return p;
+        })
+      );
+      // 내 댓글 통계 갱신
+      setCommentCount((prev) => Math.max(prev - 1, 0));
+
       alert("댓글이 삭제되었습니다.");
     } catch (err: any) {
-      console.error("❌ 댓글 삭제 실패:", err);
-      alert("❌ 삭제 실패: " + err.message);
+      console.error("댓글 삭제 실패:", err);
+      alert("삭제 실패: " + err.message);
     }
   };
 
@@ -517,7 +537,7 @@ export default function CommunityPage() {
         // console.log("카테고리 수", data);
         setCategoryCounts(data);
       } catch (err) {
-        console.error("❌ 카테고리 수 불러오기 실패:", err);
+        console.error("카테고리 수 불러오기 실패:", err);
       }
     };
 
@@ -576,7 +596,7 @@ export default function CommunityPage() {
         } else if (Array.isArray(data.posts)) {
           postArray = data.posts;
         } else {
-          console.error("❌ 예기치 않은 응답:", data);
+          console.error("예기치 않은 응답:", data);
           setPosts([]);
           return;
         }
@@ -594,14 +614,14 @@ export default function CommunityPage() {
 
         setPosts(filteredPosts);
       } catch (err) {
-        console.error("❌ 게시글 로딩 실패:", err);
+        console.error("게시글 로딩 실패:", err);
         setPosts([]);
       }
     };
 
     fetchPosts();
   }, []);
-
+  // 카테고리 필터 & 정렬
   const displayedPosts = (searchTerm ? filteredPosts : posts)
     .filter(
       (post) =>
@@ -627,26 +647,20 @@ export default function CommunityPage() {
 
   const indexOfLastPost = currentPage * postsPerPage;
   const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const currentPosts = displayedPosts.slice(indexOfFirstPost, indexOfLastPost);
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
 
   const formatDate = (input: string | Date) => {
     const date = new Date(input);
     if (isNaN(date.getTime())) return "날짜 오류";
 
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "오늘";
-    else if (diffDays === 1) return "어제";
-    else if (diffDays < 7) return `${diffDays}일 전`;
-
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
 
-    return `${year}.${month}.${day}`;
+    return `${year}.${month}.${day} ${hours}:${minutes}`;
   };
 
   const getCategoryName = (category: string) => {
@@ -659,6 +673,7 @@ export default function CommunityPage() {
     return categories[category as keyof typeof categories] || category;
   };
 
+  // 게시글 작성 / 수정
   const handleWriteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -670,6 +685,7 @@ export default function CommunityPage() {
 
     const payload = {
       userid: user.currentUser.userid,
+      email: user.currentUser.email,
       title,
       content,
       category,
@@ -680,20 +696,19 @@ export default function CommunityPage() {
       preview,
       isHot: false,
       isNotice: false,
-      email: user.currentUser.email,
     };
 
     if (editingPost) {
-      console.log("🛠 수정 모드입니다");
-      console.log("📌 editingPost 객체:", editingPost);
-      console.log("📌 editingPost._id 값:", editingPost._id);
-      console.log("📌 editingPost.id 값:", editingPost.id);
+      console.log("수정 모드입니다");
+      console.log("editingPost 객체:", editingPost);
+      console.log("editingPost._id 값:", editingPost._id);
+      console.log("editingPost.id 값:", editingPost.id);
     }
 
     try {
       let res;
 
-      // ✅ 수정인지 확인 (id 보완)
+      // 수정모드라면 -> PUT 요청
       if (editingPost) {
         const postId = editingPost._id || editingPost.id;
         if (!postId) {
@@ -718,23 +733,23 @@ export default function CommunityPage() {
         });
       }
 
-      if (!res.ok) throw new Error("❌ 글 저장 실패");
+      if (!res.ok) throw new Error("글 저장 실패");
 
       // 최신 글 목록 다시 불러오기
       const updatedPosts: Post[] = await fetch(
         "http://localhost:8000/posts"
       ).then((res) => res.json());
 
-      // ✅ 최신순 정렬 추가
+      // 최신순 정렬 추가
       const sortedPosts = updatedPosts.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 
-      console.log("📌 최신 글 목록:", sortedPosts);
+      console.log("최신 글 목록:", sortedPosts);
 
       setPosts(updatedPosts);
-      setFilteredPosts(updatedPosts); // ✅ 실시간 반영을 위한 추가 코드
+      setFilteredPosts(updatedPosts); // 실시간 반영을 위한 추가 코드
 
       await fetchStats();
       setShowWriteModal(false);
@@ -743,7 +758,7 @@ export default function CommunityPage() {
         editingPost ? "게시글이 수정되었습니다." : "게시글이 등록되었습니다."
       );
     } catch (err) {
-      console.error("❌ 서버 오류:", err);
+      console.error("서버 오류:", err);
       alert("서버에 문제가 있어 게시글을 저장하지 못했습니다.");
     }
   };
