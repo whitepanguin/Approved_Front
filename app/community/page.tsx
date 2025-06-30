@@ -406,8 +406,15 @@ export default function CommunityPage() {
 
       setPostComments([...refreshedData]); // 💡 새로운 배열로 강제 반영
 
-      // 댓글 수 반영
+      // 댓글 수 반영 (posts)
       setPosts((prev) =>
+        prev.map((p) =>
+          p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
+        )
+      );
+
+      // 🔧 댓글 수 반영 (filteredPosts도 갱신)
+      setFilteredPosts((prev) =>
         prev.map((p) =>
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
         )
@@ -507,6 +514,7 @@ export default function CommunityPage() {
       // 전체 게시글 목록의 댓글 수 갱신
       const targetPostId = selectedPost?._id || selectedPost?.id;
 
+      // posts 댓글 수 감소
       setPosts((prev) =>
         prev.map((p) => {
           if ((p._id || p.id) === targetPostId) {
@@ -519,6 +527,21 @@ export default function CommunityPage() {
           return p;
         })
       );
+
+      // 🔥 filteredPosts도 동일하게 처리 (무한 렌더링 안 생김)
+      setFilteredPosts((prev) =>
+        prev.map((p) => {
+          if ((p._id || p.id) === targetPostId) {
+            const current = typeof p.comments === "number" ? p.comments : 0;
+            return {
+              ...p,
+              comments: Math.max(current - 1, 0),
+            };
+          }
+          return p;
+        })
+      );
+
       // 내 댓글 통계 갱신
       setCommentCount((prev) => Math.max(prev - 1, 0));
 
@@ -1050,41 +1073,68 @@ export default function CommunityPage() {
 
                       {/* 페이지 번호 */}
                       <div className="flex gap-1">
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((num) => (
-                          <button
-                            key={num}
-                            onClick={() => setCurrentPage(num)}
-                            className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 ${
-                              currentPage === num
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : ""
-                            }`}
-                          >
-                            {num}
-                          </button>
-                        ))}
+                        {(() => {
+                          const maxPageButtons = 5;
+                          const currentGroup = Math.floor(
+                            (currentPage - 1) / maxPageButtons
+                          );
+                          const startPage = currentGroup * maxPageButtons + 1;
+                          const endPage = Math.min(
+                            startPage + maxPageButtons - 1,
+                            totalPages
+                          );
+
+                          return Array.from(
+                            { length: endPage - startPage + 1 },
+                            (_, i) => startPage + i
+                          ).map((num) => (
+                            <button
+                              key={num}
+                              onClick={() => setCurrentPage(num)}
+                              className={`w-8 h-8 md:w-9 md:h-9 flex items-center justify-center border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 ${
+                                currentPage === num
+                                  ? "bg-blue-600 text-white border-blue-600"
+                                  : ""
+                              }`}
+                            >
+                              {num}
+                            </button>
+                          ));
+                        })()}
                       </div>
 
-                      {/* > 다음 */}
+                      {/* > 다음 그룹으로 이동 */}
+                      {/* > 다음 페이지 */}
                       <button
                         onClick={() =>
                           setCurrentPage((prev) =>
                             Math.min(prev + 1, totalPages)
                           )
                         }
-                        disabled={currentPage === totalPages}
+                        disabled={currentPage >= totalPages}
                         className="px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         &gt;
                       </button>
 
                       {/* >> 끝 */}
+                      {/* >> 다음 그룹으로 이동 */}
                       <button
-                        onClick={() => setCurrentPage(totalPages)}
-                        disabled={currentPage === totalPages}
+                        onClick={() => {
+                          const maxPageButtons = 5;
+                          const currentGroup = Math.floor(
+                            (currentPage - 1) / maxPageButtons
+                          );
+                          const nextGroupStart =
+                            (currentGroup + 1) * maxPageButtons + 1;
+
+                          if (nextGroupStart <= totalPages) {
+                            setCurrentPage(nextGroupStart);
+                          } else {
+                            setCurrentPage(totalPages); // 범위 넘어가면 마지막 페이지로
+                          }
+                        }}
+                        disabled={currentPage >= totalPages}
                         className="px-3 py-2 border border-gray-300 rounded text-sm cursor-pointer transition-all hover:border-blue-600 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         &raquo;
@@ -1104,7 +1154,7 @@ export default function CommunityPage() {
                   <img
                     src={
                       user.currentUser?.profile
-                        ? user.currentUser.profile.startsWith("http") 
+                        ? user.currentUser.profile.startsWith("http")
                           ? user.currentUser.profile
                           : `http://localhost:8000${
                               user.currentUser.profile
