@@ -155,7 +155,7 @@ export default function SearchPage() {
         setLoading(true);
 
         const res = await fetch(
-          `http://localhost:8001/searchllm?search=${encodeURIComponent(
+          `http://localhost:8000/searchllm?search=${encodeURIComponent(
             query
           )}&email=${encodeURIComponent(email)}`
         );
