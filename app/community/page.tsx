@@ -925,13 +925,7 @@ export default function CommunityPage() {
                   </div>
 
                   <button
-                    onClick={() => {
-                      setTitle(""); // 제목 초기화
-                      setContent(""); // 내용 초기화
-                      setCategory(""); // 카테고리 초기화
-                      setEditingPost(null); // 수정 모드 해제
-                      setShowWriteModal(true); // 모달 열기
-                    }}
+                    onClick={() => setShowWriteModal(true)}
                     className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-blue-700 transition-colors ml-auto"
                   >
                     <FontAwesomeIcon icon={faPen} /> 글쓰기
@@ -1110,7 +1104,7 @@ export default function CommunityPage() {
                   <img
                     src={
                       user.currentUser?.profile
-                        ? user.currentUser.profile.startsWith("http")
+                        ? user.currentUser.profile.startsWith("http") 
                           ? user.currentUser.profile
                           : `http://localhost:8000${
                               user.currentUser.profile
@@ -1167,13 +1161,7 @@ export default function CommunityPage() {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setTitle(""); // 제목 초기화
-                  setContent(""); // 내용 초기화
-                  setCategory(""); // 카테고리 초기화
-                  setEditingPost(null); // 수정 모드 해제
-                  setShowWriteModal(true); // 모달 열기
-                }}
+                onClick={() => setShowWriteModal(true)}
                 className="w-full py-3 bg-blue-600 text-white border-none rounded-lg text-sm font-medium cursor-pointer transition-colors hover:bg-blue-700"
               >
                 <FontAwesomeIcon icon={faPen} className="mr-2" /> 글쓰기
@@ -1227,11 +1215,8 @@ export default function CommunityPage() {
               <span
                 className="close"
                 onClick={() => {
-                  setTitle("");
-                  setContent("");
-                  setCategory("");
-                  setEditingPost(null); // 수정 모드 해제
-                  setShowWriteModal(false); // 모달 닫기
+                  setShowWriteModal(false);
+                  setEditingPost(null); // 닫을 때 초기화
                 }}
               >
                 &times;

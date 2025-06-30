@@ -1409,7 +1409,7 @@ export default function AdminPage() {
                                 <img
                                   src={
                                     user.profile
-                                      ? user.profile.startsWith("http")
+                                      ? user.profile.startsWith("http") 
                                         ? user.profile
                                         : `http://localhost:8000${
                                             user.profile
