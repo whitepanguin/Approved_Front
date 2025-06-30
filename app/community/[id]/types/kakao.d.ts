@@ -1,34 +1,33 @@
 // types/kakao.d.ts
-declare namespace kakao {
-  namespace maps {
-    class LatLng {
-      constructor(lat: number, lng: number);
-    }
 
-    class Map {
-      constructor(container: HTMLElement, options: object);
-      setCenter(position: LatLng): void;
-      setLevel(level: number): void;
-    }
+declare namespace kakao.maps {
+  class LatLng {
+    constructor(lat: number, lng: number);
+    getLat(): number;
+    getLng(): number;
+  }
 
-    class Marker {
-      constructor(options: object);
-      setMap(map: Map | null): void;
-    }
+  class Polygon {
+    constructor(options: any);
+    getPath(): any;
+    setMap(map: Map | null): void;
+  }
 
-    class Circle {
-      constructor(options: object);
-      setMap(map: Map | null): void;
-    }
+  class LatLngBounds {
+    constructor();
+    extend(latlng: LatLng): void;
+    getCenter(): LatLng;
+  }
 
-    class InfoWindow {
-      constructor(options: object);
-      open(map: Map, marker: Marker): void;
-      close(): void;
-    }
+  class Map {
+    constructor(container: HTMLElement, options: any);
+    setCenter(latlng: LatLng): void;
+    setLevel(level: number): void;
+    getLevel(): number;
+  }
 
-    class Services {
-      static Geocoder: any;
-    }
+  class CustomOverlay {
+    constructor(options: any);
+    setMap(map: Map | null): void;
   }
 }
