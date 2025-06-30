@@ -51,16 +51,31 @@ export default function SearchPage() {
     // let selectedText = "";
 
     const handleContextMenu = (e: MouseEvent) => {
-      const selected = window.getSelection()?.toString().trim() || "";
-      selectedTextRef.current = selected;
+      const selected = window.getSelection();
+      const selectedText = selected?.toString().trim() || "";
+      selectedTextRef.current = selectedText;
 
-      if (selected) {
+      const menu = document.getElementById("custom-context-menu");
+
+      if (selectedText && selected?.rangeCount) {
         e.preventDefault();
-        if (menu) {
-          menu.style.display = "block";
-          menu.style.left = `${e.pageX}px`;
-          menu.style.top = `${e.pageY}px`;
-        }
+
+        setTimeout(() => {
+          const selection = window.getSelection();
+          if (!selection?.rangeCount) return;
+
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          if (rect.width === 0 && rect.height === 0) return;
+
+          const menu = document.getElementById("custom-context-menu");
+          if (menu) {
+            menu.style.left = `${rect.left}px`;
+            menu.style.top = `${rect.bottom + 6}px`;
+            menu.style.display = "block";
+          }
+        }, 0);
       } else {
         if (menu) menu.style.display = "none";
       }
@@ -140,7 +155,7 @@ export default function SearchPage() {
         setLoading(true);
 
         const res = await fetch(
-          `http://localhost:8000/searchllm?search=${encodeURIComponent(
+          `http://localhost:8001/searchllm?search=${encodeURIComponent(
             query
           )}&email=${encodeURIComponent(email)}`
         );
@@ -436,7 +451,7 @@ export default function SearchPage() {
 
       <div
         id="custom-context-menu"
-        className="fixed bg-white border border-gray-300 rounded shadow px-4 py-2 text-sm z-[9999] hidden cursor-pointer hover:bg-gray-100"
+        className="fixed z-[9999] bg-white border border-gray-300 rounded shadow px-4 py-2 text-sm z-[9999] hidden cursor-pointer hover:bg-gray-100"
       >
         🔍 단어 검색하기
       </div>
