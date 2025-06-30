@@ -32,7 +32,7 @@ export default function MainLayout({
         {introPassed && <Header onMenuClick={() => setSidebarOpen(true)} />}
         {children}
         {/* ✅ 핵심 */}
-        <FloatingDictButton />
+        {/* <FloatingDictButton /> */}
         {!hideFooter && <Footer />}
       </div>
     </>
