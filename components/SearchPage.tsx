@@ -474,3 +474,9 @@ function SpeachBubble({
     isAnswer ? "bg-[#f2fdf5]" : "bg-[#fef7ee]",
     className,
   ].join(" ");
+  return (
+    <div className={baseClass}>
+      <span dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(text) }} />
+    </div>
+  );
+}
