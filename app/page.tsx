@@ -141,9 +141,12 @@ export default function HomePage() {
   useEffect(() => {
     const getcount = async () => {
       try {
-        const res = await fetch("http://localhost:8000/searchllm/count", {
-          method: "GET",
-        });
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/searchllm/count",
+          {
+            method: "GET",
+          }
+        );
 
         const data = await res.json();
         setCount(data.count);

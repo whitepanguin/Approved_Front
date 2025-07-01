@@ -28,12 +28,15 @@ const AuthGate = () => {
       localStorage.setItem("jwtToken", jwtToken);
       const authenticate = async () => {
         try {
-          const res = await fetch("http://localhost:8000/auth/jwt", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${jwtToken}`,
-            },
-          });
+          const res = await fetch(
+            "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/auth/jwt",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${jwtToken}`,
+              },
+            }
+          );
 
           const data = await res.json();
           /*

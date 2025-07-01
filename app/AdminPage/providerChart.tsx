@@ -35,7 +35,9 @@ const PieChart: React.FC = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:8000/users/allUsers");
+        const response = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/allUsers"
+        );
         const data: User[] = await response.json();
 
         setGoogleUser(data.filter((user) => user.provider === "google").length);

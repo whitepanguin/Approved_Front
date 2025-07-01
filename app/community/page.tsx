@@ -39,7 +39,8 @@ import {
   faComment as farComment,
 } from "@fortawesome/free-regular-svg-icons";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL =
+  "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app";
 
 interface Post {
   _id: string;
@@ -103,7 +104,8 @@ export default function CommunityPage() {
   const router = useRouter();
 
   const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app";
 
   // ✅ fetchStats 함수는 최상단에 선언해도 무방합니다 (return 없음)
   const fetchStats = async () => {
@@ -142,7 +144,9 @@ export default function CommunityPage() {
   useEffect(() => {
     const fetchCommunityStats = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts/stats/community");
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/stats/community"
+        );
         const data = await res.json();
         setTotalUsers(data.totalUsers);
         setTotalPosts(data.totalPosts);
@@ -207,14 +211,17 @@ export default function CommunityPage() {
     console.log("🗑️ 삭제 요청 postId:", postId); // 디버깅
 
     try {
-      const res = await fetch(`http://localhost:8000/posts/${postId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!res.ok) throw new Error("삭제 실패");
 
       const updatedPosts: Post[] = await fetch(
-        "http://localhost:8000/posts"
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
       ).then((res) => res.json() as Promise<Post[]>);
       const sortedPosts = updatedPosts.sort(
         (a, b) =>
@@ -314,7 +321,7 @@ export default function CommunityPage() {
 
       // 게시글 좋아요 처리
       const res = await fetch(
-        `http://localhost:8000/likes/${
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/likes/${
           selectedPost._id
         }?email=${encodeURIComponent(email)}&userid=${encodeURIComponent(
           userid
@@ -451,7 +458,7 @@ export default function CommunityPage() {
     console.log("신고버튼", selectedPost?._id);
     try {
       const res = await fetch(
-        `http://localhost:8000/posts/${selectedPost?._id}/report`,
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${selectedPost?._id}/report`,
         {
           method: "PATCH",
         }
@@ -556,7 +563,9 @@ export default function CommunityPage() {
   useEffect(() => {
     const fetchCategoryCounts = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts/category-counts");
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/category-counts"
+        );
         const data = await res.json();
         // console.log("카테고리 수", data);
         setCategoryCounts(data);
@@ -610,7 +619,9 @@ export default function CommunityPage() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts");
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
+        );
         const data = await res.json();
 
         let postArray: Post[] = [];
@@ -740,28 +751,34 @@ export default function CommunityPage() {
           return;
         }
 
-        res = await fetch(`http://localhost:8000/posts/${postId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+        res = await fetch(
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          }
+        );
       } else {
-        res = await fetch("http://localhost:8000/posts", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+        res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          }
+        );
       }
 
       if (!res.ok) throw new Error("글 저장 실패");
 
       // 최신 글 목록 다시 불러오기
       const updatedPosts: Post[] = await fetch(
-        "http://localhost:8000/posts"
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
       ).then((res) => res.json());
 
       // 최신순 정렬 추가
@@ -1155,7 +1172,8 @@ export default function CommunityPage() {
                   <img
                     src={
                       user.currentUser?.profile ? user.currentUser.profile.startsWith("http") ? user.currentUser.profile.replace("http://", "https://")
-                          : `https://localhost:8000${
+                          : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
+
                               user.currentUser.profile
                             }?v=${Date.now()}`
                         : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
