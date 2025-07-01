@@ -1451,23 +1451,20 @@ export default function AdminPage() {
                             <div className="flex items-center gap-3">
                               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
                                 <img
-                                  src={
-                                    user.profile?.startsWith("http")
-                                      ? user.profile.replace(
-                                          "http://",
-                                          "https://"
-                                        ) // ⭐ 핵심
-                                      : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
-                                          user.profile
-                                        }?v=${Date.now()}`
-                                  }
-                                  alt="프로필 이미지"
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src =
-                                      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
-                                  }}
-                                />
+
+  src={
+    user.profile?.startsWith("http")
+      ? user.profile.replace("http://", "https://") // ⭐ 핵심
+      : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${user.profile}?v=${Date.now()}`
+  }
+  alt="프로필 이미지"
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    e.currentTarget.src =
+      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+  }}
+/>
+
                               </div>
 
                               <div>

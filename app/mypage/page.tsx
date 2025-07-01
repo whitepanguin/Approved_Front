@@ -63,12 +63,10 @@ export default function MyPage() {
   const [token, setToken] = useState<string | null>(null);
 
   // 🔹 프로필 이미지 경로 처리
-  const profileSrc = user?.profile
-    ? user.profile.startsWith("http")
-      ? user.profile.replace("http://", "https://")
-      : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
-          user.profile
-        }?v=${Date.now()}`
+
+  const profileSrc = user?.profile ? user.profile.startsWith("http") ? user.profile.replace("http://", "https://")
+      : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${user.profile}?v=${Date.now()}`
+
     : "/default-profile.jpg";
   // 🔹 프로필 수정 상태
   const [profileData, setProfileData] = useState({
@@ -76,6 +74,7 @@ export default function MyPage() {
     name: "",
     email: "",
     phone: "",
+
     businessType: "",
     joinDate: "",
   });
@@ -1066,185 +1065,7 @@ export default function MyPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      사업 분야
-                    </label>
-                    <select
-                      name="businessType"
-                      value={profileData.businessType || ""}
-                      onChange={handleInputChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                    >
-                      <option value=""></option>
-                      <option value="1차 금속 제조업">1차 금속 제조업</option>
-                      <option value="가구 내 고용활동">가구 내 고용활동</option>
-                      <option value="가구 제조업">가구 제조업</option>
-                      <option value="가죽, 가방 및 신발 제조업">
-                        가죽, 가방 및 신발 제조업
-                      </option>
-                      <option value="개인 및 소비용품 수리업">
-                        개인 및 소비용품 수리업
-                      </option>
-                      <option value="건축 기술, 엔지니어링 및 기타 과학기술 서비스업">
-                        건축 기술, 엔지니어링 및 기타 과학기술 서비스업
-                      </option>
-                      <option value="고무 및 플라스틱제품 제조업">
-                        고무 및 플라스틱제품 제조업
-                      </option>
-                      <option value="공공 행정, 국방 및 사회보장 행정">
-                        공공 행정, 국방 및 사회보장 행정
-                      </option>
-                      <option value="광업 지원 서비스업">
-                        광업 지원 서비스업
-                      </option>
-                      <option value="교육 서비스업">교육 서비스업</option>
-                      <option value="국제 및 외국기관">국제 및 외국기관</option>
-                      <option value="금속 가공제품 제조업; 기계 및 가구 제외">
-                        금속 가공제품 제조업; 기계 및 가구 제외
-                      </option>
-                      <option value="금속 광업">금속 광업</option>
-                      <option value="금융 및 보험관련 서비스업">
-                        금융 및 보험관련 서비스업
-                      </option>
-                      <option value="금융업">금융업</option>
-                      <option value="기타 개인 서비스업">
-                        기타 개인 서비스업
-                      </option>
-                      <option value="기타 기계 및 장비 제조업">
-                        기타 기계 및 장비 제조업
-                      </option>
-                      <option value="기타 운송장비 제조업">
-                        기타 운송장비 제조업
-                      </option>
-                      <option value="기타 전문, 과학 및 기술 서비스업">
-                        기타 전문, 과학 및 기술 서비스업
-                      </option>
-                      <option value="기타 제품 제조업">기타 제품 제조업</option>
-                      <option value="농업">농업</option>
-                      <option value="담배 제조업">담배 제조업</option>
-                      <option value="도매 및 상품 중개업">
-                        도매 및 상품 중개업
-                      </option>
-                      <option value="목재 및 나무제품 제조업; 가구 제외">
-                        목재 및 나무제품 제조업; 가구 제외
-                      </option>
-                      <option value="방송업">방송업</option>
-                      <option value="보건업">보건업</option>
-                      <option value="보험 및 연금업">보험 및 연금업</option>
-                      <option value="부동산업">부동산업</option>
-                      <option value="비금속 광물제품 제조업">
-                        비금속 광물제품 제조업
-                      </option>
-                      <option value="비금속광물 광업; 연료용 제외">
-                        비금속광물 광업; 연료용 제외
-                      </option>
-                      <option value="사업 지원 서비스업">
-                        사업 지원 서비스업
-                      </option>
-                      <option value="사업시설 관리 및 조경 서비스업">
-                        사업시설 관리 및 조경 서비스업
-                      </option>
-                      <option value="사업지원서비스업">사업지원서비스업</option>
-                      <option value="사회복지 서비스업">
-                        사회복지 서비스업
-                      </option>
-                      <option value="산업용 기계 및 장비 수리업">
-                        산업용 기계 및 장비 수리업
-                      </option>
-                      <option value="석탄, 원유 및 천연가스 광업">
-                        석탄, 원유 및 천연가스 광업
-                      </option>
-                      <option value="섬유제품 제조업; 의복 제외">
-                        섬유제품 제조업; 의복 제외
-                      </option>
-                      <option value="소매업; 자동차 제외">
-                        소매업; 자동차 제외
-                      </option>
-                      <option value="수도업">수도업</option>
-                      <option value="수상 운송업">수상 운송업</option>
-                      <option value="숙박업">숙박업</option>
-                      <option value="스포츠 및 오락관련 서비스업">
-                        스포츠 및 오락관련 서비스업
-                      </option>
-                      <option value="식료품 제조업">식료품 제조업</option>
-                      <option value="어업">어업</option>
-                      <option value="연구개발업">연구개발업</option>
-                      <option value="영상ㆍ오디오 기록물 제작 및 배급업">
-                        영상ㆍ오디오 기록물 제작 및 배급업
-                      </option>
-                      <option value="우편 및 통신업">우편 및 통신업</option>
-                      <option value="육상 운송 및 파이프라인 운송업">
-                        육상 운송 및 파이프라인 운송업
-                      </option>
-                      <option value="음료 제조업">음료 제조업</option>
-                      <option value="음식점 및 주점업">음식점 및 주점업</option>
-                      <option value="의료, 정밀, 광학 기기 및 시계 제조업">
-                        의료, 정밀, 광학 기기 및 시계 제조업
-                      </option>
-                      <option value="의료용 물질 및 의약품 제조업">
-                        의료용 물질 및 의약품 제조업
-                      </option>
-                      <option value="의복, 의복 액세서리 및 모피제품 제조업">
-                        의복, 의복 액세서리 및 모피제품 제조업
-                      </option>
-                      <option value="인쇄 및 기록매체 복제업">
-                        인쇄 및 기록매체 복제업
-                      </option>
-                      <option value="인적용역">인적용역</option>
-                      <option value="임대업; 부동산 제외">
-                        임대업; 부동산 제외
-                      </option>
-                      <option value="임업">임업</option>
-                      <option value="자동차 및 부품 판매업">
-                        자동차 및 부품 판매업
-                      </option>
-                      <option value="자동차 및 트레일러 제조업">
-                        자동차 및 트레일러 제조업
-                      </option>
-                      <option value="전기, 가스, 증기 및 공기 조절 공급업">
-                        전기, 가스, 증기 및 공기 조절 공급업
-                      </option>
-                      <option value="전기장비 제조업">전기장비 제조업</option>
-                      <option value="전문 서비스업">전문 서비스업</option>
-                      <option value="전문직별 공사업">전문직별 공사업</option>
-                      <option value="전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업">
-                        전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업
-                      </option>
-                      <option value="정보서비스업">정보서비스업</option>
-                      <option value="종합 건설업">종합 건설업</option>
-                      <option value="창고 및 운송관련 서비스업">
-                        창고 및 운송관련 서비스업
-                      </option>
-                      <option value="창작, 예술 및 여가관련 서비스업">
-                        창작, 예술 및 여가관련 서비스업
-                      </option>
-                      <option value="출판업">출판업</option>
-                      <option value="컴퓨터 프로그래밍, 시스템 통합 및 관리업">
-                        컴퓨터 프로그래밍, 시스템 통합 및 관리업
-                      </option>
-                      <option value="코크스, 연탄 및 석유정제품 제조업">
-                        코크스, 연탄 및 석유정제품 제조업
-                      </option>
-                      <option value="펄프, 종이 및 종이제품 제조업">
-                        펄프, 종이 및 종이제품 제조업
-                      </option>
-                      <option value="폐기물 수집, 운반, 처리 및 원료 재생업">
-                        폐기물 수집, 운반, 처리 및 원료 재생업
-                      </option>
-                      <option value="하수, 폐수 및 분뇨 처리업">
-                        하수, 폐수 및 분뇨 처리업
-                      </option>
-                      <option value="항공 운송업">항공 운송업</option>
-                      <option value="협회 및 단체">협회 및 단체</option>
-                      <option value="화학 물질 및 화학제품 제조업; 의약품 제외">
-                        화학 물질 및 화학제품 제조업; 의약품 제외
-                      </option>
-                      <option value="환경 정화 및 복원업">
-                        환경 정화 및 복원업
-                      </option>
-                    </select>
-                  </div>
+                  
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-11"></label>

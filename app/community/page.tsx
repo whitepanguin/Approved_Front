@@ -1171,13 +1171,9 @@ export default function CommunityPage() {
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
                   <img
                     src={
-                      user.currentUser?.profile
-                        ? user.currentUser.profile.startsWith("http")
-                          ? user.currentUser.profile.replace(
-                              "http://",
-                              "https://"
-                            )
+                      user.currentUser?.profile ? user.currentUser.profile.startsWith("http") ? user.currentUser.profile.replace("http://", "https://")
                           : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
+
                               user.currentUser.profile
                             }?v=${Date.now()}`
                         : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
