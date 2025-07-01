@@ -1155,7 +1155,7 @@ export default function CommunityPage() {
                   <img
                     src={
                       user.currentUser?.profile ? user.currentUser.profile.startsWith("http") ? user.currentUser.profile.replace("http://", "https://")
-                          : `http://localhost:8000${
+                          : `https://localhost:8000${
                               user.currentUser.profile
                             }?v=${Date.now()}`
                         : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"

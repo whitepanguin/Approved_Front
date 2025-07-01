@@ -1411,7 +1411,7 @@ export default function AdminPage() {
   src={
     user.profile?.startsWith("http")
       ? user.profile.replace("http://", "https://") // ⭐ 핵심
-      : `http://localhost:8000${user.profile}?v=${Date.now()}`
+      : `https://localhost:8000${user.profile}?v=${Date.now()}`
   }
   alt="프로필 이미지"
   className="w-full h-full object-cover"
