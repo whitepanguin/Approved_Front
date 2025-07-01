@@ -460,7 +460,7 @@ export default function SearchableBusinessMap() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-4">
         <div className="container mx-auto max-w-7xl px-4 py-6">
           <Script
-            src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=4d3887a56c2ede339cfb32ff3f73a8b6&autoload=false&libraries=services"
+            src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d&autoload=false&libraries=services"
             strategy="beforeInteractive"
           />
           <style jsx>{`

@@ -13,7 +13,7 @@ const FloatingDictButton = () => {
 
     setLoading(true);
     try {
-      const url = `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/api/dict?q=${encodeURIComponent(
+      const url = `http://localhost:8000/api/dict?q=${encodeURIComponent(
         keyword
       )}`;
 

@@ -31,39 +31,33 @@ export default function LoginPage() {
   const locationGoogle = () => {
     localStorage.removeItem("jwtToken");
     console.log("구글 버튼");
-    window.location.href =
-      "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/oauth2/authorization/google";
+    window.location.href = "http://localhost:8000/oauth2/authorization/google";
   };
   const locationKakao = () => {
     localStorage.removeItem("jwtToken");
     console.log("카카오 버튼");
-    window.location.href =
-      "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/oauth2/authorization/kakao";
+    window.location.href = "http://localhost:8000/oauth2/authorization/kakao";
   };
   const locationNaver = () => {
     localStorage.removeItem("jwtToken");
     console.log("네이버 버튼");
-    window.location.href =
-      "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/oauth2/authorization/naver";
+    window.location.href = "http://localhost:8000/oauth2/authorization/naver";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const response = await fetch(
-        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/auth/local",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-          }),
-        }
-      );
+      const response = await fetch("http://localhost:8000/auth/local", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
       const data = await response.json();
       console.log(data);

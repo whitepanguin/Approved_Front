@@ -91,9 +91,7 @@ export default function SearchPage() {
 
       try {
         const res = await fetch(
-          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/api/dict?q=${encodeURIComponent(
-            selectedText
-          )}`
+          `http://localhost:8000/api/dict?q=${encodeURIComponent(selectedText)}`
         );
         const data = await res.json();
         setDictResults(data.channel?.item || []);
@@ -157,7 +155,7 @@ export default function SearchPage() {
         setLoading(true);
 
         const res = await fetch(
-          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/searchllm?search=${encodeURIComponent(
+          `http://localhost:8000/searchllm?search=${encodeURIComponent(
             query
           )}&email=${encodeURIComponent(email)}`
         );

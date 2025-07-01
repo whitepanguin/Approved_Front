@@ -70,16 +70,13 @@ export default function SignupPage() {
     };
 
     try {
-      const res = await fetch(
-        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch("http://localhost:8000/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const data = await res.json(); // 항상 JSON 파싱 먼저 시도
 
