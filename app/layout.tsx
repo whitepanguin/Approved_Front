@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import AuthGate from "./AuthGate";
+import { Suspense } from "react"; // 👈 추가
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,7 +16,6 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  
 }: {
   children: React.ReactNode;
 }) {
@@ -23,7 +23,11 @@ export default function RootLayout({
     <html lang="ko" className="scroll-smooth">
       <body className={`${inter.className} bg-white text-gray-900`}>
         <Providers>
-          <AuthGate />
+          <Suspense fallback={null}>
+            {" "}
+            {/* ✅ 핵심 변경 사항 */}
+            <AuthGate />
+          </Suspense>
           {children}
         </Providers>
       </body>
