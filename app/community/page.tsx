@@ -1153,13 +1153,7 @@ export default function CommunityPage() {
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
                   <img
                     src={
-<<<<<<< Updated upstream
-                      user.currentUser?.profile
-                        ? user.currentUser.profile.startsWith("http")
-                          ? user.currentUser.profile
-=======
-                      user.currentUser?.profile ? user.currentUser.profile.startsWith("http") ? user.currentUser.profile
->>>>>>> Stashed changes
+                      user.currentUser?.profile ? user.currentUser.profile.startsWith("http") ? user.currentUser.profile.replace("http://", "https://")
                           : `http://localhost:8000${
                               user.currentUser.profile
                             }?v=${Date.now()}`
