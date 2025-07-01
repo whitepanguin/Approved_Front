@@ -258,19 +258,11 @@ export default function CommunityPage() {
     }
 
     try {
-      // 1) 조회수 PATCH (하루 1회)
-      if (!hasViewedToday(postId)) {
-        await fetch(`${API_BASE_URL}/posts/${postId}/view`, {
-          method: "PATCH",
-        });
-        markViewedToday(postId);
-        setPosts((prev) =>
-          prev.map((p) =>
-            (p._id || p.id) === postId ? { ...p, views: p.views + 1 } : p
-          )
-        );
-      }
-      console.log("ddddd", postId);
+      // 1) 게시글 조회수 증가 (백엔드에는 반영됨)
+      await fetch(`${API_BASE_URL}/posts/${postId}/view`, {
+        method: "PATCH",
+      });
+
       // 2) 댓글 불러오기
       const res = await fetch(`${API_BASE_URL}/comments/${postId}`);
       if (!res.ok) throw new Error("댓글 가져오기 실패");
@@ -281,11 +273,12 @@ export default function CommunityPage() {
       setLiked(false);
       setLikeCount(post.likes);
 
-      // 4) 게시글 모달 띄우기
+      // 4) 모달용 게시글 세팅 (여기에서만 조회수 1 올림)
       setSelectedPost({
         ...post,
-        _id: post._id ?? post.id ?? "", // ← 이후 기능을 위해 _id 세팅
+        _id: post._id ?? post.id ?? "",
         content: post.content ?? post.preview,
+        views: post.views + 1, // 💡 여기서만 증가
       });
       setShowPostModal(true);
     } catch (err) {
@@ -1171,9 +1164,13 @@ export default function CommunityPage() {
                 <div className="relative w-20 h-20 rounded-full overflow-hidden bg-gray-100">
                   <img
                     src={
-                      user.currentUser?.profile ? user.currentUser.profile.startsWith("http") ? user.currentUser.profile.replace("http://", "https://")
-                          : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
-
+                      user.currentUser?.profile
+                        ? user.currentUser.profile.startsWith("http")
+                          ? user.currentUser.profile.replace(
+                              "http://",
+                              "https://"
+                            )
+                          : `http://localhost:8000${
                               user.currentUser.profile
                             }?v=${Date.now()}`
                         : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png"
