@@ -63,8 +63,12 @@ export default function MyPage() {
   const [token, setToken] = useState<string | null>(null);
 
   // 🔹 프로필 이미지 경로 처리
-  const profileSrc = user?.profile ? user.profile.startsWith("http") ? user.profile.replace("http://", "https://")
-      : `http://localhost:8000${user.profile}?v=${Date.now()}`
+  const profileSrc = user?.profile
+    ? user.profile.startsWith("http")
+      ? user.profile.replace("http://", "https://")
+      : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
+          user.profile
+        }?v=${Date.now()}`
     : "/default-profile.jpg";
   // 🔹 프로필 수정 상태
   const [profileData, setProfileData] = useState({
@@ -165,7 +169,7 @@ export default function MyPage() {
 
       try {
         const res = await fetch(
-          `http://localhost:8000/searchllm/email/${encodeURIComponent(
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/searchllm/email/${encodeURIComponent(
             user.email
           )}`,
           {
@@ -206,19 +210,23 @@ export default function MyPage() {
         const [postRes, commentRes, likeRes] = await Promise.all([
           // 🔵 email 기준으로 변경
           fetch(
-            `http://localhost:8000/posts/email/${encodeURIComponent(email)}`,
+            `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/email/${encodeURIComponent(
+              email
+            )}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           ),
           fetch(
-            `http://localhost:8000/comments/email/${encodeURIComponent(email)}`,
+            `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/comments/email/${encodeURIComponent(
+              email
+            )}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           ),
           fetch(
-            `http://localhost:8000/likes/email/${encodeURIComponent(
+            `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/likes/email/${encodeURIComponent(
               email
             )}/posts`,
             {
@@ -279,13 +287,16 @@ export default function MyPage() {
     // 1) 조회수 PATCH (하루 1회)
     try {
       if (!hasViewedToday(postId)) {
-        await fetch(`http://localhost:8000/posts/${postId}/view`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await fetch(
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}/view`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         markViewedToday(postId);
 
         // 리스트 카드 +1
@@ -306,12 +317,15 @@ export default function MyPage() {
 
     // 2) 댓글 불러오기
     try {
-      const r = await fetch(`http://localhost:8000/comments/${postId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const r = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/comments/${postId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setComments(await r.json());
     } catch (err) {
@@ -321,19 +335,22 @@ export default function MyPage() {
 
     // 3) 좋아요 상태 및 개수 불러오기
     try {
-      const r = await fetch(`http://localhost:8000/posts/${postId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const r = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const p = await r.json();
 
       const nowLikeCnt = typeof p.likes === "number" ? p.likes : 0;
 
       const likeRes = await fetch(
-        `http://localhost:8000/likes/email/${encodeURIComponent(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/likes/email/${encodeURIComponent(
           user.email
         )}/posts`,
         {
@@ -385,14 +402,17 @@ export default function MyPage() {
 
     try {
       /* fetch 요청 */
-      const res = await fetch("http://localhost:8000/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
       /* 에러 판정 */
       const resultText = await res.clone().text();
@@ -425,7 +445,7 @@ export default function MyPage() {
     if (!post) {
       try {
         const r = await fetch(
-          `http://localhost:8000/posts/search?title=` +
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/search?title=` +
             encodeURIComponent(comment.postTitle),
           {
             headers: {
@@ -469,7 +489,7 @@ export default function MyPage() {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/likes/${postId}?userid=${encodeURIComponent(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/likes/${postId}?userid=${encodeURIComponent(
           userid
         )}&email=${encodeURIComponent(user.email)}`,
         {
@@ -485,7 +505,7 @@ export default function MyPage() {
       const result = await res.text(); // "liked" or "unliked"
 
       const countRes = await fetch(
-        `http://localhost:8000/posts/${postId}/like-count`
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}/like-count`
       );
       const { likeCount } = await countRes.json();
 
@@ -505,20 +525,23 @@ export default function MyPage() {
   const handleAddComment = async (content: string) => {
     if (!content.trim()) return;
     try {
-      const res = await fetch(`http://localhost:8000/comments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/comments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
 
-        body: JSON.stringify({
-          postId: selectedPost?._id,
-          userid: user?.userid,
-          email: user?.email,
-          content,
-        }),
-      });
+          body: JSON.stringify({
+            postId: selectedPost?._id,
+            userid: user?.userid,
+            email: user?.email,
+            content,
+          }),
+        }
+      );
       if (!res.ok) throw new Error("댓글 등록 실패");
       const saved = await res.json();
       setComments((prev) => [...prev, saved]); // 새 댓글 목록에 추가
@@ -551,7 +574,7 @@ export default function MyPage() {
   //     const token = localStorage.getItem("jwtToken");
   //     if (!token) return;
 
-  //     const res = await fetch(`http://localhost:8000/mypage/profile`, {
+  //     const res = await fetch(`https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/mypage/profile`, {
   //       headers: {
   //         Authorization: `Bearer ${token}`,
   //       },
@@ -579,7 +602,7 @@ export default function MyPage() {
 
       try {
         const res = await fetch(
-          `http://localhost:8000/likes/email/${encodeURIComponent(
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/likes/email/${encodeURIComponent(
             email
           )}/posts`,
           {
@@ -622,7 +645,7 @@ export default function MyPage() {
       console.log(user.email);
       try {
         const res = await fetch(
-          `http://localhost:8000/comments/email/${user.email}`,
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/comments/email/${user.email}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -658,7 +681,9 @@ export default function MyPage() {
 
       try {
         const res = await fetch(
-          `http://localhost:8000/posts/email/${encodeURIComponent(email)}`,
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/email/${encodeURIComponent(
+            email
+          )}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -687,14 +712,17 @@ export default function MyPage() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/users/remove`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: user?.email }),
-      });
+      const res = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/remove`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: user?.email }),
+        }
+      );
 
       const result = await res.json();
 
@@ -740,13 +768,16 @@ export default function MyPage() {
     formData.append("email", user?.email || "");
 
     try {
-      const res = await fetch(`http://localhost:8000/users/picture`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const res = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/picture`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -776,11 +807,14 @@ export default function MyPage() {
 
     const fetchUserProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/users/getUserInfo`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await fetch(
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/getUserInfo`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         const data = await res.json();
         console.log("🔎 getUserInfo 응답:", data);
@@ -805,7 +839,7 @@ export default function MyPage() {
   const handleCheckDuplicate = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8000/users/check-duplicate?userid=${profileData.userid}`
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/check-duplicate?userid=${profileData.userid}`
       );
 
       console.log("📡 중복확인 응답 상태:", res.status);
@@ -868,14 +902,17 @@ export default function MyPage() {
 
     try {
       // 4) fetch 요청
-      const res = await fetch(`http://localhost:8000/users/modify`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(bodyToSend),
-      });
+      const res = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/modify`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bodyToSend),
+        }
+      );
 
       // 5) 응답 상태 및 헤더 로깅
       console.log("response.status:", res.status);

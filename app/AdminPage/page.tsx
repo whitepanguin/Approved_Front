@@ -37,15 +37,18 @@ export default function AdminPage() {
     try {
       const updatedReported = !current;
 
-      const response = await fetch(`http://localhost:8000/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          reported: updatedReported,
-        }),
-      });
+      const response = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            reported: updatedReported,
+          }),
+        }
+      );
 
       if (response.ok) {
         setAllPosts((prev) =>
@@ -91,7 +94,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     const fetchAllPosts = async () => {
-      const response = await fetch("http://localhost:8000/posts");
+      const response = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
+      );
       const data = await response.json();
       console.log("불만 게시글: ", data);
       const devOnly = data.filter((post: Post) => post.category === "dev");
@@ -105,7 +110,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     const fetchQnas = async () => {
-      const response = await fetch("http://localhost:8000/posts");
+      const response = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
+      );
       const data = await response.json();
 
       const yetOnly = data.filter(
@@ -121,7 +128,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     const fetchReportedNum = async () => {
-      const response = await fetch("http://localhost:8000/posts");
+      const response = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
+      );
       const data = await response.json();
 
       const reportedNums = data.filter((post: Post) => post.reported === true);
@@ -133,9 +142,12 @@ export default function AdminPage() {
   useEffect(() => {
     const getUsercount = async () => {
       try {
-        const res = await fetch("http://localhost:8000/users/UserCount", {
-          method: "GET",
-        });
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/UserCount",
+          {
+            method: "GET",
+          }
+        );
 
         const Usercountdata = await res.json();
         setuserCount(Usercountdata.count);
@@ -151,7 +163,9 @@ export default function AdminPage() {
   useEffect(() => {
     const getPostcount = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts");
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
+        );
         const data = await res.json();
 
         const filtered = data.filter((post: Post) => post.category !== "dev");
@@ -170,7 +184,7 @@ export default function AdminPage() {
         try {
           // console.log("여기여기!!", selectedQna.id);
           const res = await fetch(
-            `http://localhost:8000/comments/${selectedQna.id}`
+            `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/comments/${selectedQna.id}`
           );
           const data = await res.json();
           // console.log(data[0].content);
@@ -188,9 +202,12 @@ export default function AdminPage() {
   useEffect(() => {
     const getReportcount = async () => {
       try {
-        const res = await fetch("http://localhost:8000/posts/reported/count", {
-          method: "GET",
-        });
+        const res = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/reported/count",
+          {
+            method: "GET",
+          }
+        );
 
         const Reportcountdata = await res.json();
         setreportCount(Reportcountdata.count);
@@ -234,9 +251,12 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchAllPosts = async () => {
       try {
-        const response = await fetch("http://localhost:8000/posts", {
-          method: "GET",
-        });
+        const response = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts",
+          {
+            method: "GET",
+          }
+        );
 
         if (!response.ok) {
           throw new Error("서버 응답 오류");
@@ -355,7 +375,9 @@ export default function AdminPage() {
     return user?.profile
       ? user.profile.startsWith("http")
         ? user.profile
-        : `http://localhost:8000${user.profile}?v=${Date.now()}`
+        : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
+            user.profile
+          }?v=${Date.now()}`
       : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
   };
 
@@ -388,9 +410,12 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const response = await fetch("http://localhost:8000/users/allUsers", {
-          method: "GET",
-        });
+        const response = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/allUsers",
+          {
+            method: "GET",
+          }
+        );
 
         if (!response.ok) {
           throw new Error("서버 응답 오류");
@@ -409,9 +434,12 @@ export default function AdminPage() {
 
   const handleDelete = async (postId: String) => {
     try {
-      const response = await fetch(`http://localhost:8000/posts/${postId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (response.ok) {
         console.log("삭제 성공!");
@@ -432,13 +460,16 @@ export default function AdminPage() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch("http://localhost:8000/users/remove", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
+      const response = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/remove",
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
 
       const data = await response.json();
 
@@ -467,30 +498,36 @@ export default function AdminPage() {
       // console.log("qnaid", qnaId);
       // console.log("reply", reply);
       // console.log("userid??", currentUser?.userid);
-      const commentRes = await fetch("http://localhost:8000/comments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          postId: qnaId,
-          content: reply,
-          author: currentUser?.userid || "관리자",
-        }),
-      });
+      const commentRes = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/comments",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            postId: qnaId,
+            content: reply,
+            author: currentUser?.userid || "관리자",
+          }),
+        }
+      );
 
       if (!commentRes.ok) throw new Error("댓글 등록 실패");
 
       // 2. QnA 상태를 '답변완료'로 백엔드에 저장
-      const statusRes = await fetch(`http://localhost:8000/posts/${qnaId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: "답변완료",
-        }),
-      });
+      const statusRes = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${qnaId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "답변완료",
+          }),
+        }
+      );
 
       if (!statusRes.ok) throw new Error("상태 변경 실패");
 
@@ -515,13 +552,16 @@ export default function AdminPage() {
   };
   const handleSave = async (user: any) => {
     try {
-      const response = await fetch("http://localhost:8000/users/modify", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ ...user, userid: editedName }),
-      });
+      const response = await fetch(
+        "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/users/modify",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...user, userid: editedName }),
+        }
+      );
 
       const data = await response.json();
 
@@ -565,13 +605,16 @@ export default function AdminPage() {
 
       console.log("보내는 데이터:", updatedPost);
 
-      const response = await fetch(`http://localhost:8000/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedPost),
-      });
+      const response = await fetch(
+        `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${postId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedPost),
+        }
+      );
 
       const resText = await response.text();
       console.log("서버 응답:", resText);
@@ -1408,20 +1451,23 @@ export default function AdminPage() {
                             <div className="flex items-center gap-3">
                               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
                                 <img
-  src={
-    user.profile?.startsWith("http")
-      ? user.profile.replace("http://", "https://") // ⭐ 핵심
-      : `http://localhost:8000${user.profile}?v=${Date.now()}`
-  }
-  alt="프로필 이미지"
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    e.currentTarget.src =
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
-  }}
-/>
-
-
+                                  src={
+                                    user.profile?.startsWith("http")
+                                      ? user.profile.replace(
+                                          "http://",
+                                          "https://"
+                                        ) // ⭐ 핵심
+                                      : `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app${
+                                          user.profile
+                                        }?v=${Date.now()}`
+                                  }
+                                  alt="프로필 이미지"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-icon-fAPihCUVCxAAcBXblivU6MKQ8c0xIs.png";
+                                  }}
+                                />
                               </div>
 
                               <div>

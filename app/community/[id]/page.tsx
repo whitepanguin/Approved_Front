@@ -21,7 +21,9 @@ export default function PostDetail() {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/posts/${id}`);
+        const res = await fetch(
+          `https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts/${id}`
+        );
         const data = await res.json();
         setPost(data);
       } catch (err) {

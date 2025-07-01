@@ -38,7 +38,9 @@ const CategoryChart: React.FC = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch("http://localhost:8000/posts");
+        const response = await fetch(
+          "https://port-0-approved-springback-m5mcnm8ebdc80276.sel4.cloudtype.app/posts"
+        );
         const data: Post[] = await response.json();
 
         setInfo(data.filter((post) => post.category === "info").length);
