@@ -1,13 +1,8 @@
 "use client"; // 🔥 App Router에서는 필수
+export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState } from "react";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Title
-} from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 
 // Chart.js 요소 등록
@@ -30,7 +25,6 @@ interface User {
   likedPosts: string[];
   isReported: boolean;
 }
-
 
 const PieChart: React.FC = () => {
   const [googleUser, setGoogleUser] = useState<number>(0);
@@ -63,9 +57,9 @@ const PieChart: React.FC = () => {
         label: "가입자 수",
         data: [googleUser, localUser, kakaoUser, NaverUser], // 숫자만 넣어야 합니다
         backgroundColor: ["#F38181", "#EAFFD0", "#FCE38A", "#95E1D3"],
-        borderWidth: 1
-      }
-    ]
+        borderWidth: 1,
+      },
+    ],
   };
 
   const options = {
@@ -74,9 +68,9 @@ const PieChart: React.FC = () => {
       legend: { position: "top" as const },
       title: {
         display: true,
-        text: "가입 플랫폼별 사용자 분포"
-      }
-    }
+        text: "가입 플랫폼별 사용자 분포",
+      },
+    },
   };
 
   return <Doughnut data={data} options={options} />;

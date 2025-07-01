@@ -20,6 +20,7 @@ const nextConfig = {
     // ✅ 이미지 최적화 비활성화 (Cloudtype 환경 대비)
     unoptimized: true,
   },
+  output: "standalone",
 
   webpack: (config) => {
     // ✅ 절대경로 alias 설정

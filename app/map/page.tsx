@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = "force-dynamic";
+
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import * as XLSX from "xlsx";
