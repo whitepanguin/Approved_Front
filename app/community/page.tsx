@@ -105,7 +105,7 @@ export default function CommunityPage() {
   const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // ✅ fetchStats 함수는 최상단에 선언해도 무방합니다 (return 없음)
+  // fetchStats 함수는 최상단에 선언해도 무방합니다 (return 없음)
   const fetchStats = async () => {
     const token =
       localStorage.getItem("jwtToken") || sessionStorage.getItem("jwtToken");
@@ -129,13 +129,13 @@ export default function CommunityPage() {
       }
 
       const data = await res.json();
-      console.log("✅ 통계 데이터:", data);
+      console.log("통계 데이터:", data);
 
       setPostCount(data.postCount);
       setCommentCount(data.commentCount);
       setLikeSum(data.likeCount ?? 0);
     } catch (err) {
-      console.error("📊 통계 불러오기 중 오류:", err);
+      console.error(" 통계 불러오기 중 오류:", err);
     }
   };
 
@@ -147,14 +147,14 @@ export default function CommunityPage() {
         setTotalUsers(data.totalUsers);
         setTotalPosts(data.totalPosts);
       } catch (err) {
-        console.error("❌ 커뮤니티 통계 로딩 실패:", err);
+        console.error("커뮤니티 통계 로딩 실패:", err);
       }
     };
 
     fetchCommunityStats();
   }, []);
 
-  // 📊 게시글 수, 댓글 수, 좋아요 수 통합 통계 API 호출
+  // 게시글 수, 댓글 수, 좋아요 수 통합 통계 API 호출
   useEffect(() => {
     fetchStats(); // 조건은 fetchStats 내부에서 체크함
   }, [user?.currentUser?.email]);
@@ -204,7 +204,7 @@ export default function CommunityPage() {
 
   // 삭제 버튼 핸들러
   const handleDelete = async (postId: string) => {
-    console.log("🗑️ 삭제 요청 postId:", postId); // 디버깅
+    console.log("삭제 요청 postId:", postId); // 디버깅
 
     try {
       const res = await fetch(`http://localhost:8000/posts/${postId}`, {
@@ -226,12 +226,12 @@ export default function CommunityPage() {
 
       await fetchStats();
 
-      alert("✅ 삭제 완료");
+      alert("삭제 완료");
       setShowPostModal(false); // 모달 닫기
       setSelectedPost(null); // 선택 글 초기화
       router.push("/community"); // 커뮤니티 이동
     } catch (err) {
-      console.error("❌ 삭제 오류:", err);
+      console.error("삭제 오류:", err);
       alert("게시글 삭제 중 오류가 발생했습니다.");
     }
   };
@@ -652,11 +652,11 @@ export default function CommunityPage() {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         case "popular":
-          return b.likes - a.likes;
+          return (b.likes ?? 0) - (a.likes ?? 0); // 좋아요 기준 내림차순
         case "comments":
-          return b.comments - a.comments;
+          return (b.comments ?? 0) - (a.comments ?? 0); // 댓글 기준 내림차순
         case "views":
-          return b.views - a.views;
+          return (b.views ?? 0) - (a.views ?? 0); // 조회수 기준 내림차순
         default:
           return 0;
       }
@@ -766,11 +766,18 @@ export default function CommunityPage() {
       console.log("최신 글 목록:", sortedPosts);
 
       setPosts(updatedPosts);
-      setFilteredPosts(updatedPosts); // 실시간 반영을 위한 추가 코드
+      setFilteredPosts(updatedPosts); // 실시간 반영
+
+      // 작성 후 필터 상태 초기화
+      setCurrentCategory("all");
+      setCurrentSort("latest");
+      setCurrentPage(1);
+      setSearchTerm?.(""); // ← searchTerm이 useState면 이거 선언되어 있어야 함
 
       await fetchStats();
       setShowWriteModal(false);
       setEditingPost(null);
+
       alert(
         editingPost ? "게시글이 수정되었습니다." : "게시글이 등록되었습니다."
       );
