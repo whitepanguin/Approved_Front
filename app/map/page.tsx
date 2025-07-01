@@ -16,6 +16,7 @@ export default function SearchableBusinessMap() {
   const landUseOverlaysRef = useRef<any[]>([]);
 
   const [showLandUse, setShowLandUse] = useState(false);
+  const [isLandUseLoading, setIsLandUseLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [address, setAddress] = useState("");
   const [businessData, setBusinessData] = useState<any[]>([]);
@@ -96,17 +97,49 @@ export default function SearchableBusinessMap() {
     if (!map) return;
 
     if (!showLandUse) {
+      setIsLandUseLoading(true);
+
       fetch("/seoul_landuse_final_cleaned_valid.geojson")
         .then((res) => res.json())
         .then((geojson) => {
-          if (!geojson || !geojson.features || !Array.isArray(geojson.features))
+          if (
+            !geojson ||
+            !geojson.features ||
+            !Array.isArray(geojson.features)
+          ) {
+            setIsLandUseLoading(false);
             return;
+          }
 
           const polygons: any[] = [];
           const overlays: any[] = [];
           const displayedZones = new Set<string>();
 
-          geojson.features.forEach((feature: any) => {
+          //렌더링 분산
+          const scheduleRender = (
+            features: any[],
+            callback: (feature: any) => void
+          ) => {
+            let i = 0;
+            const batchSize = 10;
+
+            const processBatch = (deadline: any) => {
+              while (i < features.length && deadline.timeRemaining() > 0) {
+                callback(features[i]);
+                i++;
+              }
+              if (i < features.length) {
+                requestIdleCallback(processBatch);
+              } else {
+                // 렌더링 완료 시 로딩 상태 해제
+                setIsLandUseLoading(false);
+              }
+            };
+
+            requestIdleCallback(processBatch);
+          };
+
+          scheduleRender(geojson.features, (feature: any) => {
             const { geometry, properties } = feature;
             const type = geometry.type;
             const coordinates = geometry.coordinates;
@@ -171,24 +204,24 @@ export default function SearchableBusinessMap() {
                 const overlay = new kakao.maps.CustomOverlay({
                   position: center,
                   content: `
-    <div style="
-      font-size: 10px;
-      font-weight: 600;
-      color: #1a202c;
-      white-space: nowrap;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
-      display: none;
-      pointer-events: none;
-      text-shadow: 0 0 2px rgba(255,255,255,1), 1px 1px 0 rgba(255,255,255,0.9);
-      letter-spacing: -0.01em;
-      line-height: 1;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
-    " class="land-use-label">
-      ${useZone}
-    </div>
-  `,
+  <div style="
+    font-size: 10px;
+    font-weight: 600;
+    color: #1a202c;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    display: none;
+    pointer-events: none;
+    text-shadow: 0 0 2px rgba(255,255,255,1), 1px 1px 0 rgba(255,255,255,0.9);
+    letter-spacing: -0.01em;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  " class="land-use-label">
+    ${useZone}
+  </div>
+`,
                   yAnchor: 0.5,
                   xAnchor: 0.5,
                 });
@@ -201,6 +234,10 @@ export default function SearchableBusinessMap() {
 
           landUsePolygonsRef.current = polygons;
           landUseOverlaysRef.current = overlays;
+        })
+        .catch((error) => {
+          console.error("Failed to load land use data:", error);
+          setIsLandUseLoading(false);
         });
     } else {
       landUsePolygonsRef.current.forEach((polygon) => polygon.setMap(null));
@@ -366,14 +403,12 @@ export default function SearchableBusinessMap() {
         // 용도지역 라벨 표시/숨김 제어
         const labels = document.querySelectorAll(".land-use-label");
         if (level <= 5) {
-          // 줌 레벨 6 이하일 때만 라벨 표시 (기존 4에서 6으로 변경)
           labels.forEach((label) => {
             if (label instanceof HTMLElement) {
               label.style.display = "block";
             }
           });
         } else {
-          // 줌 레벨 7 이상일 때는 라벨 숨김
           labels.forEach((label) => {
             if (label instanceof HTMLElement) {
               label.style.display = "none";
@@ -428,6 +463,23 @@ export default function SearchableBusinessMap() {
             src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=62727505cda834a0a8563345c1c569d1&autoload=false&libraries=services"
             strategy="beforeInteractive"
           />
+          <style jsx>{`
+            @keyframes wobble {
+              0%,
+              100% {
+                transform: rotate(0deg) scale(1);
+              }
+              25% {
+                transform: rotate(-5deg) scale(1.05);
+              }
+              50% {
+                transform: rotate(0deg) scale(1.1);
+              }
+              75% {
+                transform: rotate(5deg) scale(1.05);
+              }
+            }
+          `}</style>
 
           {/* Header */}
           <div className="mb-6 text-center">
@@ -475,18 +527,36 @@ export default function SearchableBusinessMap() {
                   지역별 토지 이용 현황
                 </span>
               </div>
-              <button
-                onClick={handleToggleLandUse}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  showLandUse ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ease-in-out ${
-                    showLandUse ? "translate-x-6" : "translate-x-1"
+              <div className="flex items-center gap-3">
+                {isLandUseLoading && (
+                  <div className="flex items-center gap-2">
+                    <img
+                      src="/images/default-profile.png"
+                      alt="Loading"
+                      className="w-6 h-6 animate-bounce"
+                      style={{
+                        animation: "wobble 1s ease-in-out infinite",
+                      }}
+                    />
+                    <span className="text-xs text-blue-600 font-medium">
+                      렌더링 중<span className="animate-pulse">...</span>
+                    </span>
+                  </div>
+                )}
+                <button
+                  onClick={handleToggleLandUse}
+                  disabled={isLandUseLoading}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    showLandUse ? "bg-blue-600" : "bg-gray-300"
                   }`}
-                />
-              </button>
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ease-in-out ${
+                      showLandUse ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 

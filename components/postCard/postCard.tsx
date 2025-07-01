@@ -34,6 +34,12 @@ interface Post {
   likes?: number;
   comments?: number;
   emoji?: string;
+  email: string;
+}
+
+interface User {
+  email: string;
+  nickname: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -43,14 +49,14 @@ const categoryLabels: Record<string, string> = {
   startup: "창업",
 };
 
-
-
 export default function PostCard(
-  { post, onClick }: { post: Post; onClick?: () => void }   // ⬅️ onClick 받기
+  { post, onClick }: { post: Post; onClick?: () => void } // ⬅️ onClick 받기
 ) {
   return (
-    <div onClick={onClick}
-         className="p-5 border border-gray-200 rounded-lg hover:border-blue-600 transition-colors cursor-pointer">
+    <div
+      onClick={onClick}
+      className="p-5 border border-gray-200 rounded-lg hover:border-blue-600 transition-colors cursor-pointer"
+    >
       {/* ───── 카테고리 뱃지 ───── */}
       {post.category && (
         <span className="inline-flex items-center gap-1 px-2 py-1 text-xs text-blue-600 bg-blue-100 rounded-full mb-2">
@@ -59,7 +65,7 @@ export default function PostCard(
               icon={categoryIcons[post.category as keyof typeof categoryIcons]}
             />
           )}
-           {categoryLabels[post.category] ?? post.category}
+          {categoryLabels[post.category] ?? post.category}
         </span>
       )}
 
@@ -78,7 +84,7 @@ export default function PostCard(
       <div className="flex items-center text-xs text-gray-500 gap-3 mb-1">
         <span className="flex items-center gap-1">
           <FontAwesomeIcon icon={faUser} />
-          {post.author || "익명"}
+          {/* {post.author || "익명"} */}
         </span>
         <span className="flex items-center gap-1">
           <FontAwesomeIcon icon={faClock} />
