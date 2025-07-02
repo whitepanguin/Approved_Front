@@ -349,6 +349,7 @@ export default function CommunityPage() {
     setCurrentPage(1); // 카테고리 바꿀 때도 페이지 초기화
   }, [currentCategory, posts]);
 
+  // 🔧 handleAddComment 내부 수정
   const handleAddComment = async () => {
     if (!newComment.trim() || !selectedPost?._id) return;
 
@@ -401,12 +402,21 @@ export default function CommunityPage() {
           p._id === selectedPost._id ? { ...p, comments: p.comments + 1 } : p
         )
       );
+
+      // ✅ 댓글 등록 후 검색 상태 유지
+      if (searchTerm) {
+        const filtered = posts.filter(
+          (post) =>
+            post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            post.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredPosts(filtered);
+      }
     } catch (err) {
       console.error("댓글 추가 실패:", err);
       alert("댓글 등록 중 오류가 발생했습니다.");
     }
   };
-
   const fetchComments = async () => {
     if (!selectedPost?._id) return;
 
