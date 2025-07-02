@@ -3,9 +3,8 @@ export const dynamic = "force-dynamic";
 
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/main-layout";
-import { useApp } from "../providers";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store"; // store 타입 import 필요
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,30 +15,19 @@ import {
   faFilter,
   faPen,
   faFileAlt,
-  faComments,
   faSearch,
-  faInfoCircle,
-  faQuestionCircle,
-  faCoffee,
-  faRocket,
-  faList,
   faComment,
   faChartBar,
-  faTags,
   faEye,
   faClock,
   faUser,
   faHeart,
-  faChevronLeft,
-  faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   /* 사용하는 regular 아이콘 */
   faHeart as farHeart,
   faComment as farComment,
 } from "@fortawesome/free-regular-svg-icons";
-
-const API_BASE_URL = "http://localhost:8000";
 
 interface Post {
   _id: string;

@@ -3,9 +3,8 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/main-layout";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { setUser, setUserStatus } from "../../modules/user";
 import { useRouter } from "next/navigation";
 import PieChart from "./providerChart";
 import CategoryChart from "./categoryChart";
