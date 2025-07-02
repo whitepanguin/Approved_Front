@@ -88,6 +88,8 @@ export default function CommunityPage() {
 
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
 
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+
   const router = useRouter();
 
   const API_BASE_URL =
@@ -691,6 +693,12 @@ export default function CommunityPage() {
   // 게시글 작성 / 수정
   const handleWriteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user.currentUser || !user.currentUser.userid) {
+      alert("로그인 후 이용해주세요!");
+      router.push("/login");
+      return;
+    }
+
     const formData = new FormData(e.target as HTMLFormElement);
 
     const title = formData.get("title") as string;
