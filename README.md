@@ -59,8 +59,7 @@ pnpm dev
 * Tailwind 설정 문제 → config 파일 및 경로 확인
 ## :손을_잡고_있는_두_여성: 팀 & 기여자
 Approved_Front 팀
-* 팀장 : whitepanguin
-* 프론트엔드 : LeeHwon 외
-* 데이터/기획 : 협업자
+* 팀장 : 이재용
+* 팀원 : 김동원, 김우주, 손단하, 엄동렬, 이훤
 ---
 문의 및 기여는 [whitepanguin](https://github.com/whitepanguin) 또는 이슈 게시판을 통해 연락 바랍니다.
